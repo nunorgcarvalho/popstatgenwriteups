@@ -77,7 +77,7 @@ The $G_{ii}$ element is the variance of individual $i$'s normalized genotype vec
 
 We also define $\varg = M_c \sigma_{\beta}^2$ to be the variance of the total additive genetic effects on the phenotype. We can therefore think of individuals' phenotypes as being derived from the sum of a genetic random effect $\bg = \bX_c \bbeta$ and a residual random effect $\bepsilon$. From the general rule of multivariable statistics that $\Var[\bA \bv] = \bA \Var[\bv] \bA^{\T}$, we can write the genetic random effect as coming from a normal distribution:
 $$ \bg \sim \N(\E[\bX \bbeta], \Var[\bX \bbeta]) $$
-Because $\E[\bbeta] = 0$, then $\E[\bx \bbeta] = 0$. As for the variance, we can reuse the definitions from earlier, $\Var[\bX \bbeta] =  \bG \varg$. Therefore,
+Because $\E[\bbeta] = 0$, then $\E[\bX \bbeta] = 0$. As for the variance, we can reuse the definitions from earlier, $\Var[\bX \bbeta] =  \bG \varg$. Therefore,
 $$ \bg \sim \N(0, \bG \varg) $$
 
 Narrow-sense heritability is defined as the proportion of phenotypic variance, $\sigma_P^2$, explained by additive genetic effects:
@@ -148,14 +148,14 @@ Allowing us to calculate $\E[A_{ijj}]$:
 \end{align*}
 So, the expected variance of an individual's normalized genotype is 1 and independent of the allele frequency, which is a desirable property.
 However, this frequency-independence does not hold for the variance.
-For simplicity, let's denote $P = 2 p_i (1 - p_i)$ and make use of $\Var[Y] = \E[Y^2] - \E[Y]^2$:
+For simplicity, let's denote $H = 2 p_i (1 - p_i)$ and make use of $\Var[Y] = \E[Y^2] - \E[Y]^2$:
 \begin{align*}
-    \Var[A_{ijj}] &= \Var[\frac{(x'_{ij} - 2 p_i)^2}{P}] \\
-    &= \frac{\Var[(x'_{ij} - 2 p_i)^2]}{(P)^2} \\
-    &= \frac{\E[((x'_{ij} - 2 p_i)^2)^2] - \E[(x'_{ij} - 2 p_i)^2)]^2}{(P)^2} \\
-    &= \frac{(P) - (P)^2}{(P)^2} \\
-    &= \frac{(P)(1  - P)}{(P)^2} \\
-    &= \frac{1 - P}{P} \\
+    \Var[A_{ijj}] &= \Var[\frac{(x'_{ij} - 2 p_i)^2}{H}] \\
+    &= \frac{\Var[(x'_{ij} - 2 p_i)^2]}{(H)^2} \\
+    &= \frac{\E[((x'_{ij} - 2 p_i)^2)^2] - \E[(x'_{ij} - 2 p_i)^2)]^2}{(H)^2} \\
+    &= \frac{(H) - (H)^2}{(H)^2} \\
+    &= \frac{(H)(1  - H)}{(H)^2} \\
+    &= \frac{1 - H}{H} \\
     &= \frac{1 - 2 p_i (1 - p_i)}{2 p_i (1 - p_i)} \\
 \end{align*}
 The full derivation for why $\E[((x'_{ij} - 2 p_i)^2)^2] = \E[(x'_{ij} - 2 p_i)^2] = 2 p_i (1 - p_i)$ is very lengthy algebraically, but can be shortcutted by using the formula for the \href{https://en.wikipedia.org/wiki/Binomial_distribution#Higher_moments}{higher moments of a binomially distributed variable}, where $n=2$ and $p=p_i$.
@@ -166,15 +166,15 @@ To be frank, I am not sure how the authors derived it, but this equation holds b
 $$A_{ijj} = 1 + \frac{{x'}_{ij}^2 - (1 + 2 p_i) x_{ij} + 2 p_i^2}{2 p_i (1 - p_i)} $$
 We now explicitly define $\bA$ as follows:
 $$
-A_{jk} = \frac{1}{N}\sum_{i=1}^{M} A_{ijk} = 
+A_{jk} = \frac{1}{M}\sum_{i=1}^{M} A_{ijk} = 
 \begin{cases}
-\frac{1}{N}\sum_{i=1}^{M} \frac{(x'_{ij} - 2 p_i)(x'_{ik} - 2 p_i)}{ 2 p_i (1 - p_i)}, & j \neq k \\[10pt]
-1 + \frac{1}{N}\sum_{i=1}^{M} \frac{{x'}_{ij}^2 - (1 + 2 p_i) x'_{ij} + 2 p_i^2}{2 p_i (1 - p_i)}, & j = k
+\frac{1}{M}\sum_{i=1}^{M} \frac{(x'_{ij} - 2 p_i)(x'_{ik} - 2 p_i)}{ 2 p_i (1 - p_i)}, & j \neq k \\[10pt]
+1 + \frac{1}{M}\sum_{i=1}^{M} \frac{{x'}_{ij}^2 - (1 + 2 p_i) x'_{ij} + 2 p_i^2}{2 p_i (1 - p_i)}, & j = k
 \end{cases}
 $$
 
 \subsection{Estimating the genetic variance component through REML}
-Notice that earlier, we were able to define the phenotype $\by$ as a sum of random effects, treating $\bA$ as a good approxiation of $bG$:
+Notice that earlier, we were able to define the phenotype $\by$ as a sum of random effects, treating $\bA$ as a good approximation of $\bG$:
 \begin{equation*}
 \by = \bg + \bepsilon
 \quad\mathrm{where}\quad
