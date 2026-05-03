@@ -118,12 +118,12 @@ Therefore, a small change in the paramater value(s) from the MLE leads to a shar
 In contrast, if there is weak curvature (low magnitude) at the MLE, then there is a wide region of parameter estimates that yield similar (albeit slightly lower) likelihoods of producing the data.
 
 \subsubsection{The Hessian}
-For $M$ parameters, the second derivative of the log-likelihood function is the \textbf{Hessian} ($\bH$), an $M \times M$ symmetric matrix where:
+For $M$ parameters, the second derivative of the log-likelihood function is the \textbf{Hessian} ($\bH \in \R^{M \times M}$), a symmetric matrix where:
 $$
-H_{ij} = \frac{ \partial^2 \LL(\Theta | \by)
+H_{ij} = \frac{ \partial^2 \LL(\bTheta | \by)
     }{ \partial \Theta_i \partial \Theta_j}
 $$
-This is also called the gradient and can be evaluated at any set of parameter values, describing the multi-dimensional curvature of the log-likelihood at that set of parameters.
+This can be evaluated at any set of parameter values, describing the multi-dimensional curvature of the log-likelihood at that set of parameters.
 
 \subsubsection{The Fisher information Matrix}
 Of mathematical interest to us is the negative expected value of the Hessian, which is called the \textbf{Fisher information matrix}:
@@ -158,7 +158,7 @@ Maximum likelihood estimation is often applied in the context of a linear mixed 
 $$
 \by = \bX \bbeta + \bu + \bepsilon
 $$
-where $\bX \bbeta$ encodes fixed effects on $\by$, while $\bu$ is a random effect drawn from a multivariate normal distribution, $\bu \sim MVN(0, \sigma_A^2 \bA)$. Furthermore, $\bepsilon$ can also be thought of as a random effect representing the random residual that is distributed from a single normal distribution, $\bepsilon \sim \N(0, \sigma_{\epsilon}^2 \bI)$. The problem with ML is that when estimating the parameter $\sigma_A^2$, it must assume that its estimate of the fixed effect is exactly correct, $\hat{\bbeta} = \bbeta$. This often leads to bias in the estimate of the other parameters; see Lynch and Walsh \citep[pg. 781]{lynch1998book} for an example. Restricted Maximum Likelihood (REML) resolves this by transforming the equation definining $y$ such that it does not depend on the fixed effects. The transformation can be thought of as multiplying both sides of the equation by a transformation matrix $\bK$ that when multiplied by $\bX$ equals $\bzero$, $\bK \bX = \bzero$:
+where $\bX \bbeta$ encodes fixed effects on $\by$, while $\bu$ is a random effect drawn from a multivariate normal distribution, $\bu \sim \N(\bzero, \sigma_A^2 \bA)$. Furthermore, $\bepsilon$ can also be thought of as a random effect representing the random residual that is distributed from a multivariate normal distribution, $\bepsilon \sim \N(\bzero, \sigma_{\epsilon}^2 \bI)$. The problem with ML is that when estimating the parameter $\sigma_A^2$, it must assume that its estimate of the fixed effect is exactly correct, $\hat{\bbeta} = \bbeta$. This often leads to bias in the estimate of the other parameters; see Lynch and Walsh \citep[pg. 781]{lynch1998book} for an example. Restricted Maximum Likelihood (REML) resolves this by transforming the equation definining $\by$ such that it does not depend on the fixed effects. The transformation can be thought of as multiplying both sides of the equation by a transformation matrix $\bK$ that when multiplied by $\bX$ equals $\bzero$, $\bK \bX = \bzero$:
 $$
 \bK \by = \bK \bu + \bK \bepsilon
 $$
@@ -252,16 +252,16 @@ Second, the Fisher-Scoring method also appears to be better at converging correc
 
 \subsubsection{Average Information}
 
-The Average Information method uses the average of the expected and observed information matrices evaluated at the current iteration's MLE as the second derivative of the log-likelihood. Defining this matrix as $\mathbf{AI}$, it is:
+The Average Information method uses the average of the expected and observed information matrices evaluated at the current iteration's MLE as the second derivative of the log-likelihood. Defining this matrix as $\bAI$, it is:
 $$
-\mathbf{AI}(\bTheta) = \frac{1}{2}
+\bAI(\bTheta) = \frac{1}{2}
 (\mathcal{I}(\bTheta) - \bH(\bTheta))  
 $$
 Such that the iterative equation is:
 \begin{align*}
 \hat{\bTheta}^{(k+1)} &= 
 \hat{\bTheta}^{(k)} +
-\mathbf{AI}^{-1} (\hat{\bTheta}^{(k)})
+\bAI^{-1} (\hat{\bTheta}^{(k)})
 \bS(\hat{\bTheta}^{(k)}) \\
 &= 
 \hat{\bTheta}^{(k)} +
@@ -281,40 +281,35 @@ We define a mixed model for an outcome $\by$ composed of fixed effects and $M$ r
 $$ \by = \bX \bbeta + \sum_{i=1}^{M+1} \bZ_i \bu_i $$
 Where:
 \begin{itemize}
-    \item $\by$: phenotypes.
-    $N \times 1$ vector.
+    \item $\by \in \R^N$: phenotypes.
     Centered so that $\E[\by]=0$.
     \begin{itemize}
         \item $N$: number of samples.
     \end{itemize}
-    \item $\bX$: covariate design matrix.
-    $N \times C$ matrix.
+    \item $\bX \in \R^{N \times C}$: covariate design matrix.
     \begin{itemize}
         \item $C$: number of covariates.
     \end{itemize}
-    \item $\bbeta$: covariate effects.
-    $C \times 1$ vector.
+    \item $\bbeta \in \R^C$: covariate effects.
     \item $M$: number of random effect components.
     Does not include the random residual component.
     Indexed by $i$.
     \begin{itemize}
         \item $i = M+1$ refers to the random residual component, often denoted by $\epsilon$
     \end{itemize}
-    \item $\bZ_i$: incidence matrix for the $i \sps{th}$ random effect component.
-    $N \times N_i$ matrix.
+    \item $\bZ_i \in \R^{N \times N_i}$: incidence matrix for the $i \sps{th}$ random effect component.
     Maps each individual to their respective cluster in the $i \sps{th}$ random effect component.
     \begin{itemize}
         \item $N_i$: number of clusters in $i \sps{th}$ random effect component.
         \item $\bZ_{M+1} = \bI_{N}$
     \end{itemize}
-    \item $\bu_i$: the $i \sps{th}$ set of random effects.
-    $N_i \times 1$ vector. Assumed to be drawn from a multivariate normal distribution:
-    $\bu_i \sim \N(0, \sigma^2_i \bA_i)$
+    \item $\bu_i \in \R^{N_i}$: the $i \sps{th}$ set of random effects.
+    Assumed to be drawn from a multivariate normal distribution:
+    $\bu_i \sim \N(\bzero, \sigma^2_i \bA_i)$
     \begin{itemize}
         \item $\sigma^2_i$: variance of the $i \sps{th}$ random effect component.
         This is what we are often interested in estimating.
-        \item $\bA_i$: relationship matrix for the $i \sps{th}$ random effect component.
-        $N_i \times N_i$ matrix.
+        \item $\bA_i \in \R^{N_i \times N_i}$: relationship matrix for the $i \sps{th}$ random effect component.
         This encodes the similarity between clusters for some component of interest.
         \begin{itemize}
             \item $\bA_{M+1} = \bI_N$
@@ -323,9 +318,9 @@ Where:
 \end{itemize}
 
 We can write $\by$ as a multivariate normal:
-$$ \by = \N(\bX \bbeta, \bV) $$
+$$ \by \sim \N(\bX \bbeta, \bV) $$
 where:
-$$ V = \sum_{i=1}^{M+1} \sigma^2_i \bZ_i \bA_i \bZ_i^{\T} $$
+$$ \bV = \sum_{i=1}^{M+1} \sigma^2_i \bZ_i \bA_i \bZ_i^{\T} $$
 
 \subsection{Solving ML equations through quadratic methods}
 The ML equations that need to be solved to obtain parameter estimates are not solvable through analytical methods.
@@ -386,20 +381,20 @@ This also needs to be computed at every iteration.
 \subsubsection{Second derivative of the likelihood}
 As discussed above, different algorithms use different matrices as their second derivative of the log-likelihood differently.
 Using the notation from above:
-$$ \bH_{ij} =
+$$ H_{ij} =
 \frac{1}{2} \mathrm{tr}[\bP \bV_i \bP \bV_j] - 
 \by^{\T} \bP \bV_i \bP \bV_j \bP \by
 $$
 $$ \mathcal{I}_{ij} =
 \frac{1}{2} \mathrm{tr}[\bP \bV_i \bP \bV_j]
 $$
-$$ \mathbf{AI}_{ij} =
+$$ AI_{ij} =
 \frac{1}{2}
 \by^{\T} \bP \bV_i \bP \bV_j \bP \by
 $$
 As you may have noticed, they are closely related to each other:
 $$
-\bH_{ij} = \mathcal{I}_{ij} - 2 \mathbf{AI}_{ij}
+H_{ij} = \mathcal{I}_{ij} - 2 AI_{ij}
 $$
 This also needs to be computed at every iteration.
 

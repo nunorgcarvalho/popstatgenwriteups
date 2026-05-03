@@ -21,31 +21,31 @@ Largely adapted from the respective Wikipedia article \citep{wikipedia2026webGLS
 \subsection{Model definition}
 
 In Generalized Least Squares (GLS), we define an outcome's mean to be a linear function of a set of predictors:
-$$ \by = \bX \pmb{\beta} + \bepsilon $$
+$$ \by = \bX \bbeta + \bepsilon $$
 
 Where:
 
 \begin{itemize}
-    \item $\by$: outcome vector. $N \times 1$
+    \item $\by \in \R^N$: outcome vector.
     \begin{itemize}
         \item $N$: number of samples
     \end{itemize}
-    \item $\bX$: design matrix. $N \times K$ matrix
+    \item $\bX \in \R^{N \times K}$: design matrix.
     \begin{itemize}
         \item $K$: number of predictors
     \end{itemize}
-    \item $\bbeta$ : coefficients vector. $K \times 1$ vector
-    \item $\bepsilon$ : error term. $N \times 1$ vector
+    \item $\bbeta \in \R^K$: coefficients vector.
+    \item $\bepsilon \in \R^N$: error term.
 \end{itemize}
 
 Because of our conditional mean definition earlier, the error term, $\bepsilon$, has a mean of zero for a given set of predictor values ($\bX$):
-$$ \E [\bepsilon | \bX ] = \B{0} $$
+$$ \E [\bepsilon | \bX ] = \bzero $$
 
-We also assume that the variance of the error term given $\bX$ is described by an invertible $N \times N$ covariance matrix, $\bOmega$:
+We also assume that the variance of the error term given $\bX$ is described by an invertible covariance matrix, $\bOmega \in \R^{N \times N}$:
 $$ \Cov[ \bepsilon | \bX ] = \bOmega $$
 
-We further assume that the error term follows a multivariate normal distribution with mean 0 and covariance $\bOmega$:
-$$ \bepsilon \sim \N (\B{0}, \bOmega) $$
+We further assume that the error term follows a multivariate normal distribution with mean $\bzero$ and covariance $\bOmega$:
+$$ \bepsilon \sim \N (\bzero, \bOmega) $$
 
 And so it follows that:
 $$ \by \sim \N (\bX \bbeta, \bOmega) $$
@@ -78,7 +78,7 @@ Through matrix algebra, this is equivalent to:
 We can use calculus to solve for the $\bb$ that minimizes this expression by taking the partial derivative with respect to $\bb$ and solving for 0:
 
 \begin{align*}
-    \B{0} &= \frac{\partial}{\partial \bb} [ \by^{\T} \bOmega^{-1} \by + (\bX \bb)^{\T} \bOmega^{-1} (\bX \bb) - 2(\bX \bb)^{\T} \bOmega^{-1} \by ]\\
+    \bzero &= \frac{\partial}{\partial \bb} [ \by^{\T} \bOmega^{-1} \by + (\bX \bb)^{\T} \bOmega^{-1} (\bX \bb) - 2(\bX \bb)^{\T} \bOmega^{-1} \by ]\\
     &=  2 \bX^{\T} \bOmega^{-1} \bX \hat{\bbeta} - 2 \bX^{\T} \bOmega^{-1} \by
 \end{align*}
 
@@ -87,7 +87,7 @@ $$ \hat{\bbeta} = (\bX^{\T} \bOmega^{-1} \bX)^{-1} \bX^{\T} \bOmega^{-1} \by $$
 
 \subsubsection{Specific case of Ordinary Least Squares}
 
-Note that in Ordinary Least Squares (OLS), the covariance matrix is an identity matrix, $\bOmega = I$. That is, the residuals are uncorrelated with each other. This simplifies the above equation to:
+Note that in Ordinary Least Squares (OLS), the covariance matrix is an identity matrix, $\bOmega = \bI$. That is, the residuals are uncorrelated with each other. This simplifies the above equation to:
 
 \begin{align*}
     \hat{\bbeta} &= (\bX^{\T} \bOmega^{-1} \bX)^{-1} \bX^{\T} \bOmega^{-1} \by \\
@@ -104,12 +104,12 @@ To get the variance of the $\hat{\bbeta}$ estimate, we only need to focus on the
 \begin{align*}
     \Var[\by] &= \Var[\bX \bbeta + \bepsilon] \\
     &= \Var[\bX \bbeta] + \Var[\bepsilon] \\
-    &= \B{0} + \E[ \Var[\bepsilon | \bX] ] + \Var[ \E[\bepsilon | \bX]] \\
-    &= \E[ \bOmega ] + \Var[ \B{0} ] \\ 
+    &= \bzero + \E[ \Var[\bepsilon | \bX] ] + \Var[ \E[\bepsilon | \bX]] \\
+    &= \E[ \bOmega ] + \Var[ \bzero ] \\ 
     &= \bOmega
 \end{align*}
 
-Let's define $\bA = (\bX^{\T} \bOmega^{-1} \bX)^{-1} \bX^{\T} \bOmega^{-1}$, such that $\hat{\bbeta} = \bA \by$. Furthermore, note that since $\bOmega$ is a covariance matrix, it (and its inverse) is symmetric: $\bOmega = \bOmega^{\T}$. The same symmetry property applies to $\bX^{\T} \bOmega^{-1} \bX$. We can then solve:
+Let's define $\bA \in \R^{K \times N}$ as $\bA = (\bX^{\T} \bOmega^{-1} \bX)^{-1} \bX^{\T} \bOmega^{-1}$, such that $\hat{\bbeta} = \bA \by$. Furthermore, note that since $\bOmega$ is a covariance matrix, it (and its inverse) is symmetric: $\bOmega = \bOmega^{\T}$. The same symmetry property applies to $\bX^{\T} \bOmega^{-1} \bX$. We can then solve:
 
 \begin{align*}
     \Var[ \hat{\bbeta} ] &= \Var[(\bX^{\T} \bOmega^{-1} \bX)^{-1} \bX^{\T} \bOmega^{-1} \by] \\

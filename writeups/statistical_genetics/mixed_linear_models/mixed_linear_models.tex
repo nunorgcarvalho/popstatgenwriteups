@@ -25,29 +25,24 @@ A phenotype is modeled as:
 $$ \by = \bK \bc + \bg + \bepsilon $$
 Where:
 \begin{itemize}
-    \item $\by$: outcomes.
-    $N \times 1$ vector.
+    \item $\by \in \R^N$: outcomes.
     \begin{itemize}
         \item $N$: number of samples.
     \end{itemize}
-    \item $\bK$: design matrix of covariates and intercept placeholder term.
-    $N \times (K+1)$ matrix.
+    \item $\bK \in \R^{N \times (K+1)}$: design matrix of covariates and intercept placeholder term.
     \begin{itemize}
         \item $K$: number of covariates.
     \end{itemize}
-    \item $\bc$: covariate coefficients, including intercept term.
-    $(K+1) \times 1$ vector.
-    \item $\bg$: genetic effects.
-    $N \times 1$ vector.
-    \item $\bepsilon$: non-genetic effects (i.e. error or noise term).
-    $N \times 1$ vector.
+    \item $\bc \in \R^{K+1}$: covariate coefficients, including intercept term.
+    \item $\bg \in \R^N$: genetic effects.
+    \item $\bepsilon \in \R^N$: non-genetic effects (i.e. error or noise term).
 \end{itemize}
 
 The $\bK \bc$ term consists of fixed effects, while the $\bg$ and $\bepsilon$ terms are random effects.
-The genetic effect, $\bg$, is drawn from a multivariate normal distribution with a covariance structure determined by the genetic relatedness matrix (GRM, $\bA$) scaled by the genetic variance component $varg$. That is:
-$$ \bg \sim \mathcal{N} (0, \bA \varg)$$
-Where the $\bA$ is a $N \times N$ matrix with elements denoting the genetic relatedness between individuals $j$ and $k$ as:
-$$ \bA_{jk} = \frac{1}{M} \sum_{i=1}^{M}
+The genetic effect, $\bg$, is drawn from a multivariate normal distribution with a covariance structure determined by the genetic relatedness matrix (GRM, $\bA$) scaled by the genetic variance component $\varg$. That is:
+$$ \bg \sim \mathcal{N} (\bzero, \bA \varg)$$
+Where $\bA \in \R^{N \times N}$ has elements denoting the genetic relatedness between individuals $j$ and $k$ as:
+$$ A_{jk} = \frac{1}{M} \sum_{i=1}^{M}
 \frac{(x_{ij} - 2 p_i)(x_{ik} - 2 p_i)}
 {2 p_i (1 - p_i)}
 $$
@@ -56,7 +51,7 @@ If the genotype matrix, $\bX$, has been standardized such that each row containi
 $$ \bA = \frac{ \bX^{\T} \bX }{M} $$
 
 The non-genetic effect, $\bepsilon$, is drawn from a multivariate normal distribution with no covariance structure and scaled by the environmental variance component, $\vareps$. That is:
-$$ \bepsilon \sim \N (\B{0}, \bI \vareps) $$
+$$ \bepsilon \sim \N (\bzero, \bI \vareps) $$
 
 We can therefore assume that $\bg$ and $\bepsilon$ are independent from each other.
 We can then define the SNP heritability as the proportion of non-fixed-effects variance that is explained by the genotyped markers, which is equivalent to:
@@ -79,7 +74,7 @@ GCTA implements this through the Leave-One-Chromosome-Out (LOCO) method, where a
 This results in 22 GRMs (assuming autosomes only).
 We modify our above model:
 $$ \by = \bK \bc + \bw_i b_i + \bg + \bepsilon $$
-Where $\bw_i$ is a $N \times 1$ vector of mean-adjusted genotypes, $w_{ij} = x_{ij} - 2 p_i$, and $b_i$ is its fixed effect we are trying to estimate. We can combine our fixed effects as follows:
+Where $\bw_i \in \R^N$ is a vector of mean-adjusted genotypes, $w_{ij} = x_{ij} - 2 p_i$, and $b_i$ is its fixed effect we are trying to estimate. We can combine our fixed effects as follows:
 \begin{equation*}
 \bq = \begin{bmatrix} \bc \\ b_i \end{bmatrix}
 \quad\mathrm{and}\quad

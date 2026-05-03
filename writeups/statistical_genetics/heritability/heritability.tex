@@ -18,44 +18,41 @@
 These derivations are based on the Methods of Yang et al. \citep{yang2010natgen}.
 
 \subsection{Phenotype model}
-We can define a quantitative phenotype $y$ as:
+We can define a quantitative phenotype vector $\by$ as:
 $$ \by = \bX_c \bbeta + \bepsilon $$
 
 Where:
 \begin{itemize}
-    \item $\by$: phenotypes.
-    $N \times 1$ vector.
+    \item $\by \in \R^N$: phenotypes.
     Centered so that $\E[\by]=0$.
     \begin{itemize}
         \item $N$: number of samples.
     \end{itemize}
-    \item $\bX_c$: normalized genotypes for causal variants.
-    $N \times M_c$ matrix.
+    \item $\bX_c \in \R^{N \times M_c}$: normalized genotypes for causal variants.
     \begin{itemize}
         \item $M_c$: number of causal variants.
         \item Normalized according to
         $\bX_{c,i} = \frac{\bX'_{c,i} - 2 f_i}{\sqrt{2 f_i (1 - f_i)}}$.
         \begin{itemize}
-            \item $\bX_c'$: allele dosages, taking on values of 0, 1, 2.
+            \item $\bX'_c \in \{0,1,2\}^{N \times M_c}$: allele dosages.
             \item $f_i$: true population allele frequency for variant $i$.
             \item Such that for each row (variant), $\E[\bX_{c,i}] = 0$ and $\Var[\bX_{c,i}] = 1$.
         \end{itemize}
     \end{itemize}
-    \item $\bbeta$: per-normalized-genotype causal effects.
-    $M_c \times 1$ vector.
+    \item $\bbeta \in \R^{M_c}$: per-normalized-genotype causal effects.
     \begin{itemize}
         \item Assume infinitesimal model.
-        \item Drawn from $\bbeta \sim \N(\B{0}, \bI \sigma_{\beta}^2)$.
+        \item Drawn from $\bbeta \sim \N(\bzero, \bI \sigma_{\beta}^2)$.
         \begin{itemize}
-            \item $\bI$: $M_c \times M_c$ identity matrix.
+            \item $\bI \in \R^{M_c \times M_c}$: identity matrix.
             \item $\sigma_{\beta}^2$: variance of causal effects.
         \end{itemize}
     \end{itemize}
-    \item $\bepsilon$: residual effects (i.e. error or noise term). $N \times 1$ vector.
+    \item $\bepsilon \in \R^N$: residual effects (i.e. error or noise term).
     \begin{itemize}
-        \item Drawn from $\bepsilon \sim \N(0, \bI \vareps)$.
+        \item Drawn from $\bepsilon \sim \N(\bzero, \bI \vareps)$.
         \begin{itemize}
-            \item $\bI$: $N \times N$ identity matrix.
+            \item $\bI \in \R^{N \times N}$: identity matrix.
             \item $\vareps$: residual variance.
         \end{itemize}
     \end{itemize}
@@ -72,13 +69,13 @@ By making use of the independence between terms, we can define the variance-cova
     &= \frac{\bX_c \bX_c^{\T}}{M_c} M_c \sigma_{\beta}^2 + \bI \vareps \\
     &= \bG \varg + \bI \vareps \\
 \end{align*}
-where we define $\bG = \frac{\bX_c \bX_c^{\T}}{M_c}$ as the $N \times N$ genetic relationship matrix (GRM) between individuals.
+where we define $\bG = \frac{\bX_c \bX_c^{\T}}{M_c}$, with $\bG \in \R^{N \times N}$, as the genetic relationship matrix (GRM) between individuals.
 The $G_{ii}$ element is the variance of individual $i$'s normalized genotype vector, while the $G_{ij}$ element is the covariance of individuals $i$ and $j$'s normalized genotype vectors.
 
 We also define $\varg = M_c \sigma_{\beta}^2$ to be the variance of the total additive genetic effects on the phenotype. We can therefore think of individuals' phenotypes as being derived from the sum of a genetic random effect $\bg = \bX_c \bbeta$ and a residual random effect $\bepsilon$. From the general rule of multivariable statistics that $\Var[\bA \bv] = \bA \Var[\bv] \bA^{\T}$, we can write the genetic random effect as coming from a normal distribution:
 $$ \bg \sim \N(\E[\bX \bbeta], \Var[\bX \bbeta]) $$
-Because $\E[\bbeta] = 0$, then $\E[\bX \bbeta] = 0$. As for the variance, we can reuse the definitions from earlier, $\Var[\bX \bbeta] =  \bG \varg$. Therefore,
-$$ \bg \sim \N(0, \bG \varg) $$
+Because $\E[\bbeta] = \bzero$, then $\E[\bX \bbeta] = \bzero$. As for the variance, we can reuse the definitions from earlier, $\Var[\bX \bbeta] =  \bG \varg$. Therefore,
+$$ \bg \sim \N(\bzero, \bG \varg) $$
 
 Narrow-sense heritability is defined as the proportion of phenotypic variance, $\sigma_P^2$, explained by additive genetic effects:
 $$ h^2 = \frac{\varg}{\sigma_P^2} = \frac{\varg}{\varg + \vareps} $$
@@ -89,7 +86,7 @@ In practice, we likely do not know the exact set of causal variants and instead 
 
 $$ \bA = \frac{\bX \bX^{\T}}{M} $$
 
-Where $\bA$ is the estimated GRM, $X$ is the normalized genotype matrix of our genotyped SNPs, and $M$ is the number of genotyped SNPs.
+Where $\bA$ is the estimated GRM, $\bX$ is the normalized genotype matrix of our genotyped SNPs, and $M$ is the number of genotyped SNPs.
 Note that because we are also working with a sample, $X$ is normalized using sample allele frequencies, $\bp$:
 
 $$ \bX_i = \frac{\bX'_i - 2 p_i}{\sqrt{2 p_i (1 - p_i)}} $$
@@ -178,9 +175,9 @@ Notice that earlier, we were able to define the phenotype $\by$ as a sum of rand
 \begin{equation*}
 \by = \bg + \bepsilon
 \quad\mathrm{where}\quad
-\bg \sim \N(0, \bA \varg)
+\bg \sim \N(\bzero, \bA \varg)
 \quad\mathrm{and}\quad
-\bepsilon \sim \N(0, \bI \vareps)
+\bepsilon \sim \N(\bzero, \bI \vareps)
 \end{equation*}
 The unknown parameters here, $\varg$ and $\vareps$, can be estimated through REML (Restricted Maximum Likelihood; since this model doesn't include any fixed effects, simple Maximum Likelihood would also suffice). See the entry on "Maximum Likelihood" for a derivation of how variance component parameters are estimated through REML.
 
