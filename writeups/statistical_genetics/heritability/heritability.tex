@@ -42,18 +42,18 @@ Where:
     \item $\bbeta \in \R^{M_c}$: per-normalized-genotype causal effects.
     \begin{itemize}
         \item Assume infinitesimal model.
-        \item Drawn from $\bbeta \sim \N(\bzero, \bI \sigma_{\beta}^2)$.
+        \item Drawn from $\bbeta \sim \N(\bzero,\sigma_{\beta}^2 \bI )$.
         \begin{itemize}
-            \item $\bI \in \R^{M_c \times M_c}$: identity matrix.
             \item $\sigma_{\beta}^2$: variance of causal effects.
+            \item $\bI \in \R^{M_c \times M_c}$: identity matrix.
         \end{itemize}
     \end{itemize}
     \item $\bepsilon \in \R^N$: residual effects (i.e. error or noise term).
     \begin{itemize}
-        \item Drawn from $\bepsilon \sim \N(\bzero, \bI \vareps)$.
+        \item Drawn from $\bepsilon \sim \N(\bzero, \vareps \bI )$.
         \begin{itemize}
-            \item $\bI \in \R^{N \times N}$: identity matrix.
             \item $\vareps$: residual variance.
+            \item $\bI \in \R^{N \times N}$: identity matrix.
         \end{itemize}
     \end{itemize}
 \end{itemize}
@@ -65,9 +65,9 @@ By making use of the independence between terms, we can define the variance-cova
     \Var[\by] &= \Var[\bX_c \bbeta + \bepsilon] \\
     &= \Var[\bX_c \bbeta] + \Var[\bepsilon] \\
     &= \Var[\bX_c] \Var[\bbeta] + \Var[\bepsilon] \\
-    &= (\bX_c \bX_c^{\T}) \sigma_{\beta}^2 + \bI \vareps \\
-    &= \frac{\bX_c \bX_c^{\T}}{M_c} M_c \sigma_{\beta}^2 + \bI \vareps \\
-    &= \bG \varg + \bI \vareps \\
+    &= \sigma_{\beta}^2 (\bX_c \bX_c^{\T}) + \vareps \bI  \\
+    &= M_c \sigma_{\beta}^2 \frac{\bX_c \bX_c^{\T}}{M_c}  + \vareps \bI  \\
+    &= \varg \bG + \vareps \bI \\
 \end{align*}
 where we define $\bG = \frac{\bX_c \bX_c^{\T}}{M_c}$, with $\bG \in \R^{N \times N}$, as the genetic relationship matrix (GRM) between individuals.
 The $G_{ii}$ element is the variance of individual $i$'s normalized genotype vector, while the $G_{ij}$ element is the covariance of individuals $i$ and $j$'s normalized genotype vectors.
@@ -175,11 +175,95 @@ Notice that earlier, we were able to define the phenotype $\by$ as a sum of rand
 \begin{equation*}
 \by = \bg + \bepsilon
 \quad\mathrm{where}\quad
-\bg \sim \N(\bzero, \bA \varg)
+\bg \sim \N(\bzero, \varg \bA )
 \quad\mathrm{and}\quad
-\bepsilon \sim \N(\bzero, \bI \vareps)
+\bepsilon \sim \N(\bzero, \vareps \bI )
 \end{equation*}
 The unknown parameters here, $\varg$ and $\vareps$, can be estimated through REML (Restricted Maximum Likelihood; since this model doesn't include any fixed effects, simple Maximum Likelihood would also suffice). See the entry on "Maximum Likelihood" for a derivation of how variance component parameters are estimated through REML.
+
+\subsection{Heritability of a polygenic risk score}
+Here, we consider a polygenic score (PGS) $\hat{y}_i$ that acts to predict the trait value $y_i$ of an individual.
+We assume the PGS only captures signal through the genetic component $g_i$ of the trait and not through the random noise $\epsilon_i$.
+That means we can model a polygenic score (PGS) as follows:
+$$ \hat{\by} = \bg + \bzeta $$
+where $\bzeta \in \R^N$ is random noise in the PGS: $\bzeta \sim \N(\bzero,\sigma^2_\zeta \bI)$.
+PGS accuracy is commonly defined by its $\Rsq$ value:
+$$ \Rsq = \Corr[\by, \hat{\by}]^2 $$
+Under our assumptions, $\Rsq \leq h^2$.
+If the phenotype has been standardized so that $\sigma_P^2 = 1$, then $h^2 = \varg$ and $\Rsq \leq \varg$.
+We can derive the value of $\sigma^2_\zeta$ as follows:
+\begin{align*}
+    \Rsq &= \Corr[\by, \hat{\by}]^2 \\
+    &= \frac{ \Cov[\by, \hat{\by}]^2 }{ \Var[\by] \Var[\hat{\by}] } \\
+    &= \frac{ \Cov[\bg + \bepsilon, \bg + \bzeta]^2 }{ \Var[\bg + \bepsilon] \Var[\bg + \bzeta] }
+\end{align*}
+Because $\bg$, $\bepsilon$, and $\bzeta$ are independent from each other:
+\begin{align*}
+    \Cov[\bg + \bepsilon, \bg + \bzeta]
+    &= \Cov[\bg, \bg] + \Cov[\bg, \bzeta] + \Cov[\bepsilon, \bg] + \Cov[\bepsilon, \bzeta] \\
+    &= \Var[\bg] \\
+    &= \varg
+\end{align*}
+and
+\begin{align*}
+    \Var[\by] &= \Var[\bg + \bepsilon] = \varg + \vareps = \sigma_P^2 \\
+    \Var[\hat{\by}] &= \Var[\bg + \bzeta] = \varg + \sigma_\zeta^2
+\end{align*}
+Therefore,
+\begin{align*}
+    \Rsq
+    &= \frac{(\varg)^2}{(\varg + \vareps)(\varg + \sigma_\zeta^2)} \\
+    &= \frac{(\varg)^2}{\sigma_P^2(\varg + \sigma_\zeta^2)}
+\end{align*}
+Solving this for $\sigma_\zeta^2$:
+\begin{align*}
+    \Rsq \sigma_P^2(\varg + \sigma_\zeta^2) &= (\varg)^2 \\
+    \varg + \sigma_\zeta^2 &= \frac{(\varg)^2}{\Rsq \sigma_P^2} \\
+    \sigma_\zeta^2 &= \frac{(\varg)^2}{\Rsq \sigma_P^2} - \varg \\
+    \sigma_\zeta^2 &= \varg \left(\frac{\varg}{\Rsq \sigma_P^2} - 1 \right)
+\end{align*}
+If we are working with a standardized phenotype, then $\sigma_P^2 = 1$ and this simplifies to:
+$$\sigma_\zeta^2 = \varg \left(\frac{\varg}{\Rsq} - 1 \right) $$
+This also makes clear why $\Rsq$ cannot be larger than the heritability under this model.
+If $\sigma_\zeta^2 = 0$, the PGS is exactly the genetic component, so $\hat{\by} = \bg$ and $\Rsq = h^2$.
+Adding PGS noise increases $\Var[\hat{\by}]$ without increasing $\Cov[\by,\hat{\by}]$, so $\Rsq$ decreases.
+This also means that:
+$$\Var[\hat{\by}] =
+\frac{(\varg)^2}{\Rsq \sigma_P^2} =
+\frac{\varg h^2}{\Rsq}$$
+
+Suppose that the PGS is then scaled $\hat{\by}' = c\hat{\by}$ such that $\Var[\hat{\by}'] = 1$, where:
+$$ c^2 = \frac{1}{\Var[\hat{\by}]} = \frac{\Rsq \sigma_P^2}{(\varg)^2} $$
+We can then write the scaled PGS as:
+\begin{align*}
+    \hat{\by}' &= c(\bg + \bzeta) \\
+    &= c\bg + c\bzeta
+\end{align*}
+The variance explained by the genetic component in the scaled PGS is:
+\begin{align*}
+    \Var[c\bg]
+    &= c^2 \Var[\bg] \\
+    &= \frac{\Rsq \sigma_P^2}{(\varg)^2} \varg \\
+    &= \frac{\Rsq \sigma_P^2}{\varg} \\
+    &= \frac{\Rsq}{h^2}
+\end{align*}
+and the variance explained by the residual component in the scaled PGS is:
+\begin{align*}
+    \Var[c\bzeta]
+    &= c^2 \Var[\bzeta] \\
+    &= \frac{\Rsq \sigma_P^2}{(\varg)^2}
+    \left[\frac{(\varg)^2}{\Rsq \sigma_P^2} - \varg\right] \\
+    &= 1 - \frac{\Rsq \sigma_P^2}{\varg} \\
+    &= 1 - \frac{\Rsq}{h^2}
+\end{align*}
+Therefore, if we fit the following REML model and treat $\bA$ as a good approximation of the true GRM:
+$$ \hat{\by}' \sim \N(\bzero, \sigma^2_1 \bA + \sigma^2_2 \bI) $$
+the expected values of $\sigma^2_1$ and $\sigma^2_2$ are:
+\begin{align*}
+    \E[\sigma^2_1] &= \frac{\Rsq \sigma_P^2}{\varg} = \frac{\Rsq}{h^2} \\
+    \E[\sigma^2_2] &= 1 - \frac{\Rsq \sigma_P^2}{\varg} = 1 - \frac{\Rsq}{h^2}
+\end{align*}
+In other words, the heritability of the scaled PGS is the ratio between PGS accuracy and trait heritability.
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
