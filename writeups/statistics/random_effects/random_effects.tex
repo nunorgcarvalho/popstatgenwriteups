@@ -2,7 +2,7 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
@@ -16,7 +16,7 @@
 \maketitle
 
 This document describes the math behind simulating random effects as implemented by the popstatgen package.
-Large portions are adapted from Wikipedia articles relating to the relevant topics.
+Large portions are adapted from Wikipedia articles relating to the relevant topics \citep{wikipedia2026webCovMatrix,wikipedia2026webCorrelation,wikipedia2026webRandomEffects,wikipedia2026webMVN,wikipedia2026webCholesky}.
 
 \section{Covariance and Correlation Matrices}
 \subsection{Covariance Matrix}
@@ -120,5 +120,8 @@ $$ z_i = \N(0,1) $$
 which we will multiply by some matrix that induces the correlation between samples implied by $\bZ_i \bA_i \bZ_i^{\T}$.
 
 ...
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}

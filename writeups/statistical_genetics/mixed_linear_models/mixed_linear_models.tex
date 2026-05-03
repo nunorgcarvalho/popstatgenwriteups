@@ -2,12 +2,12 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
 
-\title{Linear Regression}
+\title{Mixed Linear Models}
 \date{\today}
 
 \begin{document}
@@ -16,7 +16,7 @@
 
 \section{Mixed linear model associations}
 
-These derivations are based on Supplementary Note 1 of [\href{https://www.nature.com/articles/ng.2876}{Yang et al., 2014}]. They describe the model behind GCTA's implementation of mixed linear model (MLM) associations for determining SNP effects in a dataset containing cryptic relatedness.
+These derivations are based on Supplementary Note 1 of Yang et al. \citep{yang2014natgen}. They describe the model behind GCTA's implementation of mixed linear model (MLM) associations for determining SNP effects in a dataset containing cryptic relatedness.
 
 \subsection{GCTA implementation of MLM}
 
@@ -126,5 +126,8 @@ This is because if the SNP is correlated with the covariates, pre-adjusting the 
 
 
 
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}

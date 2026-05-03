@@ -2,7 +2,7 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
@@ -15,7 +15,7 @@
 \maketitle
 
 \section{REML-based heritability estimation}
-These derivations are based on the Methods of [\href{https://www.nature.com/articles/ng.608}{Yang et al., 2010}]. 
+These derivations are based on the Methods of Yang et al. \citep{yang2010natgen}.
 
 \subsection{Phenotype model}
 We can define a quantitative phenotype $y$ as:
@@ -158,7 +158,7 @@ For simplicity, let's denote $H = 2 p_i (1 - p_i)$ and make use of $\Var[Y] = \E
     &= \frac{1 - H}{H} \\
     &= \frac{1 - 2 p_i (1 - p_i)}{2 p_i (1 - p_i)} \\
 \end{align*}
-The full derivation for why $\E[((x'_{ij} - 2 p_i)^2)^2] = \E[(x'_{ij} - 2 p_i)^2] = 2 p_i (1 - p_i)$ is very lengthy algebraically, but can be shortcutted by using the formula for the \href{https://en.wikipedia.org/wiki/Binomial_distribution#Higher_moments}{higher moments of a binomially distributed variable}, where $n=2$ and $p=p_i$.
+The full derivation for why $\E[((x'_{ij} - 2 p_i)^2)^2] = \E[(x'_{ij} - 2 p_i)^2] = 2 p_i (1 - p_i)$ is very lengthy algebraically, but can be shortcutted by using the formula for the higher moments of a binomially distributed variable, where $n=2$ and $p=p_i$ \citep{wikipedia2026webBinomial}.
 Importantly, the variance of $A_{jj}$ therefore depends on the allele frequencies of the SNPs, even after normalization.
 $\bA$ would be a better estimator of the GRM if for the same individual, its variance did not depend on the allele frequency, so we want to adjust $A_{ijj}$ so that $\E[A_{ijj}] = 1$ like before, but also that $\Var[A_{ijj}] = 1$ like for unrelated individuals.
 
@@ -183,5 +183,8 @@ Notice that earlier, we were able to define the phenotype $\by$ as a sum of rand
 \bepsilon \sim \N(0, \bI \vareps)
 \end{equation*}
 The unknown parameters here, $\varg$ and $\vareps$, can be estimated through REML (Restricted Maximum Likelihood; since this model doesn't include any fixed effects, simple Maximum Likelihood would also suffice). See the entry on "Maximum Likelihood" for a derivation of how variance component parameters are estimated through REML.
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}

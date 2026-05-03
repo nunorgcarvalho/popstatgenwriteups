@@ -16,8 +16,7 @@ sim/popstatgen/__pycache__
 *.cb
 *.cb2
 .*.lb
-#pdf
-*.pdf
+# PDFs are intentionally tracked so they can be viewed directly on GitHub.
 
 ## Intermediate documents:
 *.dvi

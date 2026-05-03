@@ -2,7 +2,7 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
@@ -15,7 +15,7 @@
 
 \maketitle
 
-A lot of this text is adapted from the textbook [Lynch \& Walsh, 1998], particularly Appendix 4, as well as some back-and-forth with ChatGPT to help consolidate ideas.
+A lot of this text is adapted from Appendix 4 of Lynch and Walsh \citep{lynch1998book}, as well as some back-and-forth with ChatGPT to help consolidate ideas.
 The point of this is to re-explain (restricted) maximum likelihood in a way that makes more sense to me, and hopefully to you. Here, I focus more on the theory and abstraction of ML/REML, and in other entries, I plan to apply it to a particular class of problem (e.g. variance component estimation).
 
 \section{Maximum Likelihood (ML)}
@@ -43,7 +43,7 @@ $$ \mathrm{L}(\bTheta | \by) = \sum_i^{N} \ln( \ell(\bTheta | y_i) ) $$
 Because logarithms are a monotonic function, it means that whatever parameter values maximize the likelihood also maximize the log-likelihood, and same for the minimum.
 
 \subsubsection{Example of the likelihood of a function}
-(Adapted from Example 1 of Appendix 4 of [Lynch \& Walsh, 1998]).
+(Adapted from Example 1 of Appendix 4 of Lynch and Walsh \citep{lynch1998book}.)
 Let's say we have $N$ data points: $\by = [y_1,y_2, ..., y_N]$, which we believe were generated from some normal distribution with a variance of $\sigma^2 = 1$ but an unknown mean.
 We know the probability density function (PDF) for a normal distribution, which is a function of the mean $\mu$ and variance $\sigma$.
 $$
@@ -136,14 +136,14 @@ As sample size increases, the Fisher information matrix evaluated at the MLE con
 $$ \mathcal{I}(\hat{\bTheta}) \approx -\bH(\hat{\bTheta}) $$
 
 \subsubsection{Asymptotic normality of the MLE}
-If our likelihood function follows \href{https://en.wikipedia.org/wiki/Fisher_information#Regularity_conditions}{some regularity conditions}, as sample size increases, the sampling distribution of the MLE (that is, the distribution of the MLE for different samples of observed data from the same underlying data-generating process) converges to normality. This is called \textbf{asymptotic normality} and can be written formally as:
+If our likelihood function follows some regularity conditions \citep{wikipedia2026webFisherInfo}, as sample size increases, the sampling distribution of the MLE (that is, the distribution of the MLE for different samples of observed data from the same underlying data-generating process) converges to normality. This is called \textbf{asymptotic normality} and can be written formally as:
 $$
 \sqrt{N}
 (\hat{\theta}_N - \theta_0)
 \rightarrow^d
 \mathcal{N}(0, \sigma^2)
 $$
-It can be \href{https://gregorygundersen.com/blog/2019/11/28/asymptotic-normality-mle/}{proven} that the variance ($\sigma^2$ in the above equation) of the MLE converges to the inverse of the Fisher information at the true parameter value:
+It can be proven that the variance ($\sigma^2$ in the above equation) of the MLE converges to the inverse of the Fisher information at the true parameter value \citep{gundersen2019web}:
 $$
 \hat{\theta}_N
 \rightarrow^d
@@ -158,7 +158,7 @@ Maximum likelihood estimation is often applied in the context of a linear mixed 
 $$
 \by = \bX \bbeta + \bu + \bepsilon
 $$
-where $\bX \bbeta$ encodes fixed effects on $\by$, while $\bu$ is a random effect drawn from a multivariate normal distribution, $\bu \sim MVN(0, \sigma_A^2 \bA)$. Furthermore, $\bepsilon$ can also be thought of as a random effect representing the random residual that is distributed from a single normal distribution, $\bepsilon \sim \N(0, \sigma_{\epsilon}^2 \bI)$. The problem with ML is that when estimating the parameter $\sigma_A^2$, it must assume that its estimate of the fixed effect is exactly correct, $\hat{\bbeta} = \bbeta$. This often leads to bias in the estimate of the other parameters (see [Lynch \& Walsh, 1998, pg 781] for an example). Restricted Maximum Likelihood (REML) resolves this by transforming the equation definining $y$ such that it does not depend on the fixed effects. The transformation can be thought of as multiplying both sides of the equation by a transformation matrix $\bK$ that when multiplied by $\bX$ equals $\bzero$, $\bK \bX = \bzero$:
+where $\bX \bbeta$ encodes fixed effects on $\by$, while $\bu$ is a random effect drawn from a multivariate normal distribution, $\bu \sim MVN(0, \sigma_A^2 \bA)$. Furthermore, $\bepsilon$ can also be thought of as a random effect representing the random residual that is distributed from a single normal distribution, $\bepsilon \sim \N(0, \sigma_{\epsilon}^2 \bI)$. The problem with ML is that when estimating the parameter $\sigma_A^2$, it must assume that its estimate of the fixed effect is exactly correct, $\hat{\bbeta} = \bbeta$. This often leads to bias in the estimate of the other parameters; see Lynch and Walsh \citep[pg. 781]{lynch1998book} for an example. Restricted Maximum Likelihood (REML) resolves this by transforming the equation definining $y$ such that it does not depend on the fixed effects. The transformation can be thought of as multiplying both sides of the equation by a transformation matrix $\bK$ that when multiplied by $\bX$ equals $\bzero$, $\bK \bX = \bzero$:
 $$
 \bK \by = \bK \bu + \bK \bepsilon
 $$
@@ -341,7 +341,7 @@ $$
 Here, $\bTheta$ denotes the variances of the random components, $\bTheta = [ \sigma^2_1, \sigma^2_2, ... , \sigma^2_K, \sigma^2_{\epsilon} ]^{\T}$.
 All we need is an equation for the first and second derivatives of the likelihood function.
 As the derivation is lengthy, I will simply write the equations that yield such derivatives.
-Refer to [Lynch \& Walsh, 1998, pg 784] for derivations.
+Refer to Lynch and Walsh \citep[pg. 784]{lynch1998book} for derivations.
 Note that these derivatives are evaluated at the current set of parameter estimates.
 In an iterative algorithm, it starts with a random (or user-specified) set of parameter estimates, and iteratively improves on them until the estimates change very little.
 We'll first define two sets of matrices that are used for both first and second derivatives.
@@ -402,5 +402,8 @@ $$
 \bH_{ij} = \mathcal{I}_{ij} - 2 \mathbf{AI}_{ij}
 $$
 This also needs to be computed at every iteration.
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}

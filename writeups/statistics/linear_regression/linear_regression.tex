@@ -2,7 +2,7 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
@@ -16,7 +16,7 @@
 
 \section{Generalized Least Squares (GLS)}
 
-Largely adapted from the \href{https://en.wikipedia.org/wiki/Generalized_least_squares}{respective Wikipedia article}.
+Largely adapted from the respective Wikipedia article \citep{wikipedia2026webGLS}.
 
 \subsection{Model definition}
 
@@ -56,7 +56,7 @@ $$ \by \sim \N (\bX \bbeta, \bOmega) $$
 
 \subsection[Least squares estimate of beta]{Least squares estimate of $\bbeta$}
 
-We denote a candidate estimate for the $\bbeta$ vector as $\bb$ and define its residual vector as $ \by - \bX \bb $. The goal of GLS is to find the estimate of $\bbeta$ that maximizes the likelihood of the data given the above model, which we can calculate using the \href{https://en.wikipedia.org/wiki/Multivariate_normal_distribution}{probability density function of a multivariate normal distribution}:
+We denote a candidate estimate for the $\bbeta$ vector as $\bb$ and define its residual vector as $ \by - \bX \bb $. The goal of GLS is to find the estimate of $\bbeta$ that maximizes the likelihood of the data given the above model, which we can calculate using the probability density function of a multivariate normal distribution \citep{wikipedia2026webMVN}:
 
 $$
 \frac{1}{\sqrt{(2 \pi)^K |\bSigma| }}
@@ -131,5 +131,8 @@ $$ \Var[ \hat{\bbeta} ] = (\bX^{\T} \bOmega^{-1} \bX)^{-1} $$
 
 
 
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}

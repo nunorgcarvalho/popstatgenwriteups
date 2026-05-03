@@ -2,7 +2,7 @@
 
 % loads config.sty
 \makeatletter
-\def\input@path{{../../../}}
+\def\input@path{{../../../tex/}}
 \makeatother
 \usepackage{config}
 \usepackage{macros}
@@ -53,7 +53,7 @@ Therefore, the variance of a random variable is equal to the difference in the e
 
 \subsection{Properties}
 
-Largely taken from \href{https://en.wikipedia.org/wiki/Algebra_of_random_variables}{this wikipedia article}. See below for definitions of covariance.
+Largely taken from the Wikipedia article on algebra of random variables \citep{wikipedia2026webAlgebraRandomVariables}. See below for definitions of covariance.
 
 \subsubsection{Scalars and constants}
 $$ \Var[aX + b] = a^2 \Var[X] $$
@@ -154,5 +154,8 @@ If $ \Var[X] = \Var[Y] = 1$, then the correlation coefficient further simplifies
 $$ \rho_{X,Y} = \E[XY] $$
 
 Which is equivalent to the covariance between $X$ and $Y$ in this case.
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
 
 \end{document}
