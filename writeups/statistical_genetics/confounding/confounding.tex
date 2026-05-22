@@ -1,0 +1,147 @@
+\documentclass[12pt]{article}
+
+% loads config.sty
+\makeatletter
+\def\input@path{{../../../tex/}}
+\makeatother
+\usepackage{config}
+\usepackage{macros}
+
+\title{Confounding}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+In this article, I attempt to synthesize a coherent framework for the different sources of associations between genetic variants and phenotypes.
+In the literature, many of the concepts described here are referred to under different terms.
+I try to be consistent with my usage of terms in this article and also give alternate terms that are commonly used in the literature.
+For the most part, I am simpy synthesizing and/or paraphrasing existing literature, which I reference where applicable.
+I use the terms "trait" and "phenotype" interchangeably.
+
+This is a rough draft and some of the language and sentence structure here is clunky.
+The overall structure of sections is probably suboptimal and subject to change. 
+I acknowledge that parts of this article may get too much into the weeds of certain definitions/concepts.
+
+\section{General Generative Model for a Phenotype}
+I begin by defining the broadest generative model for a trait $Y$ that I can think of:
+$$ Y_i = f(G_i,E_i)$$
+where for some individual $i$, $G_i$ denotes all of their genetic information and $E_i$ denotes all of their non-genetic (often referred to as environmental) information.
+Here, $f$ denotes some function that takes in genetic and environmental information and outputs a trait value.
+In essence, $f$ determines exactly how the trait comes about in the real world by translating its preceding physical processes into a mathematical formula.
+
+Genetic information can be distilled down into distinct units of genetic variation, which I refer to as genetic \textbf{variants}.
+For a given genetic variant, an \textbf{allele} refers to a possible value of that variant.
+Different types of genetic variants exist, such as:
+\begin{itemize}
+    \item \textbf{Single-nucleotide polymorphisms (SNPs)}: a single nucleotide letter change in a DNA sequence, such as having an A allele vs a T allele at some location in the genome.
+    Another term for SNP is \textbf{single-nucleotide variant (SNV)}.
+    Originally, SNP was supposed to refer to SNVs whose minor allele is "common" in a population, although such distinction is rarely applied in modern papers.
+    \item \textbf{Insertions and deletions (indels)}: either the presence (insertion) or absence (deletion) of a string of nucleotides at some location in the genome.
+    \item \textbf{Structural Variants (SVs)}: [To-do]
+    \item \textbf{Copy-Number Variants (CNVs)}: [To-do]
+    \item ... [To-do]
+\end{itemize}
+Regardless of the type of genetic variants being considered, we can parameterize our generative model as being a function of $M$ genetic variants and an environmental term:
+$$ Y_i = f(g_{i,1}, ... , g_{i,M};E_i)$$
+
+\subsection{Causality}
+
+A genetic variant $g_j$ has a \textbf{causal effect} on a phenotype if changing $g_j$ while holding all other terms in $f$ fixed at any values leads to a change in the phenotypic value $Y$.
+This definition allows for interactions between genetic variants and environments since a genetic variant can only be non-causal if for all possible values of the remaining genetic and environmental terms, changing $g_j$ does not change $Y$.
+
+\subsubsection{Environmental mediation of a causal genetic effect}
+
+A genetic variant being causal does not mean its effect is not environmentally mediated.
+For example, suppose a genetic variant causes an individual to have ginger hair. In a society where those with ginger hair are discriminated against and prevented from getting an education, this genetic variant would also be causal for having lower educational attainment.
+However, it would be silly to interpret this causality as meaning that the educational-attainment-lowering causal effect of this genetic variant is an immutable biological property.
+Later, I propose a way to think about environmentally-mediated effects as an environmental interaction.
+
+\subsection{\texorpdfstring{Form of $f$}{Form of f}}
+
+To do meaningful work with such a generative model, we have to impose a form onto $f$, which is typically done by adopting two assumptions: \textbf{additivity} and \textbf{linearity}.
+We also simplify the expression for the environmental effect.
+
+\subsubsection{Additivity}
+The additivity assumption states that the effect of a specific genetic variant $g_j$ is independent of all other genetic variants and environmental factors.
+In other words, it assumes that interactions between causal factors do not exist, such as gene x gene (GxG) or gene x environment (GxE) interactions.
+Therefore, predicting the change in phenotype caused by a change in a genetic variant only requires knowledge of that genetic variant.
+We can formulate this as each genetic variant having its own function $f_j$ that determines its effect on the phenotype.
+All factors' effects are then added together to determine the phenotypic value, hence the term "additivity":
+$$ Y_i = f_1(g_{i,1}) + ... + f_M(g_{i,M}) + f_E(E_{i}) $$
+
+\subsubsection{Linearity}
+The linearity assumption states that the form of each variant's effect function $f_j$ is linear.
+For example, if a SNP is encoded as the the number of alternate alleles (0, 1, or 2) that an individual possesses in their genome for a locus, i.e. an \textbf{allele count}, then relative to having 0 alternate alleles, having 2 alleles should have double the effect on the phenotype as having 1 alternate allele.
+This precludes the presence of dominance/recessive effects of a variant.
+Updating our generative model under this assumption looks like:
+$$ Y_i = \beta_1 g_{i,1} + ... + \beta_M g_{i,M} + f_E(E_i) = 
+\sum_j^M \beta_j g_{i,j} + f_E(E_i)
+$$
+where $\beta_j$ denotes the linear causal effect of variant $j$ on the phenotype.
+
+\subsubsection{Noise and Environmental Component}
+
+Phenotypic generative models often consider the effect of \textbf{noise}, $\epsilon$, which I define as a causal factor on a phenotype that has no antecedent that causes it.
+In other words, it is a causal factor whose value is generated at random for an individual such that it cannot be predicted beforehand.
+Without getting too philosophical, I believe everything is caused by something else in a deterministic fashion, and therefore there is no such thing as true noise.
+However, in practice, there are tons of environmental causal factors that conceivably cannot be measured and thus could be realistically modelled as noise.
+I don't need to make assumptions about the distribution of this noise component $\epsilon$.
+However, due to noise typically capturing the cumulative contribution of many small immeasurable causal factors, it is typically assumed to be normally distributed.
+
+For this article, I use the term $e_i = f_E(E_i)$ to denote the \textbf{environmental component} of a trait, which may be non-independent of other (genetic) factors.
+In contrast, $\epsilon_i$ is the \textbf{noise component} and aggregates the effects of environmental factors that are (in practice) independent of all other factors.
+At this point, we are not making assumptions about the environmental component being independent of genetics, therefore we are not dealing with noise. Our final generative model assumes additivity and linearity of genetic effects:
+$$ Y_i = \sum_j^M \beta_j g_{i,j} + e_i $$
+
+\subsubsection{Aside: Environmentally-mediated genetic causal effects}
+Earlier, I presented an example of a genetic variant that causes ginger hair that is also causal for educational attainment in the circumstance where gingers are discriminated against in society.
+It may seem unusual to refer to this variant as being causal for educational attainment since we could easily conceive of a non-discriminatory society where this would not be the case, and intuitively, such a society is the "default".
+I square this by going back to the most general generative model prior to any additivity ssumptions and arguing that there is an interaction effect between the genetic variant and the environmental state of being in a discriminatory society. That is:
+$$ f(g|E = \text{not discriminatory}) = 0
+\quad \text{and} \quad f(g|E = \text{discriminatory}) \neq 0$$
+Upon thinking about it in this context, I am troubled by the realization that all \textbf{main} (i.e. non-interacting) effects of genetic variants could be theoretically thought of as interactions.
+For example, a genetic variant that simply accelerates bone growth is, in an abstract sense, equally interacting with the environment, where the environment could be something like the presence of bone-forming molecular mechanisms that are needed for bone growth to exist in the first place.
+Without such mechanisms, the genetic variant would not accelerate bone growth.
+In reality, all surviving humans need and therefore already possess those bone-forming molecular mechanisms, so it may appear obtuse to to describe this as a gene-environment interaction.
+Furthermore, by allowing any theoretically possible environment to be considered, any genetic variant could conceivably be defined as causal for any phenotype.
+
+In my opinion, the sound way of squaring these perspectives is to require the generative model to be defined for a particular population.
+If the environmental factor that could theoretically interact with a genetic variant does not vary in the population, then it is fair to think about the genetic variant's effect as being a main effect.
+Under this definition, the ginger-causing genetic variant would have a causal main effect on educational attainment in a discriminatory society and would not be causal at all in a non-discriminatory society.
+As long as we define what the population of our generative model is, there is no issue here.
+If our population is a mix of both societies, then there is a gene-environment interaction effect, since the environmental factor of being in a discriminatory-society does vary within the population.
+This also makes it easier to apply the additivity assumption, since we just have to think, "Do the environmental factors that could potentially interact with this genetic variant meaningfully vary within the population?" 
+
+\section{Overview on Confounding}
+The causal effect of a genetic variant $j$ is denoted by $\beta_j$, which we are interested in estimating accurately.
+As stated, we assume this causal effect is both linear and independent of other effects (such that is additive).
+The naive approach to estimating $\beta_j$ is to obtain a sample of individuals from the population and run a regression of the phenotype on the genetic variant:
+$$ Y_i \sim \hat{\beta}_j g_{i,j} $$
+If we think of genotypes as being random variables, then according to ordinary linear regression, the expected value of the estimated effect is:
+$$ \E[\hat{\beta}_j] = \frac{\Cov[g_j, Y]}{\Var[g_j]} $$
+If this expected value equals the true causal effect, $ \E[\hat{\beta}_j] = \beta_j$, then our estimate is not confounded (i.e. it is unbiased).
+On the contrary, is this expected value does not equal the trur causal effect, $ \E[\hat{\beta}_j] \neq \beta_j$, then our estimate is confounded (i.e. it is biased).
+
+\subsection{Producing non-confounded estimates}
+We can expand the above formula for $\E[\beta_j]$ and determine what assumptions we need to make in order to obtain an unbiased estimate of $\beta_j$:
+\begin{align*}
+    \E[\hat{\beta}_j] &= \frac{\Cov[g_j, Y]}{\Var[g_j]} \\
+    &= \frac{\Cov[g_j, \sum_k^M \beta_k g_{k} + e]}{\Var[g_j]} \\
+    &= \frac{(\sum_k^M \Cov[g_j, \beta_k g_k]) + \Cov[g_j,e]}{\Var[g_j]}
+\end{align*}
+If we assume that genetic variant $j$ is uncorrelated with all other genetic variants as well as the environmental component, then all covariance terms become zero except for the covariance between the genetic variant and its own genetic effect:
+\begin{align*}
+    &= \frac{\Cov[g_j, \beta_j g_j]}{\Var[g_j]} \\
+    &= \frac{\beta_j \Var[g_j]}{\Var[g_j]} \\
+    &= \beta_j
+\end{align*}
+These assumptions of independence between genetic variants and with the environment are the easiest way to achieve an unbiased estimate of $\beta_j$.
+However, it is theoretically possible for the genetic variant to be correlated with other factors in such a way that their effects cancel out and leave the final estimate free of confounding.
+In practice, this is unlikely.
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
+
+\end{document}
