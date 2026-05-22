@@ -18,6 +18,7 @@ In this article, I attempt to synthesize a coherent framework for the different 
 In the literature, many of the concepts described here are referred to under different terms.
 I try to be consistent with my usage of terms in this article and also give alternate terms that are commonly used in the literature.
 For the most part, I am simpy synthesizing and/or paraphrasing existing literature, which I reference where applicable.
+A reference that helped me immensely in organizing my thinking for this entire document is \citep{Veller2024PLoS}.
 I use the terms "trait" and "phenotype" interchangeably.
 
 This is a rough draft and some of the language and sentence structure here is clunky.
@@ -94,6 +95,8 @@ For this article, I use the term $e_i = f_E(E_i)$ to denote the \textbf{environm
 In contrast, $\epsilon_i$ is the \textbf{noise component} and aggregates the effects of environmental factors that are (in practice) independent of all other factors.
 At this point, we are not making assumptions about the environmental component being independent of genetics, therefore we are not dealing with noise. Our final generative model assumes additivity and linearity of genetic effects:
 $$ Y_i = \sum_j^M \beta_j g_{i,j} + e_i $$
+
+Furthermore, the aggregate of additive genetic effects, $A_i = \sum_j^M \beta_j g_{i,j}$, is the \textbf{additive genetic component}, or just genetic component, of the trait.
 
 \subsubsection{Aside: Environmentally-mediated genetic causal effects}
 Earlier, I presented an example of a genetic variant that causes ginger hair that is also causal for educational attainment in the circumstance where gingers are discriminated against in society.
@@ -189,11 +192,88 @@ Furthermore, the aggregate of causal effects is not the same as the aggregate of
 A way to unify these perspectives is to think of individual variants as tagging a \textbf{locus} (a region of tightly linked variants) and assigning DGEs to loci, not the variants themselves.
 However, for this article, I try to maintain the original definition of DGEs that applies to variants and not loci.
 
+\todo{To-do: write the expected $\hat\beta$ given the recombination fraction, or at least the expected covariance between genetic variants given the recombination fraction}
+
 \subsection{Population Structure}
+\textbf{Population structure} is a form of non-random mating whereby preferential mating occurs based on subpopulation membership.
+For example, suppose a population actually consists of two subpopulations where individuals only mate with others belonging to their subpopulation.
+\textbf{Genetic drift}, the random fluctuations in allele frequencies over generations, will occur independently between each subpopulation, leading to distinct allele frequencies.
+In an abstract sense, each individual has their own set of allele frequencies from which their genotype was drawn from; population structure is present when these individual-level allele frequencies differ across the population.
+If two alleles rise in frequency in one subpopulation while falling in frequency in the other subpopulation, then in the aggregate population, the alleles become correlated with each other because they signal subpopulation membership.
+
+The consequence of population structure is that a proband's parents are going to have more similar genotypes than expected under random mating.
+However, unlike assortative mating (discussed next), the expected similarity is largely the same across the entire genome and therefore not specific to any particular trait (at least in the absence of population stratification, discussed later).
+Technically, some regions of the genome can be under accelerated genetic drift due to background selection and this could theoretically correlate with a trait's genetic architecture.
+However, the process driving this similarity remains subpopulation membership.
+
+By random chance, the genetic component of a trait may correlate with subpopulation membership because the trait-increasing causal alleles tended to increase more in one subpopulation vs the other.
+This means if the focal trait is differentiated across subpopulations, it will be correlated with other variants that are differentated across subpopulations, whose causal effects with a trait will be picked up by the focal variant's association with the trait.
+Because (neutral) genetic drift is symmetric with regards to effect size, population structure should not systematically bias effect estimates towards or away from zero on expectation, but for some given population structure, it can (by chance).
+
+\todo{To-do: Mathematically write out how population structure biases effects}
 
 \subsection{Assortative Mating}
+\textbf{Assortative mating (AM)} is a form of non-random mating whereby preferential mating occurs based on the two potential mates' trait values.
+\textbf{Direct assortatment} refers to when the focal trait of interest is the trait that mating is sorting on (the \textbf{sorting factor}), while \textbf{indirect assortatment (iAM)} refers to when the focal trait of interest is simply correlated with the sorting factor \citep{Sunde2025NatComm}.
+\textbf{Positive assortative mating} refers to when individuals preferentially mate with individuals with similar trait values, while \textbf{negative assortative mating} refers to when individuals preferentially mate with individuals with dissimilar trait values.
+The former is much more common in human populations and thus is often used interchangeably with the term assortative mating.
 
-\subsection{Selection / Migration / Ascertainment}
+The strength of assortative mating is typically quantified by the correlation between mates' phenotypic values, $r = \Corr[Y_{m(i)}, Y_{p(i)}] $, where $m(i)$ and $p(i)$ refer to the mother and father of proband $i$, respectively.
+This correlation between trait values also induces a correlation between any factors that are correlated with the trait values, such as genetic variants with a causal effect on the trait, in the same direction as the assortative mating.
+So, the trait-increasing allele of a causal variant will be positively correlated with the trait-increasing allele of another causal variant under positive assortative mating.
+Consequently, an association between a causal genetic variant and a trait under assortative mating will not only pick up its own causal effect, but also the causal effects of all other variants for that trait, biasing estimates away from zero. 
+
+\todo{To-do: Mathematically write out how correlation between trait increasing alleles arises from AM. See [Yengo et al. 2018 NatGen]}
+
+\textbf{Cross-trait assortative mating (xAM)} refers to correlations between two traits across mates (e.g. father's height and mother's education).
+This can easily occur when the two traits share causes.
+\unsure{It is unclear to me whether the consequences of xAM on variants' correlations with each other depends on just the shared causal structure, or additionally on there being a cross-trait mating preference to begin with}.
+
+In an abstract sense, population structure is an example of assortative mating, where the trait being sorted on is subpopulation membership and variants' causal effects on the trait is the differentiation of allele frequencies between subpopulations.
+Like population structure, correlations between genetic variants start off as being entirely in trans due to non-random mating, but become in cis correlations over time as recombination places variants from different parents onto the same chromosome in subsequent generations.
+
+\subsection{Selection / Ascertainment / Migration}
+Here, I describe very different processes that act similarly in the context of genetic confounding.
+
+\subsubsection{Stabilizing and Disruptive Selection}
+\textbf{Selection} refers to when the number of offspring produced by an individual depends on their trait values.
+Some forms of selection can induce correlations between causal variants, such as \textbf{stabilizing selection} (deviations from some optimal trait value are selected against) and \textbf{disruptive selection} (deviations from some sub-optimal trait value are selected for).
+
+In stabilizing selectioin, by selecting against extreme values of a trait, the co-occurrence of variants with effects in the same direction is less frequent in the mating population.
+As a consequence, trait-increasing alleles will become negatively correlated with each other among gametes.
+When sampling a population, this negative correlation will be present between variants in cis, and if selection acts on the probability of survival prior to sampling, it will also be present between variants in trans. \unsure{[Low-key unsure about this]}.
+When performing an association analysis on a trait that has undergone stabilizing selection, this should bias estimated effects towards zero.
+
+Disruptive selection should have the opposite effect, inducing positive correlations between trait-increasing alleles and biasing estimates away from zero.
+
+\subsubsection{Ascertainment}
+\textbf{Ascertainment} refers to when the inclusion of an individual into a sample depends on their trait values.
+For example, it is known that participants in the UK Biobank tend to be wealthier and healthier than the average Brit \todo{[To-do: ref]}.
+Therefore, there is ascertainment for wealth and health.
+
+Ascertainment is akin to conditioning on a collider (inclusion in the sample) and thus can induce correlations between genetic variants, an example of Berkson's paradox.
+For example, if two genetic variants are causal for wealth, and only rich individuals can become part of our sample, then the two wealth-increasing alleles will appear negatively correlated within our sample.
+
+Ascertainment can also be thought of as directional selection occurring on a single generation and only acting on individuals' survival.
+However, unlike selection, ascertainment does not affect subsequent generations.
+Ascertainment induces correlations in variants both in cis and in trans.
+It biases estimates towards zero due to the negative correlation of trait-increasing alleles.
+
+\subsubsection{Differential Directional Selection and Migration}
+In a structured population, we previously assumed that allele frequencies fluctuated symmetrically.
+However, additional processes can make this not the case.
+
+If the subpopulations differ in the strength of directional selection for some trait (e.g. subpopulation 1 is being selected for height while subpopulation 2 isn't), then the differences in the average genetic component of each subpopulation will reflect these differences in selection.
+As a consequence, variants that signalled subpopulation membership will now also become correlated with the trait undergoing differential selection.
+For a non-causal variant, the expected bias on its estimate is still zero since non-causal variants' allele frequencies are only subject to genetic drift and not directional selection.
+However, for causal variants, the trait-increasing alleles will rise in frequency alongside other trait-increasing alleles due to the shared selection happening on them within select subpopulations.
+As a result, causal variants' population-level estimates will be biased away from zero.
+
+Similarly, if migration between subpopulations depends on individuals' trait values, the same exact process occurs.
+For example, if migrants from subpopulation 2 to subpopulation 1 tend to be wealthier, then it should drive up the average genetic component of subpopulation 1.
+Wealth-increasing alleles will become positively correlated with each other because they each signal membership into subpopulation 1 where potential mates also tend to have these wealth-increasing alleles.
+
+\unsure{Directional selection by itself in an unstructured population is not expected to cause correlations between genetic variants except beyond what was described in the ascertainment section}.
 
 \section{Environmental Confounding}
 \textbf{Environmental confounding} is the non-independence between the focal genetic variant and the environmental component: $\Cov[g_j, e] \neq 0 $.
