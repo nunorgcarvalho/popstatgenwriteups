@@ -24,7 +24,7 @@ This is a rough draft and some of the language and sentence structure here is cl
 The overall structure of sections is probably suboptimal and subject to change. 
 I acknowledge that parts of this article may get too much into the weeds of certain definitions/concepts.
 
-\section{General Generative Model for a Phenotype}
+\section{Generative Model for a Phenotype}
 I begin by defining the broadest generative model for a trait $Y$ that I can think of:
 $$ Y_i = f(G_i,E_i)$$
 where for some individual $i$, $G_i$ denotes all of their genetic information and $E_i$ denotes all of their non-genetic (often referred to as environmental) information.
@@ -39,9 +39,9 @@ Different types of genetic variants exist, such as:
     Another term for SNP is \textbf{single-nucleotide variant (SNV)}.
     Originally, SNP was supposed to refer to SNVs whose minor allele is "common" in a population, although such distinction is rarely applied in modern papers.
     \item \textbf{Insertions and deletions (indels)}: either the presence (insertion) or absence (deletion) of a string of nucleotides at some location in the genome.
-    \item \textbf{Structural Variants (SVs)}: [To-do]
-    \item \textbf{Copy-Number Variants (CNVs)}: [To-do]
-    \item ... [To-do]
+    \item \textbf{Structural Variants (SVs)}: \todo{[To-do]}
+    \item \textbf{Copy-Number Variants (CNVs)}: \todo{[To-do]}
+    \item \todo{[...]}
 \end{itemize}
 Regardless of the type of genetic variants being considered, we can parameterize our generative model as being a function of $M$ genetic variants and an environmental term:
 $$ Y_i = f(g_{i,1}, ... , g_{i,M};E_i)$$
@@ -116,7 +116,7 @@ This also makes it easier to apply the additivity assumption, since we just have
 
 \section{Overview on Confounding}
 The causal effect of a genetic variant $j$ is denoted by $\beta_j$, which we are interested in estimating accurately.
-As stated, we assume this causal effect is both linear and independent of other effects (such that is additive).
+As stated, we assume this causal effect is both linear and independent of other effects (such that it is additive).
 The naive approach to estimating $\beta_j$ is to obtain a sample of individuals from the population and run a regression of the phenotype on the genetic variant:
 $$ Y_i \sim \hat{\beta}_j g_{i,j} $$
 If we think of genotypes as being random variables, then according to ordinary linear regression, the expected value of the estimated effect is:
@@ -140,12 +140,22 @@ If we assume that genetic variant $j$ is uncorrelated with all other genetic var
 These assumptions of independence between genetic variants and with the environment are the easiest way to achieve an unbiased estimate of $\beta_j$.
 However, it is theoretically possible for the genetic variant to be correlated with other factors in such a way that their biasing effects cancel out and leave the final estimate free of confounding.
 In practice, this is unlikely.
-This exercise reveals that there are two types of confounding, discussed in the next two sections.
+This exercise reveals that there are two types of confounding: genetic and environmental.
 
 
 \section{Genetic Confounding}
 \textbf{Genetic confounding} is the non-independence between the focal genetic variant and other genetic variants: $\Cov[g_j, g_k] \neq 0 $.
+\unsure{[Does the correlated genetic variant have to be causal itself to induce genetic confounding?]}
 There are many ways that genetic variants can become correlated in a population.
+
+Before proceeding further, it is important to distinguish when two genetic variants are in cis vs in trans.
+Depending on the context, a genetic variant can refer to the unit of genetic variation that exists on a single chromosome or to the aggregate of those units across the two copies of each chromosome that diploids carry.
+In the former context, two genetic variants that lie on the same chromosome are said to be \textbf{in cis}.
+In contrast, two genetic variants that lie on different chromosomes are said to be \textbf{in trans}.
+This includes the two copies of the same unit of genetic variation as well as two genetic variants that are in different chromosome numbers altogether (e.g. chromosome 1 vs 22).
+The distinction is important because two variants that are in cis are inherited from the same parent (although they do not have to also be in cis in the parent's genome), while variants that are in trans on the same chromosome number are inherited from different parents.
+Relationships between variants in cis reflects the structure of the genomes in the population, while relationships between variants in trans further reflect the patterns of mating in the population.
+Because recombination causes variants on the same chromosome number that are in trans to be in cis in the subsequent generation, the structure of the genomes in the population reflects the prior patterns of mating in the population.
 
 \subsection{Linkage}
 
@@ -155,16 +165,29 @@ This leads to two alleles that are found in cis on some chromosome to continue t
 For example, suppose there are two genetic variants (both biallelic: A/T) physically close to each other on a chromosome, and in a population, two haplotypes are observed: AA and TT.
 The two genetic variants are correlated with each other because the A allele for the first variant is only ever found alongside the A allele for the second variant, and vice-versa for the T alleles.
 Because the two variants are in strong linkage, it is unlikely for a crossover event to occur between the two variants, which would otherwise cause a heterozygote to produce an AT or TA haplotype that could be inherited by their offspring and thus lower the correlation between the two variants.
-The recombination fraction between two variants, $c_{jk}$, quantifies the probability of an odd number of crossover events occurring between the two loci, which causes two alleles that are in cis to segregate to different gametes.
+The \textbf{recombination fraction} between two variants, $c_{jk}$, quantifies the probability of an odd number of crossover events occurring between the two loci, which causes two alleles that are in cis to segregate to different gametes.
 A recombination fraction of $c_{jk} = 0.5$ implies non-linkage, since it is equally likely for two alleles in cis to segregate together vs apart.
 
 Theoretically, all genetic variants on the same chromosome are in non-linkage with each other, since it is possible for the entire chromosome to segregate together without a crossover event occurring.
 In contrast, genetic variants on different chromosomes are never in linkage with each other because parent-of-origin information is lost in meiosis such that chromosomes that were inherited from the same parent are not more likely to segregate together.
-In practice, the field assumes a fuzzy recombination fraction threeshold for which two variants below the threshold are considered sufficiently linked and are said to be \textbf{tagging} or \textbf{local} to each other.
+In practice, the field assumes a fuzzy recombination fraction threshold for which two variants below the threshold are considered sufficiently linked and are said to be \textbf{tagging} or \textbf{local} to each other.
 Typically, the local region of a focal variant does not exceed tens to hundreds of kilobases.\citep{Pritchard2001AJHG}
 
 Linkage is not a population-level process, and whether it actually constitutes as confounding is undecided within the field.
-For example, suppose two genetic variants are directly adjacent to each other in the genome such that there is never a crossover event between, and thus they are perfectly correlated with each other
+For example, suppose two genetic variants are directly adjacent to each other in the genome such that there is never a crossover event between, and thus they are perfectly correlated with each other.
+However, only the first variant is causal for some trait.
+In a population-level association analysis, distinguishing which variant is causal is impossible, since the causal effect of the first variant will be perfectly tagged by the second variant.
+Even within siblings of a parent that is heterozygous at these variants, the effect of each variant cannot be separated since they are always inherited together even within families.
+Should this trouble us?
+If our goal is solely prediction or quantifying the aggregate effect of genetic variants, then no, either variant can give us the information we need.
+But if our goal is to understand biology, then the distinction matters, since molecular mechanisms must be interact with each variant in different ways.
+
+\subsubsection{Direct genetic effects}
+\textbf{Direct genetic effects (DGEs)} refer to the aggregate causal effect of all variants tagged by a focal variant, including itself.
+The field seems to concretely agree on this definition and use it consistently, but note that a variant have a DGE does not require it to have a causal effect.
+Furthermore, the aggregate of causal effects is not the same as the aggregate of DGEs, since the latter includes double-counting of the same tagged causal variants.
+A way to unify these perspectives is to think of individual variants as tagging a \textbf{locus} (a region of tightly linked variants) and assigning DGEs to loci, not the variants themselves.
+However, for this article, I try to maintain the original definition of DGEs that applies to variants and not loci.
 
 \subsection{Population Structure}
 

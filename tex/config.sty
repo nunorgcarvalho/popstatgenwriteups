@@ -11,6 +11,7 @@
 \RequirePackage{url} % For URLs in bibliography entries
 \RequirePackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref} % For hyperlinks in the document
 \RequirePackage{enumitem}
+\RequirePackage{xcolor}
 
 % info %%%%
 \author{Nuno Carvalho}
@@ -23,3 +24,8 @@
 % Remove paragraph indentation and add vertical spacing between paragraphs
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.75em}
+
+% highlights
+\newcommand{\todo}[1]{\textcolor{blue}{#1}}
+\newcommand{\unsure}[1]{\textcolor{orange}{#1}}
+
