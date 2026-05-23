@@ -276,12 +276,34 @@ Wealth-increasing alleles will become positively correlated with each other beca
 \unsure{Directional selection by itself in an unstructured population is not expected to cause correlations between genetic variants except beyond what was described in the ascertainment section}.
 
 \section{Environmental Confounding}
-\textbf{Environmental confounding} is the non-independence between the focal genetic variant and the environmental component: $\Cov[g_j, e] \neq 0 $.
+\textbf{Environmental confounding} is the non-independence between the focal genetic variant and the environmental component: $\Cov[g_j, e] \neq 0$.
+For confounding to occur, $e$ has to share a cause with $g_j$, meaning that having a particular allele is predictive of an environment state not because the allele causes the environmental state, but because it signals an antecedent factor that causes the environmental state.
+\unsure{[Unsure if the antecedent factor has to *cause* the environmental factor.]}
 
 \subsection{Population Stratification}
+\textbf{Population stratification} is the combination of population structure and phenotype-influencing environments that are stratified by subpopulation.
+For example, suppose in a structured population, subpopulation 1 lives in a region with more universities than the region that subpopulation 2 lives in.
+Presumably, the greater access to universities would lead to individuals from subpopulation 1 obtaining more education, and therefore all genetic variants with allele frequency differences between subpopulations would become associated with educational attainment because they signal subpopulation membership.
+
+An important aspect of population stratification \unsure{that I commit to but I'm unsure if the field does} is that the stratified environments are not a consequence of genetics.
+That is, the increased number of universities available to subpopulation 1 from the example above should not be because subpopulation 1 contains genetic variants that cause more universities to be built.
+Instead, this environmental difference should be a product of other environmental factors and/or random chance.
+If the startified environment is caused by stratified genetic variants, then I would consider it an indirect genetic effect (see below).
+
+The direction of bias depends on the genetic variant.
+For a non-causal genetic variant, if it differs in frequency between subpopulations, the stratification of the environment will bias the estimate away from zero.
+For a causal genetic variant, the bias can go either direction.
+For example, suppose an allele causally increases educational attainment and is also higher in frequency in subpopulation 1.
+The allele will not only be associated with higher educational attainment through its direct effect on the trait, but also because it signals membership for subpopulation 1 that possesses an environment that also promotes educational attainment, therefore biasing the association estimate away from zero.
+However, if that allele was instead lower in frequency in subpopulation 1, the estimate would be biased towards zero.
+
+\todo{To-do: write math relating pop strat to confounding}
 
 \subsection{Indirect Genetic Effects}
 
+
+
+\subsubsection{Cultural Transmission}
 \subsubsection{Genetic Nurture}
 \subsubsection{Sibling indirect genetic effects}
 \subsubsection{Dynastic Effects}
