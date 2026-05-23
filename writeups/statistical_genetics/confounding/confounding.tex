@@ -317,6 +317,12 @@ A common tactic for modelling IGEs is through \textbf{cultural transmission}, wh
 For example, \textbf{vertical transmission} specifically refers to the phenotype of a parent (or any prior relative) influencing the phenotype of their child.
 If the phenotype has causal genetic variants, then this is an example of an IGE.
 
+For a non-directly-causal genetic variant, any IGE it is involved in will bias proband association estimates away from zero.
+For a directly causal genetic variant, the direction of bias of its IGEs depend on the environmental mechanism that mediates it, although typically, the bias is away from zero.
+For example, suppose higher parental education directly causes their children to pursue a higher education.
+An allele that has an education-increasing direct causal effect in the proband will also be found in the parents and increase the parents' education, thus additionally increasing the education of the proband.
+Therefore, the proband-level association of the allele with education combines both effects acting in the same direction, biasing the causal effect estimate away from zero.
+
 \subsubsection{Shared Household Environment Effects}
 Often when working with data that contains siblings, researchers will add a \textbf{shared household environment} random effect where the covariance between sibling's residuals is modelled through the variance of this random effect.
 \unsure{I believe} the spirit of such a control is to capture the environment, therefore, if it can bias a population-level association, it is doing so through environmental confounding.
@@ -327,6 +333,22 @@ In this case, a set of siblings' shared genetics are predictive of their members
 
 In contrast, if the household effect is correlated on expectation with the siblings' genetics (e.g. siblings with a higher genetic component value also have a higher shared environmental component value), then it is an IGE.
 \unsure{This is because the only way that I can think of} such correlation arising is through IGE mechanisms, such as from the parents or from siblings affecting each other.
+
+\section{Within-Family Associations}
+
+\subsection{Model}
+
+\todo{[Introduce within-family associations that regress out parents' genotypes.]}
+
+\todo{[Define Non-Transmitted Coefficients (NTCs)]}
+
+\subsubsection{Sibling Differences}
+
+\subsection{Remaining Confounding}
+
+\todo{[Explain which sources of confounding remain and under what circumstances]}
+
+
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
