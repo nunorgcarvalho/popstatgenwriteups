@@ -24,6 +24,7 @@ I use the terms "trait" and "phenotype" interchangeably.
 This is a rough draft and some of the language and sentence structure here is clunky.
 The overall structure of sections is probably suboptimal and subject to change. 
 I acknowledge that parts of this article may get too much into the weeds of certain definitions/concepts.
+Statements that I am particularly unsure of are written \unsure{in orange}.
 
 \section{Generative Model for a Phenotype}
 I begin by defining the broadest generative model for a trait $Y$ that I can think of:
@@ -300,13 +301,32 @@ However, if that allele was instead lower in frequency in subpopulation 1, the e
 \todo{To-do: write math relating pop strat to confounding}
 
 \subsection{Indirect Genetic Effects}
+\textbf{Indirect genetic effects (IGEs)} refer to when a genetic variant of one individual has a causal effect on the trait of another individual.
+For IGEs to confound a population-level genetic association, the focal variant in the proband has to be correlated with the relevant genetic variant(s) in the other individual that is driving the IGE mechanism.
+Most commonly, this occurs because the other individual is a relative of the proband, which means they will share alleles more often than is expected from unrelated individuals.
+For example, IGEs coming from a parent will confound a population-level association because the offspring will inherit the alleles from their parents that causing their own environment.
+The offspring's allele's estimate is confounded because the allele predicts (through inheritance) the existence of that allele in a relative where it can causally influence the offspring's trait through the environment.
+\unsure{This also means that assortative mating can allow IGEs coming from in-laws and spouses to confound estimates, since the proband's allele predicts the genetics of the person they (or their relatives) married and their relatives.}
 
+Different types of IGEs are referred to under many different names, which I attempt here to establish consensus definitions of.
+\textbf{Genetic nurture} refers to IGEs coming from parents.
+\textbf{Dynastic effects} refers to IGEs coming from more distant relatives and evokes a multi-generational passing on of environments.
+Another commonly referred-to type of IGE is that coming from siblings, which doesn't have its own separate term.
 
+A common tactic for modelling IGEs is through \textbf{cultural transmission}, where the trait value of one individual affects the trait value of the proband.
+For example, \textbf{vertical transmission} specifically refers to the phenotype of a parent (or any prior relative) influencing the phenotype of their child.
+If the phenotype has causal genetic variants, then this is an example of an IGE.
 
-\subsubsection{Cultural Transmission}
-\subsubsection{Genetic Nurture}
-\subsubsection{Sibling indirect genetic effects}
-\subsubsection{Dynastic Effects}
+\subsubsection{Shared Household Environment Effects}
+Often when working with data that contains siblings, researchers will add a \textbf{shared household environment} random effect where the covariance between sibling's residuals is modelled through the variance of this random effect.
+\unsure{I believe} the spirit of such a control is to capture the environment, therefore, if it can bias a population-level association, it is doing so through environmental confounding.
+
+We can extrapolate the implications of population structure (that individuals within a subpopulation are more closely related to each other compared to the overall population) to the very fine scale of individual households.
+If the household effect is independent of the siblings' genetics, then in practice, it is indistinguishable from very fine-scale population stratification.
+In this case, a set of siblings' shared genetics are predictive of their membership into their household, and the stratification of environments between households is not caused by genetics.
+
+In contrast, if the household effect is correlated on expectation with the siblings' genetics (e.g. siblings with a higher genetic component value also have a higher shared environmental component value), then it is an IGE.
+\unsure{This is because the only way that I can think of} such correlation arising is through IGE mechanisms, such as from the parents or from siblings affecting each other.
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
