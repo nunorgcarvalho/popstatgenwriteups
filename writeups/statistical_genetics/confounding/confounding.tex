@@ -75,7 +75,7 @@ $$ Y_i = f_1(g_{i,1}) + ... + f_M(g_{i,M}) + f_E(E_{i}) $$
 
 \subsubsection{Linearity}
 The linearity assumption states that the form of each variant's effect function $f_j$ is linear.
-For example, if a SNP is encoded as the the number of alternate alleles (0, 1, or 2) that an individual possesses in their genome for a locus, i.e. an \textbf{allele count}, then relative to having 0 alternate alleles, having 2 alleles should have double the effect on the phenotype as having 1 alternate allele.
+For example, if a SNP is encoded as the the number of alternate alleles, $g_j \in \{0, 1, 2\}$, that an individual possesses in their genome for some position, i.e. an \textbf{allele count}, then relative to having 0 alternate alleles, having 2 alleles should have double the effect on the phenotype as having 1 alternate allele.
 This precludes the presence of dominance/recessive effects of a variant.
 Updating our generative model under this assumption looks like:
 $$ Y_i = \beta_1 g_{i,1} + ... + \beta_M g_{i,M} + f_E(E_i) = 
@@ -90,7 +90,7 @@ In other words, it is a causal factor whose value is generated at random for an 
 Without getting too philosophical, I believe everything is caused by something else in a deterministic fashion, and therefore there is no such thing as true noise.
 However, in practice, there are tons of environmental causal factors that conceivably cannot be measured and thus could be realistically modelled as noise.
 I don't need to make assumptions about the distribution of this noise component $\epsilon$.
-However, due to noise typically capturing the cumulative contribution of many small immeasurable causal factors, it is typically assumed to be normally distributed.
+However, due to noise typically capturing the cumulative contribution of many small immeasurable causal factors, it is often assumed to be normally distributed.
 
 For this article, I use the term $e_i = f_E(E_i)$ to denote the \textbf{environmental component} of a trait, which may be non-independent of other (genetic) factors.
 In contrast, $\epsilon_i$ is the \textbf{noise component} and aggregates the effects of environmental factors that are (in practice) independent of all other factors.
@@ -105,7 +105,7 @@ It may seem unusual to refer to this variant as being causal for educational att
 I square this by going back to the most general generative model prior to any additivity ssumptions and arguing that there is an interaction effect between the genetic variant and the environmental state of being in a discriminatory society. That is:
 $$ f(g|E = \text{not discriminatory}) = 0
 \quad \text{and} \quad f(g|E = \text{discriminatory}) \neq 0$$
-Upon thinking about it in this context, I am troubled by the realization that all \textbf{main} (i.e. non-interacting) effects of genetic variants could be theoretically thought of as interactions.
+Upon thinking about it in this context, I am troubled by the realization that all \textbf{main} (i.e. non-interacting) effects of genetic variants could theoretically be thought of as interactions.
 For example, a genetic variant that simply accelerates bone growth is, in an abstract sense, equally interacting with the environment, where the environment could be something like the presence of bone-forming molecular mechanisms that are needed for bone growth to exist in the first place.
 Without such mechanisms, the genetic variant would not accelerate bone growth.
 In reality, all surviving humans need and therefore already possess those bone-forming molecular mechanisms, so it may appear obtuse to to describe this as a gene-environment interaction.
@@ -121,6 +121,7 @@ This also makes it easier to apply the additivity assumption, since we just have
 \section{Overview on Confounding}
 The causal effect of a genetic variant $j$ is denoted by $\beta_j$, which we are interested in estimating accurately.
 As stated, we assume this causal effect is both linear and independent of other effects (such that it is additive).
+Furthermore, because genetics is fixed at birth, we can be confident about the direction of causality between a variant and a trait.
 The naive approach to estimating $\beta_j$ is to obtain a sample of individuals from the population and run a regression of the phenotype on the genetic variant:
 $$ Y_i \sim \hat{\beta}_j g_{i,j} $$
 If we think of genotypes as being random variables, then according to ordinary linear regression, the expected value of the estimated effect is:
@@ -188,7 +189,7 @@ But if our goal is to understand biology, then the distinction matters, since mo
 
 \subsubsection{Direct genetic effects}
 \textbf{Direct genetic effects (DGEs)} refer to the aggregate causal effect of all variants tagged by a focal variant, including itself.
-The field seems to concretely agree on this definition and use it consistently, but note that a variant have a DGE does not require it to have a causal effect.
+The field seems to concretely agree on this definition and use it consistently, but note that a variant having a DGE does not require it to have a causal effect.
 Furthermore, the aggregate of causal effects is not the same as the aggregate of DGEs, since the latter includes double-counting of the same tagged causal variants.
 A way to unify these perspectives is to think of individual variants as tagging a \textbf{locus} (a region of tightly linked variants) and assigning DGEs to loci, not the variants themselves.
 However, for this article, I try to maintain the original definition of DGEs that applies to variants and not loci.
@@ -209,7 +210,7 @@ However, the process driving this similarity remains subpopulation membership.
 
 By random chance, the genetic component of a trait may correlate with subpopulation membership because the trait-increasing causal alleles tended to increase more in one subpopulation vs the other.
 This means if the focal trait is differentiated across subpopulations, it will be correlated with other variants that are differentated across subpopulations, whose causal effects with a trait will be picked up by the focal variant's association with the trait.
-Because (neutral) genetic drift is symmetric with regards to effect size, population structure should not systematically bias effect estimates towards or away from zero on expectation, but for some given population structure, it can (by chance).
+Because (neutral) genetic drift is symmetric with regards to effect size, population structure should not systematically bias causal variants' effect estimates towards or away from zero on expectation, but for some given population structure, it can (by chance).
 
 \todo{To-do: Mathematically write out how population structure biases effects}
 
@@ -287,9 +288,9 @@ For example, suppose in a structured population, subpopulation 1 lives in a regi
 Presumably, the greater access to universities would lead to individuals from subpopulation 1 obtaining more education, and therefore all genetic variants with allele frequency differences between subpopulations would become associated with educational attainment because they signal subpopulation membership.
 
 An important aspect of population stratification \unsure{that I commit to but I'm unsure if the field does} is that the stratified environments are not a consequence of genetics.
-That is, the increased number of universities available to subpopulation 1 from the example above should not be because subpopulation 1 contains genetic variants that cause more universities to be built.
+That is, the increased number of universities available to subpopulation 1 from the example above should not be because subpopulation 1 contains more alleles that cause universities to be built.
 Instead, this environmental difference should be a product of other environmental factors and/or random chance.
-If the startified environment is caused by stratified genetic variants, then I would consider it an indirect genetic effect (see below).
+If the stratified environment is caused by stratified genetic variants, then I would consider it an indirect genetic effect (see below).
 
 The direction of bias depends on the genetic variant.
 For a non-causal genetic variant, if it differs in frequency between subpopulations, the stratification of the environment will bias the estimate away from zero.
