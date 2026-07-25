@@ -6,8 +6,10 @@ This repository contains LaTeX writeups with derivations and explanations for se
 
 ### Statistical Genetics
 
+- [Confounding](writeups/statistical_genetics/confounding/confounding.pdf) ([source](writeups/statistical_genetics/confounding/confounding.tex))
 - [Heritability](writeups/statistical_genetics/heritability/heritability.pdf) ([source](writeups/statistical_genetics/heritability/heritability.tex))
 - [Mixed Linear Models](writeups/statistical_genetics/mixed_linear_models/mixed_linear_models.pdf) ([source](writeups/statistical_genetics/mixed_linear_models/mixed_linear_models.tex))
+- [Relative Covariance](writeups/statistical_genetics/relative_covariance/relative_covariance.pdf) ([source](writeups/statistical_genetics/relative_covariance/relative_covariance.tex))
 
 ### Statistics
 
