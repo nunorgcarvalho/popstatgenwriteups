@@ -1,0 +1,34 @@
+\documentclass[12pt]{article}
+
+% loads config.sty
+\makeatletter
+\def\input@path{{../../../tex/}}
+\makeatother
+\usepackage{config}
+\usepackage{macros}
+
+\title{Relative Covariance}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\todo{This writeup derives the covariance in phenotype (and its genetic components) between pairs of relatives, and how it relates to relatedness, heritability, and the variance components of a trait. It is currently a stub.}
+
+\section{Setup}
+\todo{Introduce the phenotype model and notation for a pair of individuals $j$ and $k$, reusing the additive model from the ``Heritability'' entry ($\by = \bg + \bepsilon$, with $\bg \sim \N(\bzero, \varg \bG)$). Define relatedness/kinship between the pair.}
+
+\section{Covariance between relatives}
+\todo{Derive $\Cov[y_j, y_k]$ in terms of the relatedness $G_{jk}$ and the additive genetic variance $\varg$, and show how the phenotypic correlation between relatives relates to heritability $h^2$.}
+
+\subsection{Special cases}
+\todo{Work through familiar relationships (e.g. parent--offspring, full siblings, monozygotic vs.\ dizygotic twins) as instances of the general result.}
+
+\section{Beyond the additive model}
+\todo{Comment on extensions: dominance/epistatic contributions, shared environment, and assortative mating, and how each perturbs the relative covariance.}
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../bib/references}
+
+\end{document}
