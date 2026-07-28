@@ -14,19 +14,61 @@
 
 \maketitle
 
-\todo{This writeup derives the covariance in phenotype (and its genetic components) between pairs of relatives, and how it relates to relatedness, heritability, and the variance components of a trait. It is currently a stub.}
+This article describes how the phenotypic covariance between two relatives can be modeled.
+We consider different trait architectures, starting with the simplest and iteratively adding complexity.
+Assumptions are stated clearly where applicable.
 
-\section{Setup}
-\todo{Introduce the phenotype model and notation for a pair of individuals $j$ and $k$, reusing the additive model from the ``Heritability'' entry ($\by = \bg + \bepsilon$, with $\bg \sim \N(\bzero, \varg \bG)$). Define relatedness/kinship between the pair.}
+\section{AE w/ no AM}
+Consider a trait solely determined by an additive genetic component and an independent environment noise component:
+$$ y_i = g_i + e_i$$
+\textbf{Where we assume}:
+\begin{itemize}
+    \item $y$ is standardized: $\E[y] = 0 $ and $\Var[y] = 1$
+    \item The genetic and environmental components are independent: $g \perp e$
+    \item The genetic and environmental components are mean-centered: $\E[g] = \E[e] = 0 $
+    \item The variance of each component is given by: $\Var[g] = V_A$ and $\Var[e] = V_E$
+\end{itemize}
+Furthermore, \textbf{we assume the environment is completely random, even between relatives}: $e_i \perp e_j$ for all $i,j$.
+The expected covariance between two individuals $i$ and $j$ is given by:
+\begin{align*}
+    \E[\Cov[y_i, y_j]] &= \E[\Cov[g_i + e_i, g_j + e_j]] \\
+    &= \E[\Cov[g_i, g_j]] \\
+    &= V_A \E[\Corr[g_i, g_j]]
+\end{align*}
+where the second line follows from assuming the environmental term is independent of genetics and across individuals.
 
-\section{Covariance between relatives}
-\todo{Derive $\Cov[y_j, y_k]$ in terms of the relatedness $G_{jk}$ and the additive genetic variance $\varg$, and show how the phenotypic correlation between relatives relates to heritability $h^2$.}
+\subsection{Approximating genetic covariance by realized relatedness}
+\textbf{We will now assume that the genetic component of a trait is the linear combination of individual variant allele counts}, which are standardized:
+$$ g_i = \sum_k \beta_k x_{ik}$$
+where $\beta_k$ is the per-standardized-allele causal effect of variant $k$ and $x_{ik}$ is the standardized allele count of individual $i$ for variant $k$.
+We can therefore expand the expected covariance of two individuals as:
+\begin{align*}
+    \E[\Cov[y_i, y_j]] &= V_A \E[\Corr[g_i, g_j]] \\
+    &= V_A \E[\Corr[\sum_k \beta_k x_{ik}, \sum_{k'} \beta_{k'} x_{jk'}]]
+\end{align*}
+\textbf{We assume no inbreeding and random mating, meaning that maternally- and paternally-inherited alleles are uncorrelated}: $\E[\Corr[x^{(m)}_{ik}, x^{(p)}_{ik}]] = 0$.
 
-\subsection{Special cases}
-\todo{Work through familiar relationships (e.g. parent--offspring, full siblings, monozygotic vs.\ dizygotic twins) as instances of the general result.}
+\textbf{We assume that all variants are physically unlinked and uncorrelated on a population level and that causal effects are independently distributed}:
+$$ \E[\Corr[x_{ik}, x_{ik'}]] = 0 \text{ and } \E[\Corr[\beta_k, \beta_{k'}]] = 0 \text{ when } k \neq k'$$
+This allows us to express the correlation in genetic values as the sum of correlations of individual variant genotypes:
+$$\E[\Corr[g_i, g_j]] = \sum_k \beta_k \E[\Corr[x_{ik}, x_{jk}]] $$
+For a particular variant, the expected correlation of two individuals' genotypes is given by their identical-by-descent (IBD) status.
 
-\section{Beyond the additive model}
-\todo{Comment on extensions: dominance/epistatic contributions, shared environment, and assortative mating, and how each perturbs the relative covariance.}
+\todo{Connect correlation between genotypes to their IBS state. Then express expected IBS state (and therefore correlation) as function of IBD, under no-mutation assumption below.}
+
+\textbf{We assume that when two alleles are IBD, then they are also identical-by-state (IBS), i.e. no recent mutations.
+When two alleles are not IBD, we assume they are drawn independently from the population and therefore uncorrelated.}
+\begin{align*}
+    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=0] &= 0 \\
+    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=1] &= 0.5 \\
+    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=2] &= 1
+\end{align*}
+The genome-wide correlation in genetic value can therefore be expressed as:
+$$
+\E[\Corr[g_i, g_j]] = \frac12 \Pr[\IBD[x_i, x_j]=1] + \Pr[\IBD[x_i, x_j]=2] = \E[\pi_{ij}]
+$$
+where $\pi_{ij}$ is the realized relatedness between individuals $i$ and $j$, i.e. the proportion of their genomes that is IBD.
+The relationship between genetic value correlation and realized relatedness should be expressed through expected values, since the true 
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
