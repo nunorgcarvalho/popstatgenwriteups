@@ -14,61 +14,184 @@
 
 \maketitle
 
-This article describes how the phenotypic covariance between two relatives can be modeled.
-We consider different trait architectures, starting with the simplest and iteratively adding complexity.
-Assumptions are stated clearly where applicable.
+This article describes how the phenotypic covariance between two individuals $i$ and $j$ can be modeled.
+Rather than assuming a fixed degree of relatedness from the outset, we treat the covariance as a quantity we \emph{approximate given whatever information we happen to have about the pair}, and build up a hierarchy of increasingly strong assumptions --- a ``tower'' --- that lets us express it at four levels of resolution:
+from the exact, effect-weighted genetic cross-moment (Level 0), down to a function of the pair's pedigree degree (Level 3).
+Each assumption is introduced only at the point the derivation requires it, is boxed and given a stable identifier (e.g.\ \assumptionid{A3}) so it can be referred to later, and is annotated with the common terminology that usually implies it.
+The intent is that more complex trait architectures (shared environment, assortative mating, population structure, dominance) can restart this same derivation from Level 0 and re-introduce a subset of these --- or newly identified --- assumptions.
 
-\section{AE w/ no AM}
-Consider a trait solely determined by an additive genetic component and an independent environment noise component:
-$$ y_i = g_i + e_i$$
-\textbf{Where we assume}:
+\section{Additive genetics and environment, without assortative mating}
+We begin with the simplest architecture: a trait determined by an additive genetic component and an independent environmental component, in a randomly mating population.
+
+\subsection{The phenotype model}
+For an individual $i$ we write the (standardized) phenotype as
+\begin{equation}\label{eq:model}
+    y_i = g_i + e_i ,
+\end{equation}
+where $g_i$ is the genetic value and $e_i$ the environmental deviation.
+We take $y$ to be standardized across the population, $\E[y]=0$ and $\Var[y]=1$, and both components to be mean-centered, $\E[g]=\E[e]=0$, with variances $\Var[g]=V_A$ and $\Var[e]=V_E$.
+
+\begin{assumption}{A1}{Additive genetic architecture}
+The genetic value is a linear combination of the individual's standardized genotypes at the causal variants,
+$$ g_i = \sum_{k=1}^{M} \beta_k\, x_{ik} , $$
+where $\beta_k$ is the per-standardized-allele causal effect of variant $k$, $x_{ik}$ is the standardized genotype ($\E[x_{ik}]=0$, $\Var[x_{ik}]=1$), and $M$ is the number of causal variants.
+\bundles{the additive model; no dominance and no epistasis.}
+\end{assumption}
+
+\begin{assumption}{A2}{Independent, unshared environment}
+The environmental component is independent of the genetic component and independent across individuals:
+$$ g \perp e \qquad\text{and}\qquad e_i \perp e_j \ \ (i \neq j). $$
+\bundles{no shared/common environment ($C$); no gene--environment correlation or interaction.}
+\end{assumption}
+
+Because $g\perp e$, the phenotypic variance decomposes as $\Var[y]=V_A+V_E$; with the standardization $\Var[y]=1$ this gives $V_A + V_E = 1$, so $V_A$ is exactly the narrow-sense heritability, $V_A = h^2$.
+Every covariance we derive below is therefore also, numerically, a phenotypic \emph{correlation} between the two individuals.
+
+\subsection{What we are computing, and conditional on what}
+For a single fixed pair, $y_i$ and $y_j$ are two numbers, so ``their covariance'' only has meaning as an average over an ensemble of pairs.
+The ensemble we use is the set of all pairs that share a given piece of \emph{relatedness information} $\mathcal{I}_{ij}$ about the pair, and the object of interest is the conditional cross-moment
+\begin{equation}\label{eq:object}
+    C_{ij}(\mathcal{I}) \;:=\; \E[\, y_i y_j \mid \mathcal{I}_{ij}\,] .
+\end{equation}
+Reading \eqref{eq:object} carefully: the expectation is taken across all pairs of individuals that match the conditioning information $\mathcal{I}_{ij}$ --- \emph{not} across all pairs (that average is $\approx 0$, since two randomly drawn individuals are uncorrelated).
+
+Two remarks fix the interpretation:
 \begin{itemize}
-    \item $y$ is standardized: $\E[y] = 0 $ and $\Var[y] = 1$
-    \item The genetic and environmental components are independent: $g \perp e$
-    \item The genetic and environmental components are mean-centered: $\E[g] = \E[e] = 0 $
-    \item The variance of each component is given by: $\Var[g] = V_A$ and $\Var[e] = V_E$
+    \item When $\mathcal{I}_{ij}$ is a statement about \emph{descent} (which alleles are identical-by-descent, the genome-wide IBD proportion, or the pedigree degree), it carries no information about \emph{which} alleles an individual actually carries, so it does not shift either marginal mean: $\E[y_i \mid \mathcal{I}]=0$. Then $C_{ij}(\mathcal{I}) = \Cov[y_i,y_j\mid \mathcal{I}]$ exactly, and we may freely call it a covariance.
+    \item The one exception is Level 0, where we condition on the realized genotypes themselves. There $\E[y_i\mid \text{genotypes}]=g_i\neq 0$, so the genuine object is the cross-moment $g_i g_j$, not a covariance (indeed $\Cov[y_i,y_j\mid\text{genotypes}]=0$, since only the independent environments remain).
 \end{itemize}
-Furthermore, \textbf{we assume the environment is completely random, even between relatives}: $e_i \perp e_j$ for all $i,j$.
-The expected covariance between two individuals $i$ and $j$ is given by:
-\begin{align*}
-    \E[\Cov[y_i, y_j]] &= \E[\Cov[g_i + e_i, g_j + e_j]] \\
-    &= \E[\Cov[g_i, g_j]] \\
-    &= V_A \E[\Corr[g_i, g_j]]
-\end{align*}
-where the second line follows from assuming the environmental term is independent of genetics and across individuals.
 
-\subsection{Approximating genetic covariance by realized relatedness}
-\textbf{We will now assume that the genetic component of a trait is the linear combination of individual variant allele counts}, which are standardized:
-$$ g_i = \sum_k \beta_k x_{ik}$$
-where $\beta_k$ is the per-standardized-allele causal effect of variant $k$ and $x_{ik}$ is the standardized allele count of individual $i$ for variant $k$.
-We can therefore expand the expected covariance of two individuals as:
-\begin{align*}
-    \E[\Cov[y_i, y_j]] &= V_A \E[\Corr[g_i, g_j]] \\
-    &= V_A \E[\Corr[\sum_k \beta_k x_{ik}, \sum_{k'} \beta_{k'} x_{jk'}]]
-\end{align*}
-\textbf{We assume no inbreeding and random mating, meaning that maternally- and paternally-inherited alleles are uncorrelated}: $\E[\Corr[x^{(m)}_{ik}, x^{(p)}_{ik}]] = 0$.
+Using \eqref{eq:model} and \assumptionid{A2}, every cross term involving $e$ vanishes in expectation, so the phenotypic cross-moment reduces to the genetic one at every level:
+\begin{equation}\label{eq:reduce}
+    C_{ij}(\mathcal{I}) \;=\; \E[\,(g_i+e_i)(g_j+e_j) \mid \mathcal{I}\,] \;=\; \E[\,g_i g_j \mid \mathcal{I}\,] .
+\end{equation}
+The rest of the article evaluates \eqref{eq:reduce} at four levels of resolution for $\mathcal{I}$.
 
-\textbf{We assume that all variants are physically unlinked and uncorrelated on a population level and that causal effects are independently distributed}:
-$$ \E[\Corr[x_{ik}, x_{ik'}]] = 0 \text{ and } \E[\Corr[\beta_k, \beta_{k'}]] = 0 \text{ when } k \neq k'$$
-This allows us to express the correlation in genetic values as the sum of correlations of individual variant genotypes:
-$$\E[\Corr[g_i, g_j]] = \sum_k \beta_k \E[\Corr[x_{ik}, x_{jk}]] $$
-For a particular variant, the expected correlation of two individuals' genotypes is given by their identical-by-descent (IBD) status.
+\subsection{Level 0 --- the exact genetic cross-moment}
+At the finest resolution we condition on the realized genotypes of $i$ and $j$ at the causal variants. Then $g_i$ and $g_j$ are fixed, and by \assumptionid{A1},
+\begin{equation}\label{eq:level0}
+    C_{ij} \;=\; g_i g_j \;=\; \sum_{k}\sum_{k'} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'} .
+\end{equation}
+This is exact given only additivity. Notably it makes no reference to relatedness or IBD at all: the genetic covariance between two individuals is, fundamentally, an effect-size-weighted function of the genotypes they actually carry at causal sites. Everything below is a controlled approximation to \eqref{eq:level0} using progressively coarser --- and more readily available --- information.
 
-\todo{Connect correlation between genotypes to their IBS state. Then express expected IBS state (and therefore correlation) as function of IBD, under no-mutation assumption below.}
+\subsection{Level 1 --- dropping the effect weighting}
+Suppose we no longer know the individual genotypes, but do know the pair's realized \emph{sharing pattern} $\mathcal{S}$ (which alleles are IBD). We average \eqref{eq:level0} over the effect sizes.
 
-\textbf{We assume that when two alleles are IBD, then they are also identical-by-state (IBS), i.e. no recent mutations.
-When two alleles are not IBD, we assume they are drawn independently from the population and therefore uncorrelated.}
-\begin{align*}
-    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=0] &= 0 \\
-    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=1] &= 0.5 \\
-    \E[\Corr[x_{ik}, x_{jk}] | \IBD[x_{ik}, x_{jk}]=2] &= 1
-\end{align*}
-The genome-wide correlation in genetic value can therefore be expressed as:
+\begin{assumption}{A3}{Random, exchangeable causal effects}
+Causal effects are drawn independently and identically across variants, with
+$$ \E[\beta_k]=0, \quad \Var[\beta_k]=\sigma_\beta^2, \quad \beta \perp \{x\}, $$
+and their distribution does not depend on a variant's genomic position or sharing.
+\bundles{the infinitesimal / random-effects model; effect sizes independent of allele frequency and of local LD.}
+\end{assumption}
+
+Taking the expectation of \eqref{eq:level0} over the effects, and using $\beta\perp\{x\}$ to factor:
 $$
-\E[\Corr[g_i, g_j]] = \frac12 \Pr[\IBD[x_i, x_j]=1] + \Pr[\IBD[x_i, x_j]=2] = \E[\pi_{ij}]
+    \E[\,g_i g_j \mid \mathcal{S}\,]
+    = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, \E[\,x_{ik} x_{jk'} \mid \mathcal{S}\,].
 $$
-where $\pi_{ij}$ is the realized relatedness between individuals $i$ and $j$, i.e. the proportion of their genomes that is IBD.
-The relationship between genetic value correlation and realized relatedness should be expressed through expected values, since the true 
+Because the effects are i.i.d.\ with mean zero, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$ and $\sigma_\beta^2$ when $k=k'$; the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. In other words, \assumptionid{A3} does the work that a separate ``linkage equilibrium'' assumption would otherwise do --- we do not need one. What remains is
+$$
+    \E[\,g_i g_j \mid \mathcal{S}\,]
+    = \sigma_\beta^2 \sum_{k} \E[\,x_{ik} x_{jk} \mid \mathcal{S}\,].
+$$
+The variance bookkeeping fixes $\sigma_\beta^2$: since $\Var[x_{ik}]=1$, we have $V_A = \sum_k \E[\beta_k^2]\,\Var[x_{ik}] = M\sigma_\beta^2$, hence $\sigma_\beta^2 = V_A/M$. Therefore
+\begin{equation}\label{eq:level1}
+    C_{ij}(\mathcal{S}) \;=\; V_A \cdot \frac{1}{M}\sum_{k} \E[\,x_{ik} x_{jk} \mid \mathcal{S}\,] .
+\end{equation}
+The per-variant effect weighting of \eqref{eq:level0} has been replaced by a flat average over causal variants of the per-variant genotype cross-moment.
+
+\subsection{Level 2 --- realized relatedness}
+We now evaluate the per-variant cross-moment $\E[x_{ik}x_{jk}\mid\mathcal S]$ in terms of IBD. It is cleanest to work at the level of individual alleles.
+At variant $k$ (with population allele frequency $p_k$), let individual $i$ carry the two allele indicators $a^{(m)}_{ik}, a^{(p)}_{ik}\in\{0,1\}$ (maternal and paternal), each $\mathrm{Bernoulli}(p_k)$, so that the allele dosage is $G_{ik}=a^{(m)}_{ik}+a^{(p)}_{ik}$ and
+$$ x_{ik} = \frac{G_{ik}-2p_k}{\sqrt{2p_k(1-p_k)}} . $$
+Two alleles are IBD if they descend from --- and are copies of --- the same ancestral allele. Let $\IBD_{ij}(k)\in\{0,1,2\}$ denote the number of alleles individual $i$ shares IBD with $j$ at variant $k$.
+
+\begin{assumption}{A5}{No mutation (IBD $\Rightarrow$ IBS)}
+Alleles that are identical-by-descent are also identical-by-state: descent is transmitted without mutation.
+\bundles{the infinite-sites / no-recurrent-mutation assumption.}
+\end{assumption}
+
+\begin{assumption}{A6}{Independence of non-IBD alleles}
+Any two alleles that are \emph{not} IBD are independent draws from the population allele distribution.
+\bundles{within an individual, no inbreeding (Hardy--Weinberg); between individuals, random mating, no population structure, and no assortative mating. We use only the weak consequence stated here.}
+\end{assumption}
+
+Under \assumptionid{A6} the two alleles within an individual are independent, so $\Var[G_{ik}]=2p_k(1-p_k)$ and the standardization indeed gives $\Var[x_{ik}]=1$. For the pair, conditioning on descent leaves the marginal allele distributions unchanged, so $\E[x_{ik}]=0$ and $\E[x_{ik}x_{jk}\mid\mathcal S]=\Cov[G_{ik},G_{jk}\mid\mathcal S]/\big(2p_k(1-p_k)\big)$. Expanding the genotype covariance over the four ordered allele pairs,
+$$
+    \Cov[G_{ik},G_{jk}\mid\mathcal S] = \sum_{u\in\{m,p\}}\ \sum_{v\in\{m,p\}} \Cov\!\big[a^{(u)}_{ik},\, a^{(v)}_{jk}\big] ,
+$$
+each term is $\Var[a]=p_k(1-p_k)$ if that allele pair is IBD (by \assumptionid{A5} it is the same copy, correlation $1$) and $0$ if it is not (by \assumptionid{A6}, independent). If the pair shares $\IBD_{ij}(k)=s$ alleles IBD, then exactly $s$ of the four terms are nonzero, giving $\Cov[G_{ik},G_{jk}\mid s]=s\,p_k(1-p_k)$ and hence the key per-variant identity
+\begin{equation}\label{eq:pervariant}
+    \E\!\left[\,x_{ik}x_{jk} \,\middle|\, \IBD_{ij}(k)=s\,\right] = \frac{s}{2}
+    \qquad (s=0,1,2).
+\end{equation}
+That is, a variant contributes correlation $0$, $\tfrac12$, or $1$ according to whether the pair shares $0$, $1$, or $2$ alleles IBD there.
+
+To turn the causal-variant average in \eqref{eq:level1} into a genome-wide quantity we need one more assumption.
+
+\begin{assumption}{A4}{Homogeneous genome sharing}
+The expected IBD sharing is the same at the causal variants as it is genome-wide; IBD is not enriched at particular loci.
+\bundles{causal variants are representative of the genome with respect to relatedness.}
+\end{assumption}
+
+Substituting \eqref{eq:pervariant} into \eqref{eq:level1} and applying \assumptionid{A4},
+$$
+    \frac{1}{M}\sum_k \E[\,x_{ik}x_{jk}\mid\mathcal S\,]
+    = \frac{1}{M}\sum_k \frac{\IBD_{ij}(k)}{2}
+    \;\xrightarrow{\ \text{\assumptionid{A4}}\ }\; \pi_{ij},
+$$
+where $\pi_{ij}$ is the \emph{realized relatedness} --- the proportion of the pair's genome that is IBD. We arrive at the central Level-2 result:
+\begin{equation}\label{eq:level2}
+    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; \pi_{ij}\, V_A\ } .
+\end{equation}
+The phenotypic covariance between two relatives is their realized fraction of shared genome times the additive variance. Because different pairs of the same nominal relationship share different realized fractions (full siblings scatter around $\tfrac12$, and so on), \eqref{eq:level2} is expressed through the pair's \emph{actual} $\pi_{ij}$.
+
+\subsection{Level 3 --- pedigree degree}
+Often we do not know $\pi_{ij}$ but only the pair's pedigree relationship (parent--offspring, full siblings, first cousins, \dots).
+
+\begin{assumption}{A7}{Mendelian pedigree}
+The relationship degree determines the distribution of IBD sharing through Mendelian segregation, so that $\E[\pi_{ij}\mid\text{degree}]$ is the pedigree (expected) relatedness.
+\bundles{a known pedigree with Mendelian inheritance.}
+\end{assumption}
+
+Applying the tower property to \eqref{eq:level2} and averaging over the Mendelian distribution of $\pi_{ij}$ given the degree $d$,
+\begin{equation}\label{eq:level3}
+    \E[\,y_i y_j \mid d\,] \;=\; \E\big[\,\E[y_i y_j\mid \pi_{ij}]\,\big|\, d\,\big] \;=\; V_A\, \E[\pi_{ij}\mid d] \;=\; r_d\, V_A ,
+\end{equation}
+where $r_d = \E[\pi_{ij}\mid d] = 2\phi_{ij}$ is the expected relatedness (twice the kinship coefficient). This recovers the classical covariances between relatives:
+
+\begin{center}
+\begin{tabular}{l c}
+\textbf{Relationship} & \textbf{Expected relatedness } $r_d$ \\
+\hline
+Monozygotic twins & $1$ \\
+Parent--offspring & $1/2$ \\
+Full siblings & $1/2$ \\
+Half sibs / grandparent--grandchild / avuncular & $1/4$ \\
+First cousins & $1/8$ \\
+``Unrelated'' & $0$ \\
+\hline
+\end{tabular}
+\end{center}
+
+The step from \eqref{eq:level2} to \eqref{eq:level3} is exactly the realized-versus-expected distinction: Level 2 uses a pair's true realized relatedness, whereas Level 3 replaces it with its pedigree expectation, and is therefore only as good as the pedigree and the (often large) sampling variance of $\pi_{ij}$ around $r_d$ allow --- a gap that widens for distant relationships.
+
+\subsection{Summary of the tower}
+Each level conditions on coarser information than the one above and is its conditional expectation; the rightmost column lists the assumption(s) newly required to descend one step.
+
+\begin{center}
+\begin{tabular}{c l l l}
+\textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
+\hline
+0 & causal genotypes & $g_i g_j$ & \assumptionid{A1} (given \assumptionid{A2}) \\
+1 & realized sharing $\mathcal{S}$ & $V_A\,\tfrac1M\sum_k \E[x_{ik}x_{jk}\mid\mathcal S]$ & \assumptionid{A3} \\
+2 & realized relatedness $\pi_{ij}$ & $\pi_{ij}\,V_A$ & \assumptionid{A4}, \assumptionid{A5}, \assumptionid{A6} \\
+3 & pedigree degree $d$ & $r_d\,V_A$ & \assumptionid{A7} \\
+\hline
+\end{tabular}
+\end{center}
+
+\todo{Next architectures restart from Level 0 and re-introduce a subset of \assumptionid{A1}--\assumptionid{A7}, relaxing others: e.g.\ a shared environment breaks \assumptionid{A2}; dominance/epistasis breaks \assumptionid{A1}; assortative mating and population structure break \assumptionid{A6} (correlating non-IBD alleles) and drive a wedge between realized and pedigree relatedness.}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}

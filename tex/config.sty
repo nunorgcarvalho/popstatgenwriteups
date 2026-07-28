@@ -12,6 +12,7 @@
 \RequirePackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref} % For hyperlinks in the document
 \RequirePackage{enumitem}
 \RequirePackage{xcolor}
+\RequirePackage{framed} % page-breakable shaded boxes (used by the assumption environment)
 
 % info %%%%
 \author{Nuno Carvalho}
@@ -28,4 +29,28 @@
 % highlights
 \newcommand{\todo}[1]{\textcolor{blue}{#1}}
 \newcommand{\unsure}[1]{\textcolor{orange}{#1}}
+
+% assumption boxes %%%%
+% A visually distinct, page-breakable box for stating a modeling assumption.
+% Usage:
+%   \begin{assumption}{A3}{Random, exchangeable causal effects}
+%     <mathematical statement>
+%     \bundles{the infinitesimal / random-effects model}
+%   \end{assumption}
+% Arg 1 is a STABLE identifier (e.g. A3) meant to be reused verbatim across writeups when
+% the same assumption reappears; arg 2 is a short human-readable name. \bundles{...} is an
+% optional trailing note listing the common terminology that implies this assumption.
+\definecolor{assumptionframe}{RGB}{40,90,150}
+\definecolor{assumptionback}{RGB}{238,243,249}
+\newcommand{\assumptionid}[1]{{\bfseries\color{assumptionframe}[#1]}}
+\newcommand{\bundles}[1]{\par\smallskip{\small\textit{Commonly bundled into:} #1}}
+\newenvironment{assumption}[2]{%
+  \par\smallskip%
+  \colorlet{shadecolor}{assumptionback}%
+  \begin{shaded}%
+  \setlength{\parskip}{0.4em}%
+  \noindent\assumptionid{#1}~\textbf{#2.}\par\nobreak\smallskip%
+}{%
+  \end{shaded}\par\smallskip%
+}
 
