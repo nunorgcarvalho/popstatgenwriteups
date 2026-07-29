@@ -35,30 +35,34 @@ For an individual $i$ we write the (standardized) phenotype as
 where $g_i$ is the genetic value and $e_i$ the environmental deviation.
 We take $y$ to be standardized across the population, $\E[y]=0$ and $\Var[y]=1$, and both components to be mean-centered, $\E[g]=\E[e]=0$, with variances $\Var[g]=V_A$ and $\Var[e]=V_E$.
 
-We then introduce the following three assumptions.
+We then introduce the following assumptions.
 
-\begin{assumption}{A1}{Additive genetic architecture}
-The genetic value is a linear combination of the individual's standardized genotypes at the causal variants,
+\begin{assumption}{Additivity}{Additive genetic value}
+The genetic value is a fixed additive function of the individual's own genotype,
 $$ g_i = \sum_{k=1}^{M} \beta_k\, x_{ik} , $$
-where $\beta_k$ is the per-standardized-allele causal effect of variant $k$, $x_{ik}$ is the standardized genotype ($\E[x_{ik}]=0$, $\Var[x_{ik}]=1$), and $M$ is the number of variants.
-\bundles{the additive model; no dominance, no gene--gene interactions (i.e. GxG, epistasis), no gene--environment interactions (i.e., GxE).}
+where $\beta_k$ is the per-standardized-allele effect of variant $k$, $x_{ik}$ is the standardized genotype ($\E[x_{ik}]=0$, $\Var[x_{ik}]=1$), and $M$ is the number of variants in the genome. Non-causal variants are included with $\beta_k=0$.
+\bundles{the additive model; no dominance, no gene--gene interactions (GxG, epistasis), and no gene--environment interactions (GxE) --- each would make the genetic value depend on more than the individual's own genotype in an additive way.}
 \end{assumption}
 
-\begin{assumption}{A2}{Gene-environment independence}
-An individual's environmental component is independent of their genetic component:
-$$ g \perp e $$
-\bundles{no gene--environment correlation or interaction.}
+\begin{assumption}{GE-indep}{Gene--environment independence}
+An individual's environmental component is independent of their own genetic component:
+$$ g_i \perp e_i $$
+\bundles{no gene--environment correlation or interaction, within an individual.}
 \end{assumption}
 
-\begin{assumption}{A3}{Independence of environment across individuals}
-The environmental component is independent across individuals (including relatives):
+\begin{assumption}{No-IGE}{No indirect genetic effects}
+One individual's genetic component is independent of another individual's environmental component:
+$$ g_i \perp e_j \ \ (i \neq j) . $$
+\bundles{no indirect (e.g.\ parental) genetic effects --- one individual's genotype does not shape another's environment.}
+\end{assumption}
+
+\begin{assumption}{Env-indep}{Independent environments}
+The environmental component is independent across individuals, including relatives:
 $$  e_i \perp e_j \ \ (i \neq j). $$
-\bundles{no shared/common environment ($C$), no population stratification}
+\bundles{no shared/common environment ($C$); no environmental confounder shared by the pair (e.g.\ population stratification).}
 \end{assumption}
 
-\todo{Need to shift down subsequent Assumption identifiers}
-
-Because $g\perp e$, $\Cov[g,e]=0$ and the phenotypic variance decomposes as $\Var[y]=V_A+V_E$.
+Because $g_i\perp e_i$ (\assumptionid{GE-indep}), $\Cov[g_i,e_i]=0$ and the phenotypic variance decomposes as $\Var[y]=V_A+V_E$.
 Narrow--sense heritability is typically defined as:
 $$ h^2 = \frac{V_A}{\Var[y]}$$
 Since $\Var[y] = 1$, $h^2 = V_A$ under this model.
@@ -73,9 +77,9 @@ The ensemble we use is the set of all pairs that share a given piece of \emph{re
 
 If $\E[y_i \mid \mathcal{I}]=0$, then $C_{ij}(\mathcal{I}) = \Cov[y_i,y_j\mid \mathcal{I}]$.
 For most information $\mathcal{I}$, like the realized relatedness or degree between two relatives, this equivalence is applicable.
-An exception is when the information we are modelling contains individuals' actual genotype information, for which $\E[y_i\mid \text{genotypes}]=g_i\neq 0$, therefore the expected cross-product of two individuals is not equivalenmt to their covariance given the fixed information.
+An exception is when the information we are modelling contains individuals' actual genotype information, for which $\E[y_i\mid \text{genotypes}]=g_i\neq 0$, therefore the expected cross-product of two individuals is not equivalent to their covariance given the fixed information.
 
-Using \eqref{eq:model} and \assumptionid{A2}, every cross term involving $e$ vanishes in expectation, so the phenotypic cross-product reduces to the genetic one at every level:
+Using \eqref{eq:model} together with \assumptionid{No-IGE} and \assumptionid{Env-indep}, every cross term involving $e$ vanishes in expectation (each factors through a mean-zero environmental term), so the phenotypic cross-product reduces to the genetic one:
 \begin{equation}\label{eq:reduce}
     C_{ij}(\mathcal{I}) \;=\; \E[\,(g_i+e_i)(g_j+e_j) \mid \mathcal{I}\,] \;=\; \E[\,g_i g_j \mid \mathcal{I}\,] .
 \end{equation}
@@ -83,44 +87,39 @@ The rest of the article evaluates \eqref{eq:reduce} at four levels of resolution
 
 \subsection{Level 0 --- the exact genetic cross-product}
 At the finest resolution we condition on the realized genotypes of $i$ and $j$ at the causal variants, for which we know the true causal effect sizes.
-Then $g_i$ and $g_j$ are fixed, and by \assumptionid{A1},
+Then $g_i$ and $g_j$ are fixed, and by \assumptionid{Additivity},
 \begin{equation}\label{eq:level0}
-    C_{ij} \;=\; \E[\, y_i y_j \mid x_i, x_j, \beta \,] \;=\; g_i g_j \;=\; \sum_{k}\sum_{k'} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'} .
+    C_{ij} \;=\; \E[\, y_i y_j \mid \bx_i, \bx_j, \bbeta \,] \;=\; g_i g_j \;=\; \sum_{k}\sum_{k'} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'} .
 \end{equation}
 Under our model and assumptions so far, this returns the true expected cross-product of two individuals' phenotypes.
-The genetic value covariance between two individuals is, fundamentally, an effect-size-weighted function of the genotypes they actually carry at causal sites.
+The genetic cross-product between two individuals is, fundamentally, an effect-size-weighted function of the genotypes they actually carry at causal sites.
 Notably, this formula does not require any knowledge of the relatedness of the two individuals.
 
 \subsection{Level 1: genome-wide allelic sharing}
-If we do not know the causal effect sizes nor which variants are causal, then we cannot apply \eqref{eq:level0}. 
-However, we can assume that genetic effects are independent of individuals' allelic sharing patterns.
+If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}. 
+However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
-\begin{assumption}{A3}{Random, exchangeable causal effects}
-Causal effects are drawn independently and identically across variants, with
-$$ \E[\beta_k]=0, \quad \Var[\beta_k]=\sigma_\beta^2, \quad \beta \perp \{x\}, $$
-and their distribution does not depend on whether two individuals share an allele for that variant.
-\bundles{the infinitesimal model}
-
-\unsure{What is the relevance of using the $\{x\}$ notation as opposed to just $x$?}
-
-\unsure{Do we actually have to assume that causal effects are drawn indepenendently and identically across variants, or only that a pair's allelic sharing does not inform us of the effect sizes of the alleles they share/don't share. E.g., suppose that full-siblings not only shared 0.5 of the genome, but also the 0.5 they share for some reason tends to be in stronger-effect-size variants; then decomposing the expected 4-term product in \eqref{eq:level0} into a 2x2-term expected product would not be valid.}
+\begin{assumption}{Random-effects}{Random effects, unpatterned by sharing}
+Treating the effects as random, they are mean-zero and uncorrelated across variants, the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$, and every variant carries the same second moment:
+$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}], \quad \E[\beta_k^2] = \sigma_\beta^2 . $$
+\bundles{the infinitesimal / random-effects model; causal variants not concentrated in more- or less-shared regions of the genome.}
 \end{assumption}
 
-Taking the expectation of \eqref{eq:level0} over the effects, and using $\beta\perp\{x\}$ to factor:
+Taking the expectation of \eqref{eq:level0} over the effects, and using the independence of the cross-products from the genotypes (\assumptionid{Random-effects}) to replace $\E[\beta_k \beta_{k'} \mid \bX]$ by $\E[\beta_k \beta_{k'}]$:
 $$
-    \E[\,g_i g_j \mid x_i, x_j \,]
+    \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'}.
 $$
-Because the effects are i.i.d.\ with mean zero, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$ and $\sigma_\beta^2$ when $k=k'$; the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes.
-What remains is
+Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$ and $\sigma_\beta^2$ when $k=k'$;
+the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. What remains is
 $$
-    \E[\,g_i g_j \mid x_i, x_j \,]
+    \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sigma_\beta^2 \sum_{k} x_{ik} x_{jk}.
 $$
-The variance bookkeeping fixes $\sigma_\beta^2$: since $\Var[x_{ik}]=1$, we have $V_A = \sum_k \E[\beta_k^2]\,\Var[x_{ik}] = M\sigma_\beta^2$, hence $\sigma_\beta^2 = V_A/M$.
-Therefore
+The common second moment is fixed by variance bookkeeping: since $\Var[x_{ik}]=1$ and the off-diagonal effect terms vanish, $V_A = \Var[g_i] = \sum_k \E[\beta_k^2] = M\sigma_\beta^2$, hence $\sigma_\beta^2 = V_A/M$.
+ Therefore
 \begin{equation}
-    C_{ij}(x_i, x_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
+    C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
 \end{equation}
 The per-variant effect weighting of \eqref{eq:level0} has been replaced by the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by $S_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$.
 This can be thought of as an identity-by-state (IBS)-based measure of ``relatedness''.
@@ -138,29 +137,49 @@ Therefore, the former can be used to capture the contributions of the latter.
 When individuals inherit a genomic segment from a common ancestor, then all of the variants within that genomic segment will be identical-by-state, as long as we assume that de-novo mutations have not caused the inherited alleles to be different.
 These genomic segments and their variants are said to be identical-by-descent (IBD).
 
-\begin{assumption}{A5}{No mutation (IBD $\Rightarrow$ IBS)}
+\begin{assumption}{No-mutation}{IBD implies IBS}
 Alleles that are identical-by-descent are also identical-by-state: descent is transmitted without mutation.
 \bundles{the infinite-sites / no-recurrent-mutation assumption.}
 \end{assumption}
 
 When two individuals' alleles are IBD, then they are always IBS; when they are not IBD, they can still be IBS.
-Therefore, we can decompose the formula for the IBS-based relatedness, $S_ij$, as the sum of the cross-products of IBD variants and the cross-products of non-IBD variants.
+Therefore, we can decompose the IBS-based relatedness $S_{ij}$ into a sum over IBD allele pairs and a sum over non-IBD allele pairs.
+Write each standardized genotype as the sum of its two per-allele (maternal and paternal) standardized values, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$. Since $\Var[x_{ik}]=1$ and the two alleles are independent (\assumptionid{No-inbreeding}), each per-allele value has $\E[z]=0$ and $\Var[z]=\tfrac12$. The genotype cross-product then expands over the four ordered allele pairs, and $S_{ij}$ splits by IBD status:
+\begin{equation}\label{eq:Sdecomp}
+\begin{split}
+    S_{ij}
+    &= \frac{1}{M}\sum_{k} x_{ik} x_{jk}
+    = \frac{1}{M}\sum_{k} \sum_{u,v\in\{m,p\}} z^{(u)}_{ik} z^{(v)}_{jk} \\
+    &= \underbrace{\frac{1}{M}\sum_{\text{IBD pairs}} z^{(u)}_{ik} z^{(v)}_{jk}}_{\text{IBD}}
+    \;+\; \underbrace{\frac{1}{M}\sum_{\text{non-IBD pairs}} z^{(u)}_{ik} z^{(v)}_{jk}}_{\text{non-IBD}} .
+\end{split}
+\end{equation}
 
-\todo{Write formula}
+For an IBD allele pair, the two per-allele values are copies of the same ancestral allele and, by \assumptionid{No-mutation}, of the same state; they are therefore equal, so their expected cross-product is $\E[(z^{(u)}_{ik})^2] = \Var[z^{(u)}_{ik}] = \tfrac12$.
+For non-IBD allele pairs, we have to make an assumption on how they are distributed.
 
-For allele pairs that are IBD, then the expected cross-product in their allelic genotype is always 0.5 since they are identical and of variance 0.5.
-\unsure{I'm unsure about the math or how to argue this here}
-For allele pairs that are non-IBD, we have to make an assumption on how they are distributed.
-
-\begin{assumption}{A6}{Independence of non-IBD alleles}
+\begin{assumption}{Non-IBD-indep}{Independence of non-IBD alleles}
 Any two alleles that are \emph{not} IBD are independent draws from the population allele distribution.
-\bundles{within an individual, no inbreeding (Hardy--Weinberg); between individuals, random mating, no population structure, and no assortative mating.}
+\bundles{between individuals: random mating, no population structure, and no assortative mating.}
 \end{assumption}
 
-By the definition of indepdendent draws, the expected cross-product of non-IBD alleles is therefore 0.
-For any particular variant, we can therefore summarize the expected correlation in a pairs' genotypes as a function of the number of alleles that are IBD between the pair 
+\begin{assumption}{No-inbreeding}{No inbreeding}
+Within an individual, the two homologous alleles are not IBD with each other, and hence (by \assumptionid{Non-IBD-indep}) independent.
+This results in each variant's genotype variance being $2p_k(1-p_k)$ --- so the standardized $x_{ik}$ has variance $1$ --- and it keeps the number of alleles a pair shares IBD at a variant in $\{0,1,2\}$.
+\bundles{a randomly mating, outbred population (Hardy--Weinberg within individuals).}
+\end{assumption}
+
+By the definition of independent draws, the expected cross-product of a non-IBD allele pair is therefore $\E[z^{(u)}_{ik}]\,\E[z^{(v)}_{jk}] = 0$.
+Letting $\IBD_{ij}(k)\in\{0,1,2\}$ denote the number of alleles the pair shares IBD at variant $k$, exactly $\IBD_{ij}(k)$ of the four ordered allele pairs are IBD --- each contributing $\tfrac12$ --- and the rest contribute $0$, so
+$$
+    \E\!\left[\,x_{ik} x_{jk} \,\middle|\, \IBD_{ij}(k)=s\,\right]
+    = s\cdot\tfrac12 = \frac{s}{2}
+    \qquad (s=0,1,2) .
+$$
+A variant thus contributes expected cross-product $0$, $\tfrac12$, or $1$ according to whether the pair shares $0$, $1$, or $2$ alleles IBD there.
 
 \todo{Continue revising rest of document}
+
 We now evaluate the per-variant cross-product $\E[x_{ik}x_{jk}\mid\mathcal S]$ in terms of IBD. It is cleanest to work at the level of individual alleles.
 At variant $k$ (with population allele frequency $p_k$), let individual $i$ carry the two allele indicators $a^{(m)}_{ik}, a^{(p)}_{ik}\in\{0,1\}$ (maternal and paternal), each $\mathrm{Bernoulli}(p_k)$, so that the allele dosage is $G_{ik}=a^{(m)}_{ik}+a^{(p)}_{ik}$ and
 $$ x_{ik} = \frac{G_{ik}-2p_k}{\sqrt{2p_k(1-p_k)}} . $$
@@ -170,11 +189,11 @@ Two alleles are IBD if they descend from --- and are copies of --- the same ance
 
 
 
-Under \assumptionid{A6} the two alleles within an individual are independent, so $\Var[G_{ik}]=2p_k(1-p_k)$ and the standardization indeed gives $\Var[x_{ik}]=1$. For the pair, conditioning on descent leaves the marginal allele distributions unchanged, so $\E[x_{ik}]=0$ and $\E[x_{ik}x_{jk}\mid\mathcal S]=\Cov[G_{ik},G_{jk}\mid\mathcal S]/\big(2p_k(1-p_k)\big)$. Expanding the genotype covariance over the four ordered allele pairs,
+Under \assumptionid{No-inbreeding} the two alleles within an individual are independent, so $\Var[G_{ik}]=2p_k(1-p_k)$ and the standardization indeed gives $\Var[x_{ik}]=1$. For the pair, conditioning on descent leaves the marginal allele distributions unchanged, so $\E[x_{ik}]=0$ and $\E[x_{ik}x_{jk}\mid\mathcal S]=\Cov[G_{ik},G_{jk}\mid\mathcal S]/\big(2p_k(1-p_k)\big)$. Expanding the genotype covariance over the four ordered allele pairs,
 $$
     \Cov[G_{ik},G_{jk}\mid\mathcal S] = \sum_{u\in\{m,p\}}\ \sum_{v\in\{m,p\}} \Cov\!\big[a^{(u)}_{ik},\, a^{(v)}_{jk}\big] ,
 $$
-each term is $\Var[a]=p_k(1-p_k)$ if that allele pair is IBD (by \assumptionid{A5} it is the same copy, correlation $1$) and $0$ if it is not (by \assumptionid{A6}, independent). If the pair shares $\IBD_{ij}(k)=s$ alleles IBD, then exactly $s$ of the four terms are nonzero, giving $\Cov[G_{ik},G_{jk}\mid s]=s\,p_k(1-p_k)$ and hence the key per-variant identity
+each term is $\Var[a]=p_k(1-p_k)$ if that allele pair is IBD (by \assumptionid{No-mutation} it is the same copy, correlation $1$) and $0$ if it is not (by \assumptionid{Non-IBD-indep}, independent). If the pair shares $\IBD_{ij}(k)=s$ alleles IBD, then exactly $s$ of the four terms are nonzero, giving $\Cov[G_{ik},G_{jk}\mid s]=s\,p_k(1-p_k)$ and hence the key per-variant identity
 \begin{equation}\label{eq:pervariant}
     \E\!\left[\,x_{ik}x_{jk} \,\middle|\, \IBD_{ij}(k)=s\,\right] = \frac{s}{2}
     \qquad (s=0,1,2).
@@ -183,16 +202,16 @@ That is, a variant contributes correlation $0$, $\tfrac12$, or $1$ according to 
 
 To turn the causal-variant average in \eqref{eq:level1} into a genome-wide quantity we need one more assumption.
 
-\begin{assumption}{A4}{Homogeneous genome sharing}
+\begin{assumption}{Homog-sharing}{Homogeneous genome sharing}
 The expected IBD sharing is the same at the causal variants as it is genome-wide; IBD is not enriched at particular loci.
-\bundles{causal variants are representative of the genome with respect to relatedness.}
+\bundles{causal variants are representative of the genome with respect to relatedness. (Under the all-variants, homoscedastic form of \assumptionid{Random-effects} this is already implied --- kept here only until Level 2 is revised.)}
 \end{assumption}
 
-Substituting \eqref{eq:pervariant} into \eqref{eq:level1} and applying \assumptionid{A4},
+Substituting \eqref{eq:pervariant} into \eqref{eq:level1} and applying \assumptionid{Homog-sharing},
 $$
     \frac{1}{M}\sum_k \E[\,x_{ik}x_{jk}\mid\mathcal S\,]
     = \frac{1}{M}\sum_k \frac{\IBD_{ij}(k)}{2}
-    \;\xrightarrow{\ \text{\assumptionid{A4}}\ }\; \pi_{ij},
+    \;\xrightarrow{\ \text{\assumptionid{Homog-sharing}}\ }\; \pi_{ij},
 $$
 where $\pi_{ij}$ is the \emph{realized relatedness} --- the proportion of the pair's genome that is IBD. We arrive at the central Level-2 result:
 \begin{equation}\label{eq:level2}
@@ -203,7 +222,7 @@ The phenotypic covariance between two relatives is their realized fraction of sh
 \subsection{Level 3 --- pedigree degree}
 Often we do not know $\pi_{ij}$ but only the pair's pedigree relationship (parent--offspring, full siblings, first cousins, \dots).
 
-\begin{assumption}{A7}{Mendelian pedigree}
+\begin{assumption}{Mendelian}{Mendelian pedigree}
 The relationship degree determines the distribution of IBD sharing through Mendelian segregation, so that $\E[\pi_{ij}\mid\text{degree}]$ is the pedigree (expected) relatedness.
 \bundles{a known pedigree with Mendelian inheritance.}
 \end{assumption}
@@ -234,18 +253,19 @@ The step from \eqref{eq:level2} to \eqref{eq:level3} is exactly the realized-ver
 Each level conditions on coarser information than the one above and is its conditional expectation; the rightmost column lists the assumption(s) newly required to descend one step.
 
 \begin{center}
-\begin{tabular}{c l l l}
+\small
+\begin{tabular}{c l l p{4.3cm}}
 \textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
 \hline
-0 & causal genotypes & $g_i g_j$ & \assumptionid{A1} (given \assumptionid{A2}) \\
-1 & realized sharing $\mathcal{S}$ & $V_A\,\tfrac1M\sum_k \E[x_{ik}x_{jk}\mid\mathcal S]$ & \assumptionid{A3} \\
-2 & realized relatedness $\pi_{ij}$ & $\pi_{ij}\,V_A$ & \assumptionid{A4}, \assumptionid{A5}, \assumptionid{A6} \\
-3 & pedigree degree $d$ & $r_d\,V_A$ & \assumptionid{A7} \\
+0 & causal genotypes & $g_i g_j$ & \assumptionid{Additivity} (given \assumptionid{No-IGE}, \assumptionid{Env-indep}) \\
+1 & realized sharing $\mathcal{S}$ & $V_A\,\tfrac1M\sum_k \E[x_{ik}x_{jk}\mid\mathcal S]$ & \assumptionid{Random-effects} \\
+2 & realized relatedness $\pi_{ij}$ & $\pi_{ij}\,V_A$ & \assumptionid{No-mutation}, \assumptionid{Non-IBD-indep}, \assumptionid{No-inbreeding} \\
+3 & pedigree degree $d$ & $r_d\,V_A$ & \assumptionid{Mendelian} \\
 \hline
 \end{tabular}
 \end{center}
 
-\todo{Next architectures restart from Level 0 and re-introduce a subset of \assumptionid{A1}--\assumptionid{A7}, relaxing others: e.g.\ a shared environment breaks \assumptionid{A2}; dominance/epistasis breaks \assumptionid{A1}; assortative mating and population structure break \assumptionid{A6} (correlating non-IBD alleles) and drive a wedge between realized and pedigree relatedness.}
+\todo{Next architectures restart from Level 0 and re-introduce a subset of the assumptions above, relaxing others: e.g.\ a shared environment breaks \assumptionid{Env-indep}; dominance/epistasis breaks \assumptionid{Additivity}; assortative mating and population structure break \assumptionid{Non-IBD-indep} (correlating non-IBD alleles) and drive a wedge between realized and pedigree relatedness.}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
