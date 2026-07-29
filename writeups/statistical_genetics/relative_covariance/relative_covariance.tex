@@ -178,6 +178,27 @@ $$
 $$
 A variant thus contributes expected cross-product $0$, $\tfrac12$, or $1$ according to whether the pair shares $0$, $1$, or $2$ alleles IBD there.
 
+Since IBD is a latent state of the observed genotype pairs, it is difficult to determine if an individual allele pair is IBD based solely on whether it is IBS.
+However, it will be useful to us if we assume that each variant's expected IBD state is given by a single parameter, which we'll call realized relatedness ($\pi_{ij}$):
+
+\todo{Write assumption on expected IBD state being constant across all variants and equal to $\pi_{ij}$}
+
+It should be noted that we are not assuming that each variant's IBD state is independent of other variants' IBD states, as that is too strong of an assumption that is patently false.
+Particularly, since IBD states only switch when a cross-over event occurs within a genomic segment being co-inherited with someone else, and since the recombination rate between variants in close proximity (i.e. physically linked) is almost never 0.5, then physically linked variants' IBD states are correlated.
+
+The above assumption allows us to express the expected allelic sharing of two individuals to be equivalent to the realized relatedness, which also becomes equivalent to the expected cross-product of their phenotypes:
+
+\todo{Write formula}
+
+Typically, the true realized relatedness is not known but is instead estimated based on the genome-wide average of per-genotyped-variant IBD states estimated by IBD-inference algorithms that take into account multiple variants at once.
+
+\todo{Write formula where $\hat{\pi_{ij}}$ is the average of inferred (hat) IBD states across genotyped variants (use a set symbol to denote the subset of variants that are genotyped)}
+
+We assume that the expected value of this estimate is equivalent to the true realized relatedness:
+
+\todo{Write assumption on}
+
+
 \todo{Continue revising rest of document}
 
 We now evaluate the per-variant cross-product $\E[x_{ik}x_{jk}\mid\mathcal S]$ in terms of IBD. It is cleanest to work at the level of individual alleles.
