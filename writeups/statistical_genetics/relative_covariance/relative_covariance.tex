@@ -89,13 +89,13 @@ The rest of the article evaluates \eqref{eq:reduce} at four levels of resolution
 At the finest resolution we condition on the realized genotypes of $i$ and $j$ at the causal variants, for which we know the true causal effect sizes.
 Then $g_i$ and $g_j$ are fixed, and by \assumptionid{Additivity},
 \begin{equation}\label{eq:level0}
-    C_{ij} \;=\; \E[\, y_i y_j \mid \bx_i, \bx_j, \bbeta \,] \;=\; g_i g_j \;=\; \sum_{k}\sum_{k'} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'} .
+    \boxed{ C_{ij} \;=\; \E[\, y_i y_j \mid \bx_i, \bx_j, \bbeta \,] \;=\; g_i g_j \;=\; \sum_{k}\sum_{k'} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'} }
 \end{equation}
 Under our model and assumptions so far, this returns the true expected cross-product of two individuals' phenotypes.
 The genetic cross-product between two individuals is, fundamentally, an effect-size-weighted function of the genotypes they actually carry at causal sites.
 Notably, this formula does not require any knowledge of the relatedness of the two individuals.
 
-\subsection{Level 1: genome-wide allelic sharing}
+\subsection{Level 1 --- genome-wide allelic sharing}
 If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}. 
 However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
@@ -121,11 +121,12 @@ The common second moment is fixed by variance bookkeeping: since $\Var[x_{ik}]=1
 \begin{equation}
     C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
 \end{equation}
-The per-variant effect weighting of \eqref{eq:level0} has been replaced by the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by $S_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$.
+The per-variant effect weighting of \eqref{eq:level0} has been replaced by the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by:
+$$S_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$$
 This can be thought of as an identity-by-state (IBS)-based measure of ``relatedness''.
 Therefore, we can further simplify:
 \begin{equation}\label{eq:level1}
-    C_{ij}(S_{ij}) \;=\; V_A S_{ij} .
+    \boxed{ C_{ij}(S_{ij}) \;=\; V_A S_{ij} }
 \end{equation}
 
 \subsection{Level 2 --- realized relatedness}
@@ -172,106 +173,85 @@ This results in each variant's genotype variance being $2p_k(1-p_k)$ --- so the 
 By the definition of independent draws, the expected cross-product of a non-IBD allele pair is therefore $\E[z^{(u)}_{ik}]\,\E[z^{(v)}_{jk}] = 0$.
 Letting $\IBD_{ij}(k)\in\{0,1,2\}$ denote the number of alleles the pair shares IBD at variant $k$, exactly $\IBD_{ij}(k)$ of the four ordered allele pairs are IBD --- each contributing $\tfrac12$ --- and the rest contribute $0$, so
 $$
-    \E\!\left[\,x_{ik} x_{jk} \,\middle|\, \IBD_{ij}(k)=s\,\right]
-    = s\cdot\tfrac12 = \frac{s}{2}
-    \qquad (s=0,1,2) .
+    \E\!\left[\,x_{ik} x_{jk} \,\middle|\, \IBD_{ij}(k)\,\right]
+    = \tfrac12 \IBD_{ij}(k) .
 $$
 A variant thus contributes expected cross-product $0$, $\tfrac12$, or $1$ according to whether the pair shares $0$, $1$, or $2$ alleles IBD there.
+We define the pair's \emph{realized relatedness} $\pi_{ij}$ as the average IBD state across variants, halved --- equivalently, the fraction of the pair's genome that is IBD:
+\begin{equation}\label{eq:pi-def}
+    \pi_{ij} \;:=\; \frac{1}{2M}\sum_{k} \IBD_{ij}(k) .
+\end{equation}
 
-Since IBD is a latent state of the observed genotype pairs, it is difficult to determine if an individual allele pair is IBD based solely on whether it is IBS.
-However, it will be useful to us if we assume that each variant's expected IBD state is given by a single parameter, which we'll call realized relatedness ($\pi_{ij}$):
+Conditioning on the pair's realized IBD states and using the per-variant identity $\E[x_{ik}x_{jk}\mid \IBD_{ij}(k)] = \tfrac12\,\IBD_{ij}(k)$, linearity of expectation gives the expected allelic sharing:
+$$
+    \E\!\left[\,S_{ij}\,\middle|\,\{\IBD_{ij}(k)\}\,\right]
+    = \frac{1}{M}\sum_{k} \tfrac12\,\IBD_{ij}(k)
+    = \frac{1}{2M}\sum_{k} \IBD_{ij}(k)
+    = \pi_{ij} .
+$$
+This depends on the IBD states only through $\pi_{ij}$, so we may condition on $\pi_{ij}$ alone. Crucially, it required no assumption that the per-variant IBD states are independent --- and indeed they are not: an IBD state changes only at a cross-over within a co-inherited segment, so physically linked variants have strongly correlated IBD states. Linearity of expectation is insensitive to this correlation.
 
-\todo{Write assumption on expected IBD state being constant across all variants and equal to $\pi_{ij}$}
+Combining with \eqref{eq:level1}, the pair's expected phenotypic cross-product is their realized relatedness scaled by the additive variance:
+\begin{equation}\label{eq:level2}
+    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; V_A\,\E[S_{ij}\mid\pi_{ij}] \;=\; V_A\,\pi_{ij}\ } .
+\end{equation}
 
-It should be noted that we are not assuming that each variant's IBD state is independent of other variants' IBD states, as that is too strong of an assumption that is patently false.
-Particularly, since IBD states only switch when a cross-over event occurs within a genomic segment being co-inherited with someone else, and since the recombination rate between variants in close proximity (i.e. physically linked) is almost never 0.5, then physically linked variants' IBD states are correlated.
-
-The above assumption allows us to express the expected allelic sharing of two individuals to be equivalent to the realized relatedness, which also becomes equivalent to the expected cross-product of their phenotypes:
-
-\todo{Write formula}
+% --- HIDDEN (not rendered): relatedness-estimation aside. Kept in source to revisit / relocate later; unhide by removing the \iffalse ... \fi wrapper. ---
+\iffalse
+\unsure{Not sure yet if this point about estimating the relatedness should be made here.}
 
 Typically, the true realized relatedness is not known but is instead estimated based on the genome-wide average of per-genotyped-variant IBD states estimated by IBD-inference algorithms that take into account multiple variants at once.
-
-\todo{Write formula where $\hat{\pi_{ij}}$ is the average of inferred (hat) IBD states across genotyped variants (use a set symbol to denote the subset of variants that are genotyped)}
+Let $\mathcal{G}$ denote the set of genotyped variants and $\widehat{\IBD}_{ij}(k)$ the IBD state at variant $k$ inferred by such an algorithm. The estimate is their genome-wide average,
+$$
+    \hat{\pi}_{ij} = \frac{1}{|\mathcal{G}|}\sum_{k\in\mathcal{G}} \tfrac12\,\widehat{\IBD}_{ij}(k) .
+$$
 
 We assume that the expected value of this estimate is equivalent to the true realized relatedness:
 
-\todo{Write assumption on}
-
-
-\todo{Continue revising rest of document}
-
-We now evaluate the per-variant cross-product $\E[x_{ik}x_{jk}\mid\mathcal S]$ in terms of IBD. It is cleanest to work at the level of individual alleles.
-At variant $k$ (with population allele frequency $p_k$), let individual $i$ carry the two allele indicators $a^{(m)}_{ik}, a^{(p)}_{ik}\in\{0,1\}$ (maternal and paternal), each $\mathrm{Bernoulli}(p_k)$, so that the allele dosage is $G_{ik}=a^{(m)}_{ik}+a^{(p)}_{ik}$ and
-$$ x_{ik} = \frac{G_{ik}-2p_k}{\sqrt{2p_k(1-p_k)}} . $$
-Two alleles are IBD if they descend from --- and are copies of --- the same ancestral allele. Let $\IBD_{ij}(k)\in\{0,1,2\}$ denote the number of alleles individual $i$ shares IBD with $j$ at variant $k$.
-
-
-
-
-
-Under \assumptionid{No-inbreeding} the two alleles within an individual are independent, so $\Var[G_{ik}]=2p_k(1-p_k)$ and the standardization indeed gives $\Var[x_{ik}]=1$. For the pair, conditioning on descent leaves the marginal allele distributions unchanged, so $\E[x_{ik}]=0$ and $\E[x_{ik}x_{jk}\mid\mathcal S]=\Cov[G_{ik},G_{jk}\mid\mathcal S]/\big(2p_k(1-p_k)\big)$. Expanding the genotype covariance over the four ordered allele pairs,
-$$
-    \Cov[G_{ik},G_{jk}\mid\mathcal S] = \sum_{u\in\{m,p\}}\ \sum_{v\in\{m,p\}} \Cov\!\big[a^{(u)}_{ik},\, a^{(v)}_{jk}\big] ,
-$$
-each term is $\Var[a]=p_k(1-p_k)$ if that allele pair is IBD (by \assumptionid{No-mutation} it is the same copy, correlation $1$) and $0$ if it is not (by \assumptionid{Non-IBD-indep}, independent). If the pair shares $\IBD_{ij}(k)=s$ alleles IBD, then exactly $s$ of the four terms are nonzero, giving $\Cov[G_{ik},G_{jk}\mid s]=s\,p_k(1-p_k)$ and hence the key per-variant identity
-\begin{equation}\label{eq:pervariant}
-    \E\!\left[\,x_{ik}x_{jk} \,\middle|\, \IBD_{ij}(k)=s\,\right] = \frac{s}{2}
-    \qquad (s=0,1,2).
-\end{equation}
-That is, a variant contributes correlation $0$, $\tfrac12$, or $1$ according to whether the pair shares $0$, $1$, or $2$ alleles IBD there.
-
-To turn the causal-variant average in \eqref{eq:level1} into a genome-wide quantity we need one more assumption.
-
-\begin{assumption}{Homog-sharing}{Homogeneous genome sharing}
-The expected IBD sharing is the same at the causal variants as it is genome-wide; IBD is not enriched at particular loci.
-\bundles{causal variants are representative of the genome with respect to relatedness. (Under the all-variants, homoscedastic form of \assumptionid{Random-effects} this is already implied --- kept here only until Level 2 is revised.)}
+\begin{assumption}{Unbiased-IBD}{Unbiased relatedness estimate}
+IBD inference is unbiased for the per-variant IBD state, so its genome-wide average is unbiased for the realized relatedness:
+$$ \E[\hat{\pi}_{ij}] = \pi_{ij} . $$
+\bundles{no systematic bias in IBD inference (sufficient marker density and inference quality).}
 \end{assumption}
 
-Substituting \eqref{eq:pervariant} into \eqref{eq:level1} and applying \assumptionid{Homog-sharing},
-$$
-    \frac{1}{M}\sum_k \E[\,x_{ik}x_{jk}\mid\mathcal S\,]
-    = \frac{1}{M}\sum_k \frac{\IBD_{ij}(k)}{2}
-    \;\xrightarrow{\ \text{\assumptionid{Homog-sharing}}\ }\; \pi_{ij},
-$$
-where $\pi_{ij}$ is the \emph{realized relatedness} --- the proportion of the pair's genome that is IBD. We arrive at the central Level-2 result:
-\begin{equation}\label{eq:level2}
-    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; \pi_{ij}\, V_A\ } .
-\end{equation}
-The phenotypic covariance between two relatives is their realized fraction of shared genome times the additive variance. Because different pairs of the same nominal relationship share different realized fractions (full siblings scatter around $\tfrac12$, and so on), \eqref{eq:level2} is expressed through the pair's \emph{actual} $\pi_{ij}$.
+With \assumptionid{Unbiased-IBD}, the observable estimate $\hat{\pi}_{ij}$ can stand in for $\pi_{ij}$, giving an estimable form of the Level-2 result above.
+\fi
+% --- end hidden segment ---
 
-\subsection{Level 3 --- pedigree degree}
-Often we do not know $\pi_{ij}$ but only the pair's pedigree relationship (parent--offspring, full siblings, first cousins, \dots).
 
-\begin{assumption}{Mendelian}{Mendelian pedigree}
-The relationship degree determines the distribution of IBD sharing through Mendelian segregation, so that $\E[\pi_{ij}\mid\text{degree}]$ is the pedigree (expected) relatedness.
-\bundles{a known pedigree with Mendelian inheritance.}
+\subsection{Level 3 --- genetic degree}
+In cases where we cannot measure $\pi_{ij}$ based on per-variant IBD states, we can still estimate it if we know the genetic degree $d_{ij}$ between the individuals.
+
+\begin{assumption}{Genetic-degree}{Degree determines expected relatedness}
+The genetic degree $d_{ij}$ fixes the distribution of IBD sharing through Mendelian segregation, so that the expected relatedness given the degree is a single number $\bar\pi_{d_{ij}}$:
+$$ \E[\pi_{ij}\mid d_{ij}] = \bar\pi_{d_{ij}} . $$
 \end{assumption}
 
-Applying the tower property to \eqref{eq:level2} and averaging over the Mendelian distribution of $\pi_{ij}$ given the degree $d$,
+Furthermore, under the outbreeding assumption (\assumptionid{No-inbreeding}) --- applied here not only to $i$ and $j$ but to the entire pedigree connecting them, so that it contains no inbreeding loops --- $\bar\pi_{d_{ij}} = 2^{-d_{ij}}$, which is not fully derived here.
+We can then obtain the expected phenotypic covariance given the degree $d_{ij}$:
 \begin{equation}\label{eq:level3}
-    \E[\,y_i y_j \mid d\,] \;=\; \E\big[\,\E[y_i y_j\mid \pi_{ij}]\,\big|\, d\,\big] \;=\; V_A\, \E[\pi_{ij}\mid d] \;=\; r_d\, V_A ,
+    \E[\,y_i y_j \mid d_{ij}\,] \;=\; \E\big[\,\E[y_i y_j\mid \pi_{ij}]\,\big|\, d_{ij}\,\big] \;=\; V_A\, \E[\pi_{ij}\mid d_{ij}] \;=\; V_A\,\bar\pi_{d_{ij}} .
 \end{equation}
-where $r_d = \E[\pi_{ij}\mid d] = 2\phi_{ij}$ is the expected relatedness (twice the kinship coefficient). This recovers the classical covariances between relatives:
 
-\begin{center}
-\begin{tabular}{l c}
-\textbf{Relationship} & \textbf{Expected relatedness } $r_d$ \\
-\hline
-Monozygotic twins & $1$ \\
-Parent--offspring & $1/2$ \\
-Full siblings & $1/2$ \\
-Half sibs / grandparent--grandchild / avuncular & $1/4$ \\
-First cousins & $1/8$ \\
-``Unrelated'' & $0$ \\
-\hline
-\end{tabular}
-\end{center}
-
-The step from \eqref{eq:level2} to \eqref{eq:level3} is exactly the realized-versus-expected distinction: Level 2 uses a pair's true realized relatedness, whereas Level 3 replaces it with its pedigree expectation, and is therefore only as good as the pedigree and the (often large) sampling variance of $\pi_{ij}$ around $r_d$ allow --- a gap that widens for distant relationships.
-
-\subsection{Summary of the tower}
+\subsection{Summary}
 Each level conditions on coarser information than the one above and is its conditional expectation; the rightmost column lists the assumption(s) newly required to descend one step.
+
+Explicitly, each level is the conditional expectation of the finer level above it, averaging out one additional layer of information:
+\begin{align*}
+    \E[y_i y_j \mid \bx_i,\bx_j]
+      &= \E\big[\,g_i g_j \,\big|\, \bx_i,\bx_j\,\big] = V_A\,S_{ij}, \\
+    \E[y_i y_j \mid \pi_{ij}]
+      &= \E\big[\,V_A\,S_{ij} \,\big|\, \pi_{ij}\,\big] = V_A\,\pi_{ij}, \\
+    \E[y_i y_j \mid d_{ij}]
+      &= \E\big[\,V_A\,\pi_{ij} \,\big|\, d_{ij}\,\big] = V_A\,\bar\pi_{d_{ij}},
+\end{align*}
+starting from the Level-0 value $\E[y_iy_j\mid\bx_i,\bx_j,\bbeta]=g_ig_j$. Equivalently, the ladder telescopes into a single nested expectation,
+$$
+    \E[y_i y_j \mid d_{ij}]
+    = \E\Big[\,\E\big[\,\E[\,g_i g_j \mid \bx_i,\bx_j\,]\,\big|\,\pi_{ij}\,\big]\,\Big|\,d_{ij}\,\Big]
+    = V_A\,\bar\pi_{d_{ij}} .
+$$
+This is valid down the generative chain $d_{ij}\to\pi_{ij}\to(\bx_i,\bx_j)\to y$: conditioned on the finer variable, the phenotype does not depend further on the coarser one, so the tower property applies at each step.
 
 \begin{center}
 \small
@@ -279,9 +259,9 @@ Each level conditions on coarser information than the one above and is its condi
 \textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
 \hline
 0 & causal genotypes & $g_i g_j$ & \assumptionid{Additivity} (given \assumptionid{No-IGE}, \assumptionid{Env-indep}) \\
-1 & realized sharing $\mathcal{S}$ & $V_A\,\tfrac1M\sum_k \E[x_{ik}x_{jk}\mid\mathcal S]$ & \assumptionid{Random-effects} \\
-2 & realized relatedness $\pi_{ij}$ & $\pi_{ij}\,V_A$ & \assumptionid{No-mutation}, \assumptionid{Non-IBD-indep}, \assumptionid{No-inbreeding} \\
-3 & pedigree degree $d$ & $r_d\,V_A$ & \assumptionid{Mendelian} \\
+1 & realized sharing $S_{ij}$ & $V_A\,S_{ij}$ & \assumptionid{Random-effects} \\
+2 & realized relatedness $\pi_{ij}$ & $V_A\,\pi_{ij}$ & \assumptionid{No-mutation}, \assumptionid{Non-IBD-indep}, \assumptionid{No-inbreeding} \\
+3 & genetic degree $d_{ij}$ & $V_A\,\bar\pi_{d_{ij}}$ & \assumptionid{Genetic-degree} \\
 \hline
 \end{tabular}
 \end{center}
