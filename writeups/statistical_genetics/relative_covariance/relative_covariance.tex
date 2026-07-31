@@ -40,7 +40,8 @@ We then introduce the following assumptions.
 \begin{assumption}{Additivity}{Additive genetic value}
 The genetic value is a fixed additive function of the individual's own genotype,
 $$ g_i = \sum_{k=1}^{M} \beta_k\, x_{ik} , $$
-where $\beta_k$ is the per-standardized-allele effect of variant $k$, $x_{ik}$ is the standardized genotype ($\E[x_{ik}]=0$, $\Var[x_{ik}]=1$), and $M$ is the number of variants in the genome. Non-causal variants are included with $\beta_k=0$.
+where $\beta_k$ is the per-standardized-allele effect of variant $k$, $x_{ik}$ is the standardized genotype ($\E[x_{ik}]=0$, $\Var[x_{ik}]=1$), and $M$ is the number of variants in the genome.
+Non-causal variants are included with $\beta_k=0$.
 \bundles{the additive model; no dominance, no gene--gene interactions (GxG, epistasis), and no gene--environment interactions (GxE) --- each would make the genetic value depend on more than the individual's own genotype in an additive way.}
 \end{assumption}
 
@@ -96,7 +97,7 @@ The genetic cross-product between two individuals is, fundamentally, an effect-s
 Notably, this formula does not require any knowledge of the relatedness of the two individuals.
 
 \subsection{Level 1 --- genome-wide allelic sharing}
-If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}. 
+If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}.
 However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
 \begin{assumption}{Random-effects}{Random effects, exchangeable across variants}
@@ -111,8 +112,8 @@ $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'}.
 $$
-Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$;
-the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. What remains is the diagonal, weighted by each variant's effect variance:
+Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$; the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes.
+What remains is the diagonal, weighted by each variant's effect variance:
 $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sum_{k} \E[\beta_k^2]\, x_{ik} x_{jk}.
@@ -147,7 +148,9 @@ Alleles that are identical-by-descent are also identical-by-state: descent is tr
 
 When two individuals' alleles are IBD, then they are always IBS; when they are not IBD, they can still be IBS.
 Therefore, we can decompose the IBS-based relatedness $A_{ij}$ into a sum over IBD allele pairs and a sum over non-IBD allele pairs.
-Write each standardized genotype as the sum of its two per-allele (maternal and paternal) standardized values, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$. Since $\Var[x_{ik}]=1$ and the two alleles are independent (\assumptionid{No-inbreeding}), each per-allele value has $\E[z]=0$ and $\Var[z]=\tfrac12$. The genotype cross-product then expands over the four ordered allele pairs, and $A_{ij}$ splits by IBD status:
+Write each standardized genotype as the sum of its two per-allele (maternal and paternal) standardized values, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$.
+Since $\Var[x_{ik}]=1$ and the two alleles are independent (\assumptionid{No-inbreeding}), each per-allele value has $\E[z]=0$ and $\Var[z]=\tfrac12$.
+The genotype cross-product then expands over the four ordered allele pairs, and $A_{ij}$ splits by IBD status:
 \begin{equation}\label{eq:Adecomp}
 \begin{split}
     A_{ij}
@@ -191,7 +194,9 @@ $$
     = \frac{1}{2M}\sum_{k} \IBD_{ij}(k)
     = \pi_{ij} .
 $$
-This depends on the IBD states only through $\pi_{ij}$, so we may condition on $\pi_{ij}$ alone. Crucially, it required no assumption that the per-variant IBD states are independent --- and indeed they are not: an IBD state changes only at a cross-over within a co-inherited segment, so physically linked variants have strongly correlated IBD states. Linearity of expectation is insensitive to this correlation.
+This depends on the IBD states only through $\pi_{ij}$, so we may condition on $\pi_{ij}$ alone.
+Crucially, it required no assumption that the per-variant IBD states are independent --- and indeed they are not: an IBD state changes only at a cross-over within a co-inherited segment, so physically linked variants have strongly correlated IBD states.
+Linearity of expectation is insensitive to this correlation.
 
 Combining with \eqref{eq:level1}, the pair's expected phenotypic cross-product is their realized relatedness scaled by the additive variance:
 \begin{equation}\label{eq:level2}
@@ -203,7 +208,8 @@ Combining with \eqref{eq:level1}, the pair's expected phenotypic cross-product i
 \unsure{Not sure yet if this point about estimating the relatedness should be made here.}
 
 Typically, the true realized relatedness is not known but is instead estimated based on the genome-wide average of per-genotyped-variant IBD states estimated by IBD-inference algorithms that take into account multiple variants at once.
-Let $\mathcal{G}$ denote the set of genotyped variants and $\widehat{\IBD}_{ij}(k)$ the IBD state at variant $k$ inferred by such an algorithm. The estimate is their genome-wide average,
+Let $\mathcal{G}$ denote the set of genotyped variants and $\widehat{\IBD}_{ij}(k)$ the IBD state at variant $k$ inferred by such an algorithm.
+The estimate is their genome-wide average,
 $$
     \hat{\pi}_{ij} = \frac{1}{|\mathcal{G}|}\sum_{k\in\mathcal{G}} \tfrac12\,\widehat{\IBD}_{ij}(k) .
 $$
@@ -247,7 +253,8 @@ Explicitly, each level is the conditional expectation of the finer level above i
     \E[y_i y_j \mid d_{ij}]
       &= \E\big[\,V_A\,\pi_{ij} \,\big|\, d_{ij}\,\big] = V_A\,\bar\pi_{d_{ij}},
 \end{align*}
-starting from the Level-0 value $\E[y_iy_j\mid\bx_i,\bx_j,\bbeta]=g_ig_j$. Equivalently, the ladder telescopes into a single nested expectation,
+starting from the Level-0 value $\E[y_iy_j\mid\bx_i,\bx_j,\bbeta]=g_ig_j$.
+Equivalently, the ladder telescopes into a single nested expectation,
 $$
     \E[y_i y_j \mid d_{ij}]
     = \E\Big[\,\E\big[\,\E[\,g_i g_j \mid \bx_i,\bx_j\,]\,\big|\,\pi_{ij}\,\big]\,\Big|\,d_{ij}\,\Big]
