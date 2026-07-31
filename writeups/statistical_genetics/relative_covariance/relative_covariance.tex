@@ -99,10 +99,11 @@ Notably, this formula does not require any knowledge of the relatedness of the t
 If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}. 
 However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
-\begin{assumption}{Random-effects}{Random effects, unpatterned by sharing}
-Treating the effects as random, they are mean-zero and uncorrelated across variants, and the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$:
-$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}] . $$
-\bundles{the infinitesimal / random-effects model; causal variants not concentrated in more- or less-shared regions of the genome.}
+\begin{assumption}{Random-effects}{Random effects, exchangeable across variants}
+Treating the effects as random, they are mean-zero and uncorrelated across variants, the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$, and every variant carries the same second moment:
+$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}], \quad \E[\beta_k^2] = \E[\beta_{k'}^2] . $$
+The last condition is a statement about the \emph{prior} we place on effects, not about their realized values: it says we have no information distinguishing one variant from another, so we weight them symmetrically.
+\bundles{the infinitesimal / random-effects model.}
 \end{assumption}
 
 Taking the expectation of \eqref{eq:level0} over the effects, and using the independence of the cross-products from the genotypes (\assumptionid{Random-effects}) to replace $\E[\beta_k \beta_{k'} \mid \bX]$ by $\E[\beta_k \beta_{k'}]$:
@@ -111,26 +112,27 @@ $$
     = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'}.
 $$
 Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$;
-the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. What remains is
+the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. What remains is the diagonal, weighted by each variant's effect variance:
 $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
-    = \E[\beta_k^2] \sum_{k} x_{ik} x_{jk}.
+    = \sum_{k} \E[\beta_k^2]\, x_{ik} x_{jk}.
 $$
-The common second moment is fixed by variance bookkeeping: since $\Var[x_{ik}]=1$ and the off-diagonal effect terms vanish, $V_A = \Var[g_i] = \sum_k \E[\beta_k^2]$.
- Therefore
+The additive variance is the total of these: since $\Var[x_{ik}]=1$ and the off-diagonal effect terms vanish, $V_A = \Var[g_i] = \sum_k \E[\beta_k^2]$, and thus $\E[\beta_k^2] = V_A/M$.
+Effectively, the per-variant effect weighting of \eqref{eq:level0} has been replaced by a uniform weighting across all variants.
+Therefore
 \begin{equation}
     C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
 \end{equation}
 The per-variant effect weighting of \eqref{eq:level0} has been replaced by the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by:
-$$S_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$$
-This can be thought of as an identity-by-state (IBS)-based measure of ``relatedness''.
+$$A_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$$
+This can be thought of as an identity-by-state (IBS)-based measure of ``relatedness'', and is exactly the $(i,j)$ entry of what is typically computed as a Genetic Relatedness Matrix (GRM), $\bA$.
 Therefore, we can further simplify:
 \begin{equation}\label{eq:level1}
-    \boxed{ C_{ij}(S_{ij}) \;=\; V_A S_{ij} }
+    \boxed{ C_{ij}(A_{ij}) \;=\; V_A A_{ij} }
 \end{equation}
 
 \subsection{Level 2 --- realized relatedness}
-The problem with calculating $S_{ij}$ is that we may not have genotyped every causal variant that contributes to a trait.
+The problem with calculating $A_{ij}$ is that we may not have genotyped every causal variant that contributes to a trait.
 As long as some of the causal variants are not in perfect correlation with a genotyped variant, then the covariance of two individuals' phenotypes will not fully take into account the contributions of the ungenotyped causal variants.
 However, when individuals are related, their IBS-based relatedness from genotyped variants is informative of the IBS-based relatedness of ungenotyped variants.
 Therefore, the former can be used to capture the contributions of the latter.
@@ -144,11 +146,11 @@ Alleles that are identical-by-descent are also identical-by-state: descent is tr
 \end{assumption}
 
 When two individuals' alleles are IBD, then they are always IBS; when they are not IBD, they can still be IBS.
-Therefore, we can decompose the IBS-based relatedness $S_{ij}$ into a sum over IBD allele pairs and a sum over non-IBD allele pairs.
-Write each standardized genotype as the sum of its two per-allele (maternal and paternal) standardized values, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$. Since $\Var[x_{ik}]=1$ and the two alleles are independent (\assumptionid{No-inbreeding}), each per-allele value has $\E[z]=0$ and $\Var[z]=\tfrac12$. The genotype cross-product then expands over the four ordered allele pairs, and $S_{ij}$ splits by IBD status:
-\begin{equation}\label{eq:Sdecomp}
+Therefore, we can decompose the IBS-based relatedness $A_{ij}$ into a sum over IBD allele pairs and a sum over non-IBD allele pairs.
+Write each standardized genotype as the sum of its two per-allele (maternal and paternal) standardized values, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$. Since $\Var[x_{ik}]=1$ and the two alleles are independent (\assumptionid{No-inbreeding}), each per-allele value has $\E[z]=0$ and $\Var[z]=\tfrac12$. The genotype cross-product then expands over the four ordered allele pairs, and $A_{ij}$ splits by IBD status:
+\begin{equation}\label{eq:Adecomp}
 \begin{split}
-    S_{ij}
+    A_{ij}
     &= \frac{1}{M}\sum_{k} x_{ik} x_{jk}
     = \frac{1}{M}\sum_{k} \sum_{u,v\in\{m,p\}} z^{(u)}_{ik} z^{(v)}_{jk} \\
     &= \underbrace{\frac{1}{M}\sum_{\text{IBD pairs}} z^{(u)}_{ik} z^{(v)}_{jk}}_{\text{IBD}}
@@ -184,7 +186,7 @@ We define the pair's \emph{realized relatedness} $\pi_{ij}$ as the average IBD s
 
 Conditioning on the pair's realized IBD states and using the per-variant identity $\E[x_{ik}x_{jk}\mid \IBD_{ij}(k)] = \tfrac12\,\IBD_{ij}(k)$, linearity of expectation gives the expected allelic sharing:
 $$
-    \E\!\left[\,S_{ij}\,\middle|\,\{\IBD_{ij}(k)\}\,\right]
+    \E\!\left[\,A_{ij}\,\middle|\,\{\IBD_{ij}(k)\}\,\right]
     = \frac{1}{M}\sum_{k} \tfrac12\,\IBD_{ij}(k)
     = \frac{1}{2M}\sum_{k} \IBD_{ij}(k)
     = \pi_{ij} .
@@ -193,7 +195,7 @@ This depends on the IBD states only through $\pi_{ij}$, so we may condition on $
 
 Combining with \eqref{eq:level1}, the pair's expected phenotypic cross-product is their realized relatedness scaled by the additive variance:
 \begin{equation}\label{eq:level2}
-    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; V_A\,\E[S_{ij}\mid\pi_{ij}] \;=\; V_A\,\pi_{ij}\ } .
+    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; V_A\,\E[A_{ij}\mid\pi_{ij}] \;=\; V_A\,\pi_{ij}\ } .
 \end{equation}
 
 % --- HIDDEN (not rendered): relatedness-estimation aside. Kept in source to revisit / relocate later; unhide by removing the \iffalse ... \fi wrapper. ---
@@ -239,9 +241,9 @@ Each level conditions on coarser information than the one above and is its condi
 Explicitly, each level is the conditional expectation of the finer level above it, averaging out one additional layer of information:
 \begin{align*}
     \E[y_i y_j \mid \bx_i,\bx_j]
-      &= \E\big[\,g_i g_j \,\big|\, \bx_i,\bx_j\,\big] = V_A\,S_{ij}, \\
+      &= \E\big[\,g_i g_j \,\big|\, \bx_i,\bx_j\,\big] = V_A\,A_{ij}, \\
     \E[y_i y_j \mid \pi_{ij}]
-      &= \E\big[\,V_A\,S_{ij} \,\big|\, \pi_{ij}\,\big] = V_A\,\pi_{ij}, \\
+      &= \E\big[\,V_A\,A_{ij} \,\big|\, \pi_{ij}\,\big] = V_A\,\pi_{ij}, \\
     \E[y_i y_j \mid d_{ij}]
       &= \E\big[\,V_A\,\pi_{ij} \,\big|\, d_{ij}\,\big] = V_A\,\bar\pi_{d_{ij}},
 \end{align*}
@@ -259,7 +261,7 @@ This is valid down the generative chain $d_{ij}\to\pi_{ij}\to(\bx_i,\bx_j)\to y$
 \textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
 \hline
 0 & causal genotypes & $g_i g_j$ & \assumptionid{Additivity} (given \assumptionid{No-IGE}, \assumptionid{Env-indep}) \\
-1 & realized sharing $S_{ij}$ & $V_A\,S_{ij}$ & \assumptionid{Random-effects} \\
+1 & realized sharing $A_{ij}$ & $V_A\,A_{ij}$ & \assumptionid{Random-effects} \\
 2 & realized relatedness $\pi_{ij}$ & $V_A\,\pi_{ij}$ & \assumptionid{No-mutation}, \assumptionid{Non-IBD-indep}, \assumptionid{No-inbreeding} \\
 3 & genetic degree $d_{ij}$ & $V_A\,\bar\pi_{d_{ij}}$ & \assumptionid{Genetic-degree} \\
 \hline
