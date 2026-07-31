@@ -100,8 +100,8 @@ If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0
 However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
 \begin{assumption}{Random-effects}{Random effects, unpatterned by sharing}
-Treating the effects as random, they are mean-zero and uncorrelated across variants, the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$, and every variant carries the same second moment:
-$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}], \quad \E[\beta_k^2] = \sigma_\beta^2 . $$
+Treating the effects as random, they are mean-zero and uncorrelated across variants, and the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$:
+$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}] . $$
 \bundles{the infinitesimal / random-effects model; causal variants not concentrated in more- or less-shared regions of the genome.}
 \end{assumption}
 
@@ -110,13 +110,13 @@ $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'}.
 $$
-Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$ and $\sigma_\beta^2$ when $k=k'$;
+Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$;
 the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes. What remains is
 $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
-    = \sigma_\beta^2 \sum_{k} x_{ik} x_{jk}.
+    = \E[\beta_k^2] \sum_{k} x_{ik} x_{jk}.
 $$
-The common second moment is fixed by variance bookkeeping: since $\Var[x_{ik}]=1$ and the off-diagonal effect terms vanish, $V_A = \Var[g_i] = \sum_k \E[\beta_k^2] = M\sigma_\beta^2$, hence $\sigma_\beta^2 = V_A/M$.
+The common second moment is fixed by variance bookkeeping: since $\Var[x_{ik}]=1$ and the off-diagonal effect terms vanish, $V_A = \Var[g_i] = \sum_k \E[\beta_k^2]$.
  Therefore
 \begin{equation}
     C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
