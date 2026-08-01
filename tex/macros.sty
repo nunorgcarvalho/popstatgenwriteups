@@ -24,6 +24,16 @@
 \newcommand{\diag}{\mathrm{diag}} % diagonal (of a matrix)
 \newcommand{\IBD}{\mathrm{IBD}} % identical-by-descent
 
+% Generation-indexed variance components. Under assortative mating the additive variance is
+% no longer constant across generations, so the scale has to be pinned to a named generation:
+% (0) = the randomly mating base population, (eq) = the assortative-mating equilibrium.
+\newcommand{\VAo}{V_A^{(0)}}            % additive variance in the base population
+\newcommand{\VAeq}{V_A^{(\mathrm{eq})}} % additive variance at equilibrium
+\newcommand{\VPo}{V_P^{(0)}}            % phenotypic variance in the base population
+\newcommand{\VPeq}{V_P^{(\mathrm{eq})}} % phenotypic variance at equilibrium
+\newcommand{\hsqo}{h^2_{(0)}}           % heritability in the base population
+\newcommand{\hsqeq}{h^2_{(\mathrm{eq})}}% heritability at equilibrium
+
 \newcommand{\varg}{\sigma_g^2} % genetic variance
 \newcommand{\vareps}{\sigma_{\epsilon}^2} % genetic variance
 \newcommand{\varbeta}{\sigma_{\beta}^2} % genetic variance

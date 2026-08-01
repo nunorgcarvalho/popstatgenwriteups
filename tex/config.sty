@@ -54,3 +54,32 @@
   \end{shaded}\par\smallskip%
 }
 
+% approximation boxes %%%%
+% Same shape as an assumption box, but for a statement that is strictly FALSE and adopted
+% anyway because the error it introduces is negligible. The distinction matters: an
+% assumption answers "what must I believe?", an approximation answers "what am I neglecting,
+% and how big is it?". Approximations are therefore expected to carry a \justification block
+% -- a short, small-font order-of-magnitude argument ending in an explicit error term.
+% Usage:
+%   \begin{approximation}{Same-locus-AM}{Assortment does not change per-locus quantities}
+%     <statement>
+%     \justification{<why the neglected term is small, with its order>}
+%     \bundles{...}   % optional, same as for assumptions
+%   \end{approximation}
+\definecolor{approximationframe}{RGB}{160,95,20}
+\definecolor{approximationback}{RGB}{252,246,235}
+\newcommand{\approximationid}[1]{{\bfseries\color{approximationframe}[#1]}}
+\newcommand{\justification}[1]{%
+  \par\smallskip%
+  {\small\textit{\color{approximationframe}Why the error is negligible:}\ #1}%
+}
+\newenvironment{approximation}[2]{%
+  \par\smallskip%
+  \colorlet{shadecolor}{approximationback}%
+  \begin{shaded}%
+  \setlength{\parskip}{0.4em}%
+  \noindent\approximationid{#1}~\textbf{#2}\par\nobreak\smallskip%
+}{%
+  \end{shaded}\par\smallskip%
+}
+
