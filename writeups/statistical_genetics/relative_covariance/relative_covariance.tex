@@ -275,7 +275,413 @@ This is valid down the generative chain $d_{ij}\to\pi_{ij}\to(\bx_i,\bx_j)\to y$
 \end{tabular}
 \end{center}
 
-\todo{Next architectures restart from Level 0 and re-introduce a subset of the assumptions above, relaxing others: e.g.\ a shared environment breaks \assumptionid{Env-indep}; dominance/epistasis breaks \assumptionid{Additivity}; assortative mating and population structure break \assumptionid{Non-IBD-indep} (correlating non-IBD alleles) and drive a wedge between realized and pedigree relatedness.}
+The property that makes this a ladder is worth naming, because the next architecture breaks it.
+At each step, the finer variable \emph{screens off} the coarser one: once we condition on $\pi_{ij}$, knowing $d_{ij}$ as well would tell us nothing more about $y_iy_j$, and likewise for the other steps.
+Screening is what licenses the tower property, and it is the reason the four information sets can be arranged in a single descending chain rather than a more complicated structure.
+
+\todo{Remaining architectures restart from Level 0 and re-introduce a subset of the assumptions above, relaxing others: a shared environment breaks \assumptionid{Env-indep}; dominance and epistasis break \assumptionid{Additivity}; parental effects break \assumptionid{No-IGE}. Section~\ref{sec:am} works through assortative mating.}
+
+\section{Additive genetics under assortative mating}\label{sec:am}
+Section 1 assumed that mating is random.
+We now let individuals choose partners who resemble them, and keep everything else about the architecture fixed: the trait is still additive, environments are still independent across individuals, and there are still no indirect genetic effects.
+This is the smallest possible step away from Section 1, and it is worth taking carefully, because assortative mating turns out to break the tower in a more interesting place than one might guess.
+
+Throughout this section we assume the reader has Section 1 in hand.
+Rather than re-deriving each level, we identify what changes and carry the change forward.
+
+\subsection{The mating model}
+Relaxing an assumption is not by itself enough to make progress.
+\assumptionid{Non-IBD-indep} bundled ``random mating'' into a statement about allele draws, and simply deleting it leaves the model underdetermined: we would know that alleles are no longer independent draws without knowing \emph{how} they are dependent.
+Every architecture in this article therefore follows the same pattern --- one assumption is removed and a mechanism is supplied in its place.
+Here the mechanism is a mating rule.
+
+\begin{assumption}{Pheno-AM}{Assortment on the phenotype}
+Mating is random except that partners' phenotypes are correlated:
+$$ \Corr[\,y_m, y_f\,] = \rho_y , $$
+where $m$ and $f$ index the two members of a mated pair.
+Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the corresponding correlation between partners' genetic values.
+\bundles{phenotypic assortative mating; $\rho_y$ is often written $\mu$ or $r$ in the literature.}
+\end{assumption}
+
+\begin{assumption}{Primary-AM}{Assortment is mediated entirely by the phenotype}
+The only reason partners resemble each other is that they matched on $y$.
+Consequently, for any two components $a,b \in \{g,e\}$ and any mated pair $(m,f)$,
+$$ \Corr[\,a_m, b_f\,] \;=\; \rho_y \cdot \Corr[a,y] \cdot \Corr[b,y] . $$
+Equivalently: after projecting each component onto the phenotype, the residuals of the two partners are uncorrelated.
+\bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where partners grow more similar after mating.}
+\end{assumption}
+
+\begin{assumption}{AM-equilibrium}{Intergenerational equilibrium}
+Assortment has been operating at the same strength for long enough that the variance components have stopped changing from one generation to the next.
+\bundles{equilibrium assortative mating; reached after roughly six to ten generations \citep{Sunde2024NatComm}.}
+\end{assumption}
+
+\assumptionid{Primary-AM} is the substantive one, and it does real work below, so it is worth reading twice.
+It says the phenotype is a sufficient summary of an individual for the purpose of mate choice: two people with the same $y$ are equally attractive as partners regardless of how that $y$ was assembled from genes and environment.
+
+\subsubsection*{Fixing the scale}
+Section 1 could standardize the phenotype to $\Var[y]=1$ and then treat $h^2$ and $V_A$ as the same number.
+That convenience does not survive assortative mating, because $V_A$ --- and therefore $\Var[y]$ --- grows from one generation to the next until equilibrium is reached.
+Standardizing within each generation would make the scale a moving target and hide exactly the effect we are trying to measure.
+
+We therefore pin the scale to the \textbf{base population}: the randomly mating generation, labelled $(0)$, in which assortment has not yet begun.
+In that population we standardize as before, $\VPo = \VAo + V_E = 1$, so that $\hsqo = \VAo$.
+Quantities at equilibrium carry the superscript $(\mathrm{eq})$ and are measured on the \emph{same} scale, so $\VPeq > 1$ and
+$$ \hsqeq \;=\; \frac{\VAeq}{\VPeq} \;=\; \frac{\VAeq}{\VAeq + V_E} . $$
+We take the environmental variance $V_E$ to be constant across generations; only the genetic side responds to assortment.
+
+\subsubsection*{The genetic correlation between partners}
+\assumptionid{Pheno-AM} gives us $\rho_y$, but the quantity that propagates through a pedigree is $\rho_g$.
+To relate them, project the genetic value onto the phenotype,
+$$ g \;=\; \frac{\VAeq}{\VPeq}\, y \;+\; \varepsilon \;=\; \hsqeq\, y + \varepsilon , \qquad \Cov[\varepsilon, y]=0 , $$
+which is just the linear regression of $g$ on $y$, whose coefficient is $\Cov[g,y]/\Var[y] = \VAeq/\VPeq$.
+By \assumptionid{Primary-AM}, the residuals are uncorrelated both with each other and with the other partner's phenotype: $\Cov[\varepsilon_m, \varepsilon_f]=0$ and $\Cov[\varepsilon_m, y_f]=0$.
+The cross terms therefore drop out, leaving
+$$ \Cov[\,g_m,g_f\,] \;=\; (\hsqeq)^2\,\Cov[\,y_m,y_f\,] \;=\; (\hsqeq)^2\, \rho_y\, \VPeq . $$
+Dividing by $\VAeq$ to convert to a correlation gives the central relation of this section:
+\begin{equation}\label{eq:am-rhog}
+    \boxed{\ \rho_g \;=\; \rho_y\, \hsqeq \ }
+\end{equation}
+The genetic correlation between partners is the phenotypic correlation filtered through the heritability, and the heritability that appears here is the one in the population where the mating is actually happening --- the equilibrium value, not the base-population value \citep{Sunde2024NatComm}.
+That distinction matters numerically, because $\hsqeq > \hsqo$; we return to it below.
+
+\subsection{Assortative mating inflates the additive variance}
+Partners with correlated genetic values produce offspring whose two inherited halves are correlated, which raises the variance of the offspring generation.
+To see how far this goes, write the offspring's genetic value in terms of the parents',
+\begin{equation}\label{eq:am-transmission}
+    g_o \;=\; \tfrac12\,(g_m + g_f) \;+\; s_o ,
+\end{equation}
+where $s_o$ is the \emph{segregation} (or recombination) deviation: the departure of the transmitted haplotypes from the parental averages, which is mean-zero and uncorrelated with $g_m$ and $g_f$.
+
+The variance of $s_o$ is the one quantity in this recursion that assortment leaves alone.
+Segregation variance is generated by the shuffling of alleles \emph{within} each parent, so it depends only on allele frequencies, and under \assumptionid{Primary-AM} with no selection the allele frequencies do not change.
+Evaluating it in the base population, where $\Var[g_o]=\Var[g_m]=\VAo$ and $\rho_g=0$, gives
+\begin{equation}\label{eq:am-VK}
+    V_K \;:=\; \Var[s_o] \;=\; \VAo - \tfrac12 \VAo \;=\; \tfrac12 \VAo ,
+\end{equation}
+and this value carries over to every later generation.
+Taking the variance of \eqref{eq:am-transmission} in a generation with additive variance $V_A(t)$ therefore gives the recursion
+\begin{equation}\label{eq:am-recursion}
+    V_A(t+1) \;=\; \frac{\VAo}{2} \;+\; V_A(t)\left(\frac{1+\rho_g(t)}{2}\right) ,
+\end{equation}
+in agreement with \citet{Sunde2024NatComm}.
+Setting $V_A(t+1)=V_A(t)=\VAeq$ and solving,
+\begin{equation}\label{eq:am-VAeq}
+    \boxed{\ \VAeq \;=\; \frac{\VAo}{1-\rho_g} \ }
+\end{equation}
+
+Equations \eqref{eq:am-rhog} and \eqref{eq:am-VAeq} are coupled: the variance depends on $\rho_g$, and $\rho_g$ depends on the heritability, which depends on the variance.
+Substituting one into the other and using $V_E = 1-\VAo$ yields a quadratic in $\rho_g$,
+\begin{equation}\label{eq:am-fixedpoint}
+    (1-\VAo)\,\rho_g^2 \;-\; \rho_g \;+\; \rho_y \VAo \;=\; 0 ,
+    \qquad
+    \rho_g \;=\; \frac{1-\sqrt{\,1-4\rho_y \VAo (1-\VAo)\,}}{2\,(1-\VAo)} ,
+\end{equation}
+taking the root that satisfies $\rho_g \to 0$ as $\rho_y \to 0$.
+Expanding the square root to first order gives $\rho_g \approx \rho_y \VAo = \rho_y \hsqo$, the familiar weak-assortment approximation in which the base-population heritability may be used in place of the equilibrium one.
+It is only an approximation, and it understates $\rho_g$.
+
+As a worked example, take a trait with $\hsqo=0.40$ under assortment of $\rho_y=0.30$.
+Then \eqref{eq:am-fixedpoint} gives $\rho_g = 0.130$, against the first-order value $\rho_y\hsqo = 0.120$.
+The additive variance rises from $\VAo=0.400$ to $\VAeq=0.460$, an increase of $15\%$, and the heritability from $0.400$ to $\hsqeq = 0.434$.
+
+\subsubsection*{Genic variance and gametic phase disequilibrium}
+It is worth being precise about \emph{where} the extra variance sits, because the two pieces behave differently for the rest of this section.
+Expanding $\Var[g_i]$ over pairs of variants and separating the diagonal from the off-diagonal,
+\begin{equation}\label{eq:am-VAsplit}
+    \VAeq
+    \;=\; \underbrace{\sum_k \E\!\left[\beta_k^2 x_{ik}^2\right]}_{\textstyle V_g}
+    \;+\; \underbrace{\sum_{k}\sum_{k'\neq k} \E\!\left[\beta_k \beta_{k'} x_{ik} x_{ik'}\right]}_{\textstyle D} .
+\end{equation}
+The first term $V_g$ is the \emph{genic} variance: the sum of the variants' individual contributions, as though each locus stood alone.
+The second term $D$ is the contribution of correlations \emph{between} variants, known as gametic phase disequilibrium \citep{Zhang2025NatGenet}.
+
+The crucial point is that $D$ does not measure linkage disequilibrium as such.
+Ordinary LD --- generated by physical linkage and by drift --- is blind to which alleles raise the trait, so the products $\beta_k\beta_{k'}$ it multiplies are as often negative as positive and the sum cancels.
+$D$ is nonzero only when LD is \emph{aligned with the effects}, that is, when trait-increasing alleles tend to be found together.
+Assortative mating produces exactly that alignment, and it is the same fact, seen from the other side, as the failure of \assumptionid{Random-effects} discussed in Section~\ref{sec:am-level1}.
+
+Since allele frequencies are unchanged, the genic variance is still the base-population value, $V_g = \VAo$, and so by \eqref{eq:am-VAeq}
+\begin{equation}\label{eq:am-Dshare}
+    D \;=\; \VAeq - \VAo \;=\; \rho_g\, \VAeq .
+\end{equation}
+The disequilibrium share of the equilibrium additive variance is therefore exactly $\rho_g$ --- in the worked example, $13\%$.
+This is a useful sanity check on the scale of the phenomenon: \citet{Zhang2025NatGenet} estimate that cross-autosome disequilibrium contributes $10$--$27\%$ of the SNP-based heritability of traits such as height, educational attainment and intelligence, which is the same order as the $\rho_g$ values those traits' partner correlations imply.
+
+\subsection{What carries over from Section 1}
+Before working through the levels, it is worth auditing the nine assumptions of Section 1.
+Three of them fail, but they fail in very different ways, and separating those ways is most of the work.
+
+Some of what assortative mating does is real but too small to matter, and it is useful to have a distinct kind of box for such statements.
+An assumption answers the question ``what must I believe?''; the following answers ``what am I neglecting, and how big is it?''.
+
+\begin{approximation}{Same-locus-AM}{Assortment does not change per-variant quantities}
+At any single variant, assortment leaves the picture of Section 1 intact: partners' alleles are effectively uncorrelated, the two alleles within an individual are effectively independent, and the genotype variance is still $2p_k(1-p_k)$.
+This preserves the per-variant identity $\E[x_{ik}x_{jk}\mid \IBD_{ij}(k)] = \tfrac12 \IBD_{ij}(k)$, and with it \eqref{eq:pi-def} and the definition of $A_{ij}$.
+\justification{Assortment correlates partners' alleles at variant $k$ only through the trait, so the induced covariance is of order $\rho_y \beta_k^2 \sim \rho_y V_A / M$ --- vanishing as the trait becomes polygenic.
+Summed into $A_{ij} = M^{-1}\sum_k x_{ik}x_{jk}$, the $M$ such terms contribute $O(1/M)$ in total.
+The excess homozygosity that follows from the same correlation is of the same order, so \assumptionid{No-inbreeding} survives as an approximation with error $O(\rho_y V_A/M)$.}
+\end{approximation}
+
+With that in hand, the audit is:
+
+\begin{center}
+\small
+\begin{tabular}{l l p{6.6cm}}
+\textbf{Assumption} & \textbf{Status} & \textbf{Comment} \\
+\hline
+\assumptionid{Additivity}      & holds       & unchanged; the mating rule does not touch the genotype-to-phenotype map \\
+\assumptionid{GE-indep}        & holds       & within an individual, $g_i \perp e_i$ still \\
+\assumptionid{No-IGE}          & holds       & retained by choice; parental effects are a separate architecture \\
+\assumptionid{Env-indep}       & \textbf{fails} & $e$ and $g$ become correlated \emph{across} individuals; see \S\ref{sec:am-env} \\
+\assumptionid{Random-effects}  & \textbf{fails} & only the clause $\E[\beta_k\beta_{k'}\mid\bX] = \E[\beta_k\beta_{k'}]$; see \S\ref{sec:am-level1} \\
+\assumptionid{No-mutation}     & holds       & unchanged \\
+\assumptionid{Non-IBD-indep}   & \textbf{fails} & at the same variant, negligibly (\approximationid{Same-locus-AM}); across variants, not negligibly \\
+\assumptionid{No-inbreeding}   & approximate & \approximationid{Same-locus-AM} \\
+\assumptionid{Genetic-degree}  & insufficient & degree alone no longer determines the answer; see \S\ref{sec:am-level3} \\
+\hline
+\end{tabular}
+\end{center}
+
+The split in \assumptionid{Non-IBD-indep} is the single most important line in that table.
+Section 1 stated it as one assumption, but it was doing two jobs.
+Its \emph{same-variant} job --- non-IBD alleles at variant $k$ are uncorrelated --- is what makes $A_{ij}$ track $\pi_{ij}$, and assortment violates it only negligibly.
+Its \emph{across-variant} job --- alleles at different variants are uncorrelated --- is what made the off-diagonal of Level 0 disappear, and assortment violates that one substantially.
+Everything distinctive about this section follows from the second failure and not the first.
+
+\subsubsection*{Environments become correlated across individuals}\label{sec:am-env}
+\assumptionid{Env-indep} and \assumptionid{No-IGE} were used in Section 1 to conclude, at \eqref{eq:reduce}, that all cross terms involving $e$ vanish and the phenotypic cross-product reduces to the genetic one.
+That conclusion does not survive assortment.
+By \assumptionid{Primary-AM}, partners match on $y$, which correlates both of its components, so
+$$ \Cov[\,e_m, g_f\,] \;=\; \rho_y \cdot \frac{V_E}{\VPeq} \cdot \frac{\VAeq}{\VPeq} \cdot \VPeq \;=\; \rho_g\, V_E \;\neq\; 0 . $$
+An individual's environment is correlated with their partner's genes, and their partner's genes are transmitted to their children.
+
+The reach of this is limited, and precisely so: in a monogamous pedigree, the cross term $\Cov[e_a, g_b]$ is nonzero exactly when $a$ is an \textbf{ancestor} of $b$ (or when $a$ and $b$ are partners).
+The reason is mechanical.
+An individual's environment is a fresh draw, so its only route into any genome is through that individual's partner, and that partner contributes genes to $b$ only if $a$ lies on $b$'s line of descent.
+Siblings, cousins and avuncular pairs are therefore unaffected; parent--offspring and grandparent--grandchild pairs are not.
+We handle this by carrying lineal pairs separately below rather than by discarding \eqref{eq:reduce}.
+
+\subsection{Level 0 --- unchanged}
+Conditioning on both individuals' causal genotypes and the true effect sizes leaves nothing to average over, so \eqref{eq:level0} holds exactly as written.
+Level 0 is a statement about the genotype-to-phenotype map alone, and no mating rule can disturb it.
+That it survives every architecture untouched is a feature of where the tower starts, not a coincidence.
+
+\subsection{Level 1 --- the off-diagonal no longer collapses}\label{sec:am-level1}
+Section 1 moved from Level 0 to Level 1 by averaging over the effects and observing that the off-diagonal $k \neq k'$ terms vanish.
+Two separate clauses of \assumptionid{Random-effects} were needed for that: the effects are marginally uncorrelated, $\E[\beta_k\beta_{k'}]=0$, and their cross-products are independent of the genotypes, $\E[\beta_k\beta_{k'}\mid\bX] = \E[\beta_k\beta_{k'}]$.
+
+The first clause survives assortative mating.
+Assortment does not reach back and change the effect sizes; it changes which genotypes are common.
+
+The second clause does not survive, and it is worth seeing why the failure is unavoidable rather than incidental.
+Under assortment, the correlations that build up between variants are generated \emph{by} the effects: it is precisely the trait-increasing alleles that end up travelling together.
+The observed pattern of correlation in $\bX$ is therefore informative about which variants have effects and with what signs, so conditioning on $\bX$ shifts our belief about $\beta_k\beta_{k'}$.
+Formally, $\E[\beta_k \beta_{k'} \mid \bX]$ is positive for pairs of variants that are positively correlated in the sample, and the off-diagonal sum no longer disappears:
+\begin{equation}\label{eq:am-level1}
+    \E[\,g_i g_j \mid \bx_i, \bx_j\,]
+    \;=\; \underbrace{\sum_k \E[\beta_k^2]\, x_{ik} x_{jk}}_{\textstyle \VAo A_{ij}}
+    \;+\; \underbrace{\sum_{k}\sum_{k'\neq k} \E[\beta_k \beta_{k'}\mid \bX]\, x_{ik} x_{jk'}}_{\textstyle \text{disequilibrium term}} .
+\end{equation}
+The first term is the Level-1 result of Section 1, with the additive variance replaced by the \emph{genic} variance $\VAo$ of \eqref{eq:am-VAsplit} --- the genotype matrix on its own can only recover the per-variant contributions.
+The second term is new, and it is what the remainder of the disequilibrium $D$ lives in.
+
+Note the shape of \eqref{eq:am-level1}: two relatedness-like quantities added together, not one quantity rescaled.
+This is the form that methods for unrelated individuals take, where the second term is estimated with a second relatedness matrix alongside the GRM \citep{Zhang2025NatGenet}.
+We do not develop it here.
+
+\unsure{Two things to settle before writing out the disequilibrium term explicitly. First, the natural pair-level definition weights $x_{ik}x_{jk'}$ by the population LD between $k$ and $k'$; the matrix $\mathbf{G}^2$ used in practice is an estimator of this that sums over \emph{other} individuals, and so is a property of the sample rather than of the pair --- which sits awkwardly with this article's framing. Second, it needs a decision about whether to restrict to between-chromosome pairs, as is done in practice to avoid confounding with LD- and MAF-dependent architecture.}
+
+\subsection{The tower re-orders}
+At this point Section 1 descended to realized relatedness and then to genetic degree.
+That route is no longer available, and the reason is the screening property named at the end of Section 1.
+
+Under random mating, $\pi_{ij}$ screened off $d_{ij}$: once we knew what fraction of the genome a pair actually shared, their pedigree told us nothing more.
+Under assortative mating this is false.
+The disequilibrium contribution to a pair's covariance is carried by the correlations their \emph{ancestors} had, and how many rounds of assortment separate them --- information that lives in the pedigree and is not recoverable from how much genome they happen to share.
+Two pairs with identical $\pi_{ij}$ but different pedigrees have different expected covariances.
+
+The four information sets of Section 1 are therefore no longer a chain.
+Level 2 (realized relatedness) and Level 3 (pedigree) are now two \emph{parallel} coarsenings of a common refinement --- knowing both --- and neither is a function of the other.
+We keep the level numbering, since each level still refers to the same information, but the order of derivation reverses: the pedigree is now the easy case and must be done first, the joint case follows by refinement, and realized relatedness alone is the hard case and comes last.
+
+\subsection{Level 3 --- pedigree}\label{sec:am-level3}
+\subsubsection*{One more generation}
+Everything at this level follows from a single recursion.
+
+\textbf{Lemma.} \textit{Let $C$ be the child of $P$ and $P'$, and let $X$ be any random variable such that (i) $\Cov[X, e_P]=0$, and (ii) all association between $X$ and $P'$ runs through $P$'s phenotype.
+Then}
+\begin{equation}\label{eq:am-lemma}
+    \Cov[\,X, g_C\,] \;=\; \frac{1+\rho_g}{2}\;\Cov[\,X, g_P\,] .
+\end{equation}
+
+\textit{Proof.} By \eqref{eq:am-transmission}, $\Cov[X,g_C] = \tfrac12\Cov[X,g_P] + \tfrac12\Cov[X,g_{P'}]$, the segregation term dropping out.
+For the second piece, condition on $y_P$: by (ii), $\Cov[X, g_{P'}] = \Cov\big[X,\, \E[g_{P'}\mid y_P]\big]$, and the regression of a partner's genetic value on one's own phenotype has coefficient $\Cov[y_P, g_{P'}]/\VPeq = \rho_y \VAeq/\VPeq = \rho_g$ by \eqref{eq:am-rhog}.
+Hence $\Cov[X,g_{P'}] = \rho_g \Cov[X, y_P] = \rho_g\Cov[X,g_P]$, the last step using (i). $\square$
+
+Condition (ii) is a restriction on the pedigree, and it has a familiar name.
+
+\begin{assumption}{Monogamy}{Each individual has children with one partner}
+Any two relatives are connected by a single line of descent, so a chain of association between them traverses at most one assortment link that is not on that line.
+\bundles{a pedigree with no half-sibships; the leading real-world violation is an individual having children with more than one partner.}
+\end{assumption}
+
+\subsubsection*{Collateral relatives}
+For two \emph{collateral} relatives --- individuals related through a common ancestor, neither descended from the other --- Section~\ref{sec:am-env} showed that no environmental cross terms arise, so \eqref{eq:reduce} still applies and we need only the genetic covariance.
+The base case is a pair of full siblings, children of $m$ and $f$.
+Expanding both siblings with \eqref{eq:am-transmission},
+\begin{align*}
+    \Cov[\,g_i, g_j\,]
+    &= \tfrac14\Big( \Var[g_m] + \Var[g_f] + 2\Cov[g_m,g_f] \Big) \\
+    &= \tfrac14\Big( \VAeq + \VAeq + 2\rho_g \VAeq \Big)
+    \;=\; \VAeq\,\frac{1+\rho_g}{2} ,
+\end{align*}
+using that the two siblings' transmissions from a given parent are conditionally independent given that parent, exactly as in Section 1.
+Applying \eqref{eq:am-lemma} once for each further generation of separation gives, for a collateral pair of degree $d_{ij}$,
+\begin{equation}\label{eq:am-level3-col}
+    \boxed{\ \E[\,y_i y_j \mid d_{ij}\,] \;=\; \VAeq \left(\frac{1+\rho_g}{2}\right)^{d_{ij}} \ }
+\end{equation}
+in agreement with \citet{Sunde2024NatComm}.
+Setting $\rho_g=0$ recovers $\VAo 2^{-d_{ij}}$, the Level-3 result of Section 1.
+
+\subsubsection*{Lineal relatives}
+For a pair in which $a$ is an ancestor of $b$, the environmental cross term of Section~\ref{sec:am-env} contributes and the base case changes.
+For a parent and their offspring it is easiest to work with $\Cov[y_m, g_o]$ directly, since $e_o$ is a fresh draw:
+\begin{align*}
+    \Cov[\,y_m, y_o\,] = \Cov[\,y_m, g_o\,]
+    &= \tfrac12\Big( \Cov[y_m,g_m] + \Cov[y_m,g_f] \Big) \\
+    &= \tfrac12\Big( \VAeq + \rho_y \VAeq \Big)
+    \;=\; \VAeq\,\frac{1+\rho_y}{2} .
+\end{align*}
+The second term is the whole story: the focal parent's \emph{phenotype} predicts the other parent's genetic value with regression coefficient $\rho_y \VAeq/\VPeq$, and half of those genes reach the child.
+Iterating \eqref{eq:am-lemma} for the remaining generations gives
+\begin{equation}\label{eq:am-level3-lin}
+    \boxed{\ \E[\,y_a y_b \mid d_{ab}\,] \;=\; \VAeq \left(\frac{1+\rho_y}{2}\right)\left(\frac{1+\rho_g}{2}\right)^{d_{ab}-1} \ }
+\end{equation}
+
+Comparing \eqref{eq:am-level3-col} and \eqref{eq:am-level3-lin}, the two differ in one factor, $\rho_y$ in place of $\rho_g$.
+Since $\rho_g = \rho_y \hsqeq < \rho_y$, the lineal covariance is always the larger.
+This is a genuine and somewhat surprising consequence: under random mating a parent--offspring pair and a full-sibling pair have identical expected covariance $V_A/2$, whereas under assortative mating the parent--offspring covariance exceeds the sibling covariance by
+$$ \VAeq\,\frac{\rho_y - \rho_g}{2} \;=\; \frac{\rho_y \VAeq \left(1 - \hsqeq\right)}{2} . $$
+In the worked example this is a $15\%$ excess over the sibling value.
+The asymmetry is purely environmental in origin --- it is the parent's own environment, correlated with the other parent's genes --- and a model that tracked only genetic covariances would miss it entirely.
+
+\subsubsection*{Degree is no longer sufficient}
+Equations \eqref{eq:am-level3-col} and \eqref{eq:am-level3-lin} disagree at the same $d$, which already shows that the degree alone does not determine the answer.
+Half-siblings make the point again, from the other direction.
+They are second-degree relatives, but they violate \assumptionid{Monogamy}, and the two outer parents $P_1$ and $P_2$ --- both of whom assorted on the shared parent $P$ --- are themselves correlated:
+$$ \Cov[\,g_{P_1}, g_{P_2}\,] \;=\; \Var[y_P] \left(\frac{\rho_y \VAeq}{\VPeq}\right)^{\!2} \;=\; \rho_g^2\, \VPeq , $$
+which gives
+$$ \E[\,y_iy_j \mid \text{half-sibs}\,] \;=\; \tfrac14\Big( \VAeq (1+2\rho_g) + \rho_g^2\, \VPeq \Big) . $$
+This exceeds the collateral value $\tfrac14 \VAeq (1+\rho_g)^2$ by $\tfrac14 \rho_g^2 V_E$.
+So three different second-degree relationships --- grandparent--grandchild, avuncular, and half-sibling --- have three different expected covariances.
+
+\assumptionid{Genetic-degree} must therefore be strengthened: the conditioning variable at Level 3 is not the degree but the \textbf{pedigree relationship}, of which the degree is only a summary.
+The same calculation also shows that individuals with no common ancestor at all can be correlated: two people who both had children with the same person have expected phenotypic cross-product $\rho_y^2\, \VPeq$, and partners themselves $\rho_y \VPeq$.
+Under random mating both are zero.
+
+\subsection{Levels 2 and 3 together --- pedigree and realized relatedness}\label{sec:am-level23}
+Knowing the pedigree fixes the \emph{expected} sharing, $\bar\pi_{d} = 2^{-d}$, but two pairs with the same relationship still differ in how much genome they actually share.
+Section 1 handled that variation at Level 2; here we ask what it buys once the pedigree is already known.
+Following the natural parameterisation, we write the realized sharing as its pedigree expectation plus a deviation,
+$$ \pi_{ij} \;=\; \bar\pi_{d_{ij}} + \delta_{ij} , \qquad \E[\delta_{ij}\mid d_{ij}] = 0 . $$
+
+The two terms of \eqref{eq:am-level1} respond to $\delta_{ij}$ very differently, and that is the whole content of this level.
+The genic term is a sum of \emph{same-variant} products, and by \approximationid{Same-locus-AM} the argument of Section 1 goes through unchanged: its conditional expectation is $\VAo \pi_{ij}$, tracking the realized sharing exactly.
+The disequilibrium term is a sum of \emph{cross-variant} products, and it behaves quite differently.
+
+\begin{approximation}{GPD-pedigree}{The disequilibrium contribution depends only on the pedigree}
+The cross-variant part of a pair's covariance is a function of their pedigree relationship alone, and does not depend on the realized sharing $\pi_{ij}$.
+\justification{A cross-variant term $\E[x_{ik}x_{jk'}]$ with $k \neq k'$ is determined by \emph{which} ancestral genomes the two alleles descend from --- fixed by the pedigree --- and not by whether $i$ and $j$ happen to be IBD at either locus, since the two alleles are at different loci.
+A residual dependence does exist, because a pair sharing more genome is also more likely to be IBD at $k$ \emph{and} $k'$ jointly, but for unlinked variants this is a second-order effect: the correction is of order $\rho_g \delta_{ij}$, being the product of the disequilibrium share \eqref{eq:am-Dshare} and the sharing deviation.
+Deriving it exactly is left open.}
+\end{approximation}
+
+Putting the two together, the expected cross-product is the pedigree value plus a term linear in the sharing deviation.
+The coefficient on that term is fixed by requiring consistency with Level 3: averaging over $\delta_{ij}$ must return the Level-3 value for that relationship.
+Hence, writing $C_{ij}(\text{pedigree})$ for the Level-3 value of the pair's relationship,
+\begin{equation}\label{eq:am-level23}
+    \boxed{\ \E[\,y_iy_j \mid \text{pedigree},\, \pi_{ij}\,] \;=\; \underbrace{C_{ij}(\text{pedigree})}_{\text{from \eqref{eq:am-level3-col} or \eqref{eq:am-level3-lin}}} \;+\; \VAo \left(\pi_{ij} - \bar\pi_{d_{ij}}\right) \ }
+\end{equation}
+
+The structure of \eqref{eq:am-level23} is worth dwelling on, because it separates two things that Section 1 could not tell apart.
+The \emph{baseline} is set by the pedigree and is inflated by assortment.
+The \emph{response to realized sharing} is not inflated at all: its coefficient is $\VAo$, the base-population --- equivalently genic --- additive variance, because only the same-variant part of the covariance responds to how much genome a pair actually shares.
+Under random mating the two coincide, $\VAo = \VAeq$, and \eqref{eq:am-level23} collapses back to $V_A \pi_{ij}$.
+
+This suggests a way to see assortative mating directly, which we note without pursuing.
+Within a single relationship class, regressing pairs' phenotypic cross-products on their realized relatedness gives a slope that estimates $\VAo$ and an intercept that carries the assortment-inflated baseline.
+The two would agree under random mating, so the gap between them is a signature of assortment, obtainable without ever comparing across relationship classes.
+Whether the residual $O(\rho_g \delta_{ij})$ term of \approximationid{GPD-pedigree} is small enough for this to be clean is the open question flagged in that box.
+
+\subsection{Level 2 --- realized relatedness alone}\label{sec:am-level2}
+The last case is the one Section 1 found easiest and assortative mating makes hardest: we observe how much genome a pair shares, but know nothing about their pedigree.
+Because the pedigree is exactly what carries the disequilibrium contribution, we cannot evaluate \eqref{eq:am-level23} directly; we have to infer a pedigree from the sharing.
+
+The natural device is to invert the degree-to-relatedness map of Section 1.
+Since $\bar\pi_d = 2^{-d}$, a pair sharing a fraction $\pi_{ij}$ of their genome is, on average, as related as a relative of degree $-\log_2 \pi_{ij}$.
+
+\begin{approximation}{Effective-degree}{Realized sharing stands in for a degree}
+A pair's realized relatedness is treated as though it arose from a collateral relationship of \emph{effective degree}
+$$ d^{\,\mathrm{eff}}_{ij} \;:=\; -\log_2 \pi_{ij} , $$
+which is generally not an integer.
+\justification{The substitution is exact whenever $\pi_{ij}$ equals its pedigree expectation for some collateral relationship, i.e.\ on the grid $\pi \in \{2^{-1}, 2^{-2}, \dots\}$; off the grid it interpolates.
+The interpolation is benign for distant pairs, where many relationships of similar degree contribute and the sharing distribution is smooth, and poor for close pairs, where a handful of discrete relationships dominate and, as \S\ref{sec:am-level3} showed, relationships of the same degree can differ.
+It is therefore an approximation for the distant tail, not a replacement for \eqref{eq:am-level23}.}
+\end{approximation}
+
+Substituting $d^{\,\mathrm{eff}}_{ij}$ into \eqref{eq:am-level3-col} and simplifying,
+$$ \left(\frac{1+\rho_g}{2}\right)^{-\log_2 \pi_{ij}}
+   = 2^{\log_2 \pi_{ij}} \cdot (1+\rho_g)^{-\log_2 \pi_{ij}}
+   = \pi_{ij}\cdot \pi_{ij}^{-\log_2 (1+\rho_g)} , $$
+so that the expected cross-product is a \emph{power law} in the realized relatedness:
+\begin{equation}\label{eq:am-level2}
+    \boxed{\ \E[\,y_i y_j \mid \pi_{ij}\,] \;=\; \VAeq\; \pi_{ij}^{\,1-\log_2(1+\rho_g)} \ }
+\end{equation}
+
+Three things are worth reading off \eqref{eq:am-level2}.
+
+First, it contains Section 1 as a special case.
+With $\rho_g = 0$ the exponent is exactly $1$, the relationship is linear, and we recover $\E[y_iy_j\mid\pi_{ij}] = V_A \pi_{ij}$.
+Assortative mating shows up as a single number: a deficit in the exponent.
+
+Second, the exponent is less than one, so the curve is concave.
+The proportional inflation grows as pairs become more distant --- in the worked example the exponent is $0.823$, and while sibling covariance is inflated by $30\%$ relative to a randomly mating population with the same base heritability, first-cousin covariance is inflated by $66\%$.
+This is the reason assortative mating is more visible in distant relatives than in close ones, and the reason it inflates estimates that lean on distant or nominally unrelated pairs.
+
+Third, \eqref{eq:am-level2} is linear on a log--log scale,
+$$ \log \E[\,y_iy_j \mid \pi_{ij}\,] \;=\; \log \VAeq \;+\; \big(1-\log_2(1+\rho_g)\big)\,\log \pi_{ij} , $$
+so the slope of expected cross-product against realized relatedness, both on log scales, estimates $\rho_g$ through its shortfall below one.
+Combined with the within-class result of \S\ref{sec:am-level23}, this gives two distinguishable signatures: \emph{within} a relationship class the response to sharing is linear with slope $\VAo$, while \emph{across} classes it is a power law with exponent below one.
+Under random mating these are the same line.
+The wedge between them is assortative mating.
+
+Finally, note where \eqref{eq:am-level2} points as $\pi_{ij}\to 0$.
+The covariance vanishes, but more slowly than linearly, and the pairs contributing in that limit are the nominally unrelated ones.
+This is the regime in which the additive form \eqref{eq:am-level1} is the natural description, and where methods that fit a second, disequilibrium relatedness matrix alongside the GRM operate \citep{Zhang2025NatGenet}.
+
+\subsection{Summary}
+The same four information sets as Section 1, but no longer arranged in a chain.
+Level 2 and Level 3 are parallel coarsenings of their common refinement, and the derivation runs $0 \to 1 \to 3 \to (2,3) \to 2$ rather than top to bottom.
+
+\begin{center}
+\small
+\begin{tabular}{c l l p{4.0cm}}
+\textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
+\hline
+0 & causal genotypes, effects & $g_i g_j$ & \raggedright --- (unchanged) \tabularnewline
+1 & genotypes $\bx_i,\bx_j$ & $\VAo A_{ij} + \text{disequilibrium}$ & \raggedright \assumptionid{Random-effects} weakened \tabularnewline
+3 & pedigree & $\VAeq\left(\tfrac{1+\rho_g}{2}\right)^{d}$ (collateral) & \raggedright \assumptionid{Pheno-AM}, \assumptionid{Primary-AM}, \assumptionid{AM-equilibrium}, \assumptionid{Monogamy} \tabularnewline
+$(2,3)$ & pedigree and $\pi_{ij}$ & $C_{ij} + \VAo(\pi_{ij}-\bar\pi_{d})$ & \raggedright \approximationid{Same-locus-AM}, \approximationid{GPD-pedigree} \tabularnewline
+2 & $\pi_{ij}$ & $\VAeq\, \pi_{ij}^{\,1-\log_2(1+\rho_g)}$ & \raggedright \approximationid{Effective-degree} \tabularnewline
+\hline
+\end{tabular}
+\end{center}
+
+Reduced to one sentence: assortative mating adds a second channel of resemblance that travels through the pedigree rather than through shared segments, so relatedness and genealogy stop being interchangeable.
+Everything else in this section is bookkeeping for that one fact.
+
+\todo{Still to do in this section: the explicit disequilibrium relatedness matrix at Level 1 and its estimation in samples of unrelated individuals; the exact size of the residual term in \approximationid{GPD-pedigree}; and the non-equilibrium case, where a mismatch between observed and predicted correlations dates the onset of assortment \citep{Sunde2024NatComm}.}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
