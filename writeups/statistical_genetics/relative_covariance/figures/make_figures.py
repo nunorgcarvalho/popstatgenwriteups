@@ -188,11 +188,18 @@ def main() -> int:
     if args.check:
         return 0
 
+    model = mated_pair_2v()
+    b1, b2, V_E = (model.sym(s) for s in ("beta_1", "beta_2", "V_E"))
+    # pathMgr renders the phenotypic variance as the sum it is derived from; two pages of prose
+    # around these figures call it \VPo. `latex_names` is how a figure is told the document's own
+    # name for a quantity -- it reaches edge labels and captions alike, so the figure stays
+    # internally consistent as well as consistent with the text.
+    names = {b1**2 + b2**2 + V_E: r"\VPo"}
     # Unit coefficients are conventionally left off a path diagram, but these are the figures that
     # teach the tracing rules: a reader multiplying along a chain needs to see every factor,
-    # including the 1s on `g -> y` and on each genotype's variance.
-    model = mated_pair_2v()
-    style = DiagramStyle(show_variances=True, show_unit_coefficients=True)
+    # including the 1s on `g -> y` and on each genotype's variance. The caption follows the same
+    # setting, so the diagram and the product printed under it show the same factors.
+    style = DiagramStyle(show_variances=True, show_unit_coefficients=True, latex_names=names)
     target = HERE / "mated_pair_2v.tikz"
     target.write_text(to_tikz(model, layout=MATED_PAIR_2V_LAYOUT, style=style))
     print(f"wrote {target.relative_to(HERE.parent)}")
@@ -204,26 +211,16 @@ def main() -> int:
     assert len(decomposition) == 1, f"expected a single chain, got {len(decomposition)}"
     # `show_variances=False` declutters the context; the chain's own x <-> x loops are drawn
     # regardless, because they carry two of its factors.
-    chain = decomposition.chains[0]
-    caption = chain.tex_caption(
-        labels={v.name: v.label for v in model.variables if v.label},
-        name=r"\operatorname{Cov}\left[x_{m,1}, x_{p,2}\right]",
-    )
-    # pathMgr writes the phenotypic variance out as the sum it is derived from; the writeup calls
-    # it \VPo. Assert before replacing, so a change in how pathMgr renders it fails here loudly
-    # rather than leaving the figure silently inconsistent with the surrounding text.
-    literal = r"V_{E} + \beta_{1}^{2} + \beta_{2}^{2}"
-    assert literal in caption, caption
-    caption = caption.replace(literal, r"\VPo")
-
     traced = HERE / "mated_pair_2v_traced.tikz"
     traced.write_text(
         to_tikz(
             model,
             layout=MATED_PAIR_2V_LAYOUT,
-            style=DiagramStyle(show_variances=False, show_unit_coefficients=True),
-            highlight=chain,
-            caption=caption,
+            style=DiagramStyle(
+                show_variances=False, show_unit_coefficients=True, latex_names=names
+            ),
+            highlight=decomposition.chains[0],
+            caption_name=r"\operatorname{Cov}\left[x_{m,1}, x_{p,2}\right]",
         )
     )
     print(f"wrote {traced.relative_to(HERE.parent)}")

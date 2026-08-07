@@ -30,5 +30,5 @@
   \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (x_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$1$} (x_m1);
   \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (x_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$1$} (x_p2);
   \draw[pmCopath, draw=pmC1F77B4, line width=4.16pt] (y_m) -- node[pmLabel, text=pmC1F77B4] {$\left[\rho_{y}\right]$} (y_p);
-  \node[align=center] at (4.500,-1.350) {$x_{m,1} \leftrightarrow x_{m,1} \rightarrow g_m \rightarrow y_m \;\text{---}\; y_p \leftarrow g_p \leftarrow x_{p,2} \leftrightarrow x_{p,2}$\\$\operatorname{Cov}\left[x_{m,1}, x_{p,2}\right] = \beta_{1} \cdot \frac{\rho_{y}}{\VPo} \cdot \beta_{2} = \frac{\beta_{1} \beta_{2} \rho_{y}}{\VPo}$};
+  \node[align=center] at (4.500,-1.350) {$x_{m,1} \leftrightarrow x_{m,1} \rightarrow g_m \rightarrow y_m \;\text{---}\; y_p \leftarrow g_p \leftarrow x_{p,2} \leftrightarrow x_{p,2}$\\$\operatorname{Cov}\left[x_{m,1}, x_{p,2}\right] = 1 \cdot \beta_{1} \cdot 1 \cdot \frac{\rho_{y}}{\VPo} \cdot 1 \cdot \beta_{2} \cdot 1 = \frac{\beta_{1} \beta_{2} \rho_{y}}{\VPo}$};
 \end{tikzpicture}
