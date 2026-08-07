@@ -279,80 +279,260 @@ The property that makes this a ladder is worth naming, because the next architec
 At each step, the finer variable \emph{screens off} the coarser one: once we condition on $\pi_{ij}$, knowing $d_{ij}$ as well would tell us nothing more about $y_iy_j$, and likewise for the other steps.
 Screening is what licenses the tower property, and it is the reason the four information sets can be arranged in a single descending chain rather than a more complicated structure.
 
-\todo{Remaining architectures restart from Level 0 and re-introduce a subset of the assumptions above, relaxing others: a shared environment breaks \assumptionid{Env-indep}; dominance and epistasis break \assumptionid{Additivity}; parental effects break \assumptionid{No-IGE}. Section~\ref{sec:am} works through assortative mating.}
-
 \section{Additive genetics under assortative mating}\label{sec:am}
-Section 1 assumed that mating is random.
-We now let individuals choose partners who resemble them, and keep everything else about the architecture fixed: the trait is still additive, environments are still independent across individuals, and there are still no indirect genetic effects.
-This is the smallest possible step away from Section 1, and it is worth taking carefully, because assortative mating turns out to break the tower in a more interesting place than one might guess.
+We will now do away with the assumption of random mating (particularly implied in \assumptionid{Non-IBD-indep}) and instead provide a model for assortative mating that will let us quantify its impact on phenotypic covariance.
 
-Throughout this section we assume the reader has Section 1 in hand.
-Rather than re-deriving each level, we identify what changes and carry the change forward.
+The phenotype model remains the same: we assume an additive genetic architecture (\assumptionid{Additivity}) with an independent environmental component (\assumptionid{GE-indep}).
+As a consequence of the assortative mating model we adopt below, covariance between the environmental and genetic components between some individuals will arise, breaking the weakest forms of the assumptions \assumptionid{No-IGE} and \assumptionid{Env-indep}.
+We also still assume no new mutations (\assumptionid{No-mutation}) and no inbreeding (\assumptionid{No-inbreeding}).
 
 \subsection{The mating model}
-Relaxing an assumption is not by itself enough to make progress.
-\assumptionid{Non-IBD-indep} bundled ``random mating'' into a statement about allele draws, and simply deleting it leaves the model underdetermined: we would know that alleles are no longer independent draws without knowing \emph{how} they are dependent.
-Every architecture in this article therefore follows the same pattern --- one assumption is removed and a mechanism is supplied in its place.
-Here the mechanism is a mating rule.
+We assume a model of assortative mating based on mates' phenotypic similarity.
 
-\begin{assumption}{Pheno-AM}{Assortment on the phenotype}
-Mating is random except that partners' phenotypes are correlated:
-$$ \Corr[\,y_m, y_f\,] = \rho_y , $$
-where $m$ and $f$ index the two members of a mated pair.
-Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the corresponding correlation between partners' genetic values.
-\bundles{phenotypic assortative mating; $\rho_y$ is often written $\mu$ or $r$ in the literature.}
+\begin{assumption}{Primary-AM}{Primary Assortative Mating}
+Mating is non-random such that two mates' phenotypes are correlated for some trait:
+$$ \Corr[\,y_m, y_p\,] = \rho_y , $$
+where the subscripts $m$ and $p$ index the maternal and paternal member of a mated pair, matching the allele-origin superscripts of \eqref{eq:Adecomp}.
+Matching is on the phenotype \emph{only}: any covariance between the partners' trait components is a downstream consequence of this phenotypic matching, and is not specified separately.
+Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the induced correlation between partners' genetic values:
+$ \Corr[\,g_m, g_p\,] = \rho_g $.
+\bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where partners grow more similar after mating. $\rho_y$ is often written $\mu$ or $r$ in the literature.}
 \end{assumption}
 
-\begin{assumption}{Primary-AM}{Assortment is mediated entirely by the phenotype}
-The only reason partners resemble each other is that they matched on $y$.
-Consequently, for any two components $a,b \in \{g,e\}$ and any mated pair $(m,f)$,
-$$ \Corr[\,a_m, b_f\,] \;=\; \rho_y \cdot \Corr[a,y] \cdot \Corr[b,y] . $$
-Equivalently: after projecting each component onto the phenotype, the residuals of the two partners are uncorrelated.
-\bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where partners grow more similar after mating.}
-\end{assumption}
+The distinction that \assumptionid{Primary-AM} draws --- matching on the phenotype, everything else derived --- is easy to state and easy to get wrong when computing with it.
+The temptation is to write down the induced component covariances directly, one per pair of components; but they are not free parameters, and imposing them by hand both over-determines the model and, as we will see, gets the wrong answer for anything upstream of the phenotype.
+The next section introduces the machinery that lets us specify only the phenotypic matching and \emph{read off} everything it implies.
+
+\subsection{Dynamics and equilibrium}
+When starting from a randomly mating population, one generation of assortative mating causes the immediate offspring generation to exhibit different phenotypic and genetic properties.
+Luckily, if the parameters of assortative mating remain fixed, an equilibrium is reached such that stable properties of the population can be studied.
+We will first explore how assortative mating affects statistical properties of the population during the first few generations, then we will solve for the parameter values that lead to an equilibrium state.
+
+\subsubsection{Path Analysis}
+First, we'll introduce path analysis, a very helpful tool for modelling the covariance between variables in a causal system, particularly under assortative mating.
+
+A \emph{path diagram} is a drawing of a generative model that is complete enough to compute with.
+Each variable is a node --- drawn as a rectangle if it is observed and an ellipse if it is latent --- and the nodes are joined by three kinds of edge:
+
+\begin{itemize}
+    \item A \textbf{directed} edge $a \rightarrow b$ labelled with a coefficient $c$ says that $a$ is a cause of $b$, contributing $c\,a$ to $b$'s structural equation.
+    Collecting the arrows that point \emph{into} a node recovers that node's equation, so the diagram and the model equations carry the same content.
+    \item A \textbf{bidirected} edge $a \leftrightarrow b$ carries covariance between $a$ and $b$ that the diagram does not otherwise account for.
+    The self-loop $a \leftrightarrow a$ is the case $b=a$: it is $a$'s \emph{exogenous} variance, the part not supplied by the arrows pointing into it.
+    A variable with no incoming arrows carries its entire variance on such a loop.
+    \item A \textbf{co-path} $a \;\text{---}\; b$, drawn as a plain line with no arrowheads, is covariance attributable to \emph{matching}: $a$ and $b$ came to be associated because they were paired on their values, not because they share a cause.
+    This third edge type is due to \citet{Sunde2025NatComm} and is what lets us encode assortative mating without also asserting things we should be deriving.
+\end{itemize}
+
+The reason to draw the diagram rather than simply write the equations is that the covariance between \emph{any} two variables in it --- latent and intermediate ones included --- can be read straight off the picture, by Wright's tracing rules.
+Enumerate every \emph{valid chain} joining the two variables; their covariance is the sum over chains of the product of the coefficients each chain passes through.
+A valid chain between $a$ and $b$ has the shape
+$$
+    a \leftarrow \cdots \leftarrow u \;\leftrightarrow\; v \rightarrow \cdots \rightarrow b :
+$$
+trace \emph{backward} along directed edges from $a$ to some ancestor $u$, cross \emph{exactly one} bidirected edge $u \leftrightarrow v$ (possibly a self-loop, $u=v$), then trace \emph{forward} along directed edges from $v$ down to $b$.
+A chain turns around exactly once, and it turns around on a bidirected edge, because that is the only place variance enters the system.
+Note that a variable may legitimately appear on both legs of a chain: the classical rule forbidding this belongs to the standardized formulation, in which a chain may turn around at any variable using $\Var=1$ implicitly.
+Here a turning point must be written out as an explicit $u \leftrightarrow u$, and for a variable with parents that loop carries only its \emph{residual} variance --- the rest arrives on chains that continue back to its ancestors and therefore pass through it twice.
+
+Co-paths extend this.
+A chain may pass \emph{through} a co-path and keep going: a co-path joins two valid chains of the kind above into a longer one,
+$$
+    \underbrace{a \leftarrow \cdots \leftrightarrow \cdots \rightarrow y_m}_{\text{valid chain}}
+    \;\text{---}\;
+    \underbrace{y_p \leftarrow \cdots \leftrightarrow \cdots \rightarrow b}_{\text{valid chain}} .
+$$
+Two further rules apply \citep{Sunde2025NatComm}: a chain can neither start nor end with a co-path, and a chain cannot use two co-paths belonging to the same mating process.
+It \emph{may} cross co-paths of different mating processes, and it must be able to --- that is how the effect of assortment accumulates down a pedigree.
+
+This is precisely where a co-path differs from a bidirected edge, and the difference is not cosmetic.
+A bidirected edge is a statement about \emph{disturbances}, so a chain terminates on it: it cannot reach past $y_m$ to the things that caused $y_m$.
+A co-path is a statement about the matched variables themselves, so a chain continues backward through it, which encodes the fact that matching two people on their phenotypes induces correlation between \emph{all the causes} of those phenotypes --- their genetic values, and every individual variant behind them.
+Making that concrete: if the co-path in Figure~\ref{fig:pair-2v} is replaced by a bidirected edge $y_m \leftrightarrow y_p$ of the same magnitude, every cross-mate entry involving a genotype or a genetic value collapses to exactly zero, and only the two phenotypes remain correlated.
+So the rule to work by is that \textbf{the covariance between mates' genetic components is derived from the phenotypic matching, never specified alongside it} --- which is exactly what \assumptionid{Primary-AM} asserts, now in a form we can compute with.
+
+One detail matters for getting the numbers right.
+The quantity multiplied along a chain when it crosses a co-path is not the correlation $\rho_y$ itself, but
+\begin{equation}\label{eq:copath-mu}
+    \mu \;=\; \frac{\rho_y}{\sqrt{\Var[y_m]\,\Var[y_p]}} \;=\; \frac{\rho_y}{\VPo} ,
+\end{equation}
+because a co-path contributes $\Cov[a,b] = \mu\,\Var[a]\,\Var[b]$ \citep{Sunde2025NatComm}.
+The two coincide only when the matched variables have unit variance.
+Since assortative mating inflates $\Var[y]$ from one generation to the next, $\mu$ is generation-indexed even though $\rho_y$ is held fixed, and a value of $\mu$ carried from one generation to the next is silently wrong.
+For this reason we label a co-path with its correlation in brackets, as $[\rho_y]$, and leave $\mu$ to be derived from the diagram's own variances.
+
+Tracing chains by hand is instructive for a single pair and hopeless for a pedigree, since the number of chains grows multiplicatively with depth.
+The diagrams and covariances in this section were produced with \texttt{pathMgr}, a small package written alongside this writeup: it takes a model specification, returns the covariance between any two of its variables as an algebraic expression, and emits the path diagram to go with it.
+It computes each covariance in two independent ways --- by enumerating chains exactly as above, and in closed form from the matrix identity $\bSigma = \B{F}(\bI-\bA)^{-1}\bS(\bI-\bA)^{-\intercal}\B{F}^{\intercal}$ --- and their agreement is the correctness check.
+The chain enumeration is the one worth having here, because it returns the derivation and not only the answer.
+
+\subsubsection{First generation of assortative mating}
+We assume a population has been randomly mating as described by assumption \assumptionid{Non-IBD-indep} up to some generation $t=0$, which can also be referred to as the base or randomly-mating population.
+The parameters defined in the previous section, such as the additive variance $V_A$ and heritability $h^2$, are measured in this base population and denoted by a $(0)$ superscript, e.g. $\VAo$ and $\hsqo$, since these terms do not remain fixed across generations under assortative mating.
+Note that $V_E$ remains fixed.
+
+Then, mates in generation $t=0$ are formed according to \assumptionid{Primary-AM}, the offspring generation $t=1$ will have a different distribution of phenotypic and genetic values than the base population.
+Below, we present the path diagram describing a single pair that assortatively mated on the focal trait with strength $\rho_y$.
+In our example, the trait's genetic component is the additive sum of two causal variants, but we present formulas that work for a trait with arbitrarily many causal variants.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/mated_pair_2v.tikz}
+    \caption{%
+        A mated pair in the base population, assorting on the phenotype with strength $\rho_y$.
+        The trait is built from two causal variants, $g_i = \beta_1 x_{i,1} + \beta_2 x_{i,2}$, and each individual's phenotype is $y_i = g_i + e_i$.
+        Genotypes and phenotypes are observed (rectangles); genetic and environmental values are latent (ellipses).
+        Self-loops are exogenous variances: each standardized genotype has variance $1$ and each environmental deviation has variance $V_E$.
+        The single thick line is the co-path, labelled with the correlation it induces.
+        Unit coefficients are usually left off a path diagram; they are shown here so that every factor a reader multiplies along a chain is visible.
+        \emph{Everything} else about the assortment --- every entry in Table~\ref{tab:pair-2v-between} --- is derived from this one edge.%
+    }
+    \label{fig:pair-2v}
+\end{figure}
+
+Note what the diagram does \emph{not} contain.
+There is no edge between $g_m$ and $g_p$, none between any two genotypes, and none between one partner's environment and the other's genetic value.
+The only thing asserted about the pair is that their phenotypes are matched, which is all \assumptionid{Primary-AM} claims; everything else is a consequence to be traced out.
+
+Figure~\ref{fig:pair-2v-traced} works one such consequence through in full.
+It is the covariance between two \emph{different} causal variants in two \emph{different} people --- a quantity that is zero under random mating, and for which there is no common ancestor and no shared environment to appeal to.
+A single chain connects them, and it is forced to pass through the co-path:
+$$
+    x_{m,1} \leftrightarrow x_{m,1} \rightarrow g_m \rightarrow y_m \;\text{---}\; y_p \leftarrow g_p \leftarrow x_{p,2} \leftrightarrow x_{p,2} ,
+$$
+whose factors multiply to $1 \cdot \beta_1 \cdot 1 \cdot \mu \cdot 1 \cdot \beta_2 \cdot 1$, giving $\Cov[x_{m,1}, x_{p,2}] = \beta_1\beta_2\rho_y/\VPo$ by \eqref{eq:copath-mu}.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/mated_pair_2v_traced.tikz}
+    \caption{%
+        The same model with one chain traced on it, and the product of its coefficients written underneath.
+        Context variances are suppressed for legibility, but the chain's own $x \leftrightarrow x$ loops are kept, since they carry two of its factors.
+        The chain reaches backward through the co-path all the way to an individual variant: this is the property a bidirected edge does not have, and replacing the co-path with one would send this covariance to zero.%
+    }
+    \label{fig:pair-2v-traced}
+\end{figure}
+
+Doing the same for every pair of variables in the diagram gives the two tables below.
+Within an individual (Table~\ref{tab:pair-2v-within}) nothing has changed from the randomly mating case: these are base-population individuals, so their genotypes are still uncorrelated with each other and with their own environment.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{l|ccccc}
+                  & $x_{i,1}$      & $x_{i,2}$      & $g_i$     & $e_i$   & $y_i$     \\
+        \hline
+        $x_{i,1}$ & $1$            & $0$            & $\beta_1$ & $0$     & $\beta_1$ \\
+        $x_{i,2}$ & $0$            & $1$            & $\beta_2$ & $0$     & $\beta_2$ \\
+        $g_i$     & $\beta_1$      & $\beta_2$      & $\VAo$    & $0$     & $\VAo$    \\
+        $e_i$     & $0$            & $0$            & $0$       & $V_E$   & $V_E$     \\
+        $y_i$     & $\beta_1$      & $\beta_2$      & $\VAo$    & $V_E$   & $\VPo$    \\
+    \end{tabular}
+    \caption{%
+        Covariances within one individual $i \in \{m,p\}$, identical for both members of the pair.
+        Here $\VAo = \beta_1^2 + \beta_2^2$ and $\VPo = \VAo + V_E$; neither is a parameter of the model, both are read off the diagram.
+        The last column --- each variable's covariance with its own phenotype --- is the only part of this table the next one needs.%
+    }
+    \label{tab:pair-2v-within}
+\end{table}
+
+Between the two mates the picture is entirely new, and it has a simple shape.
+Every chain leaving one individual has to cross the co-path to reach the other, so every chain factors into a leg on the maternal side, the co-path coefficient, and a leg on the paternal side:
+\begin{equation}\label{eq:leg-rule}
+    \boxed{\ \Cov[\,a_m,\, b_p\,] \;=\; \Cov[\,a_m,\, y_m\,] \cdot \mu \cdot \Cov[\,y_p,\, b_p\,] \ }
+\end{equation}
+for any variables $a$ and $b$ belonging to the maternal and paternal member respectively.
+The entire cross-mate block is therefore the outer product of a single vector --- the last column of Table~\ref{tab:pair-2v-within} --- scaled by $\mu = \rho_y/\VPo$.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{l|ccccc}
+        $\times \; \rho_y/\VPo$ & $x_{p,1}$         & $x_{p,2}$         & $g_p$            & $e_p$          & $y_p$            \\
+        \hline
+        $x_{m,1}$ & $\beta_1^2$        & $\beta_1\beta_2$   & $\beta_1\VAo$     & $\beta_1 V_E$   & $\beta_1\VPo$     \\
+        $x_{m,2}$ & $\beta_1\beta_2$   & $\beta_2^2$        & $\beta_2\VAo$     & $\beta_2 V_E$   & $\beta_2\VPo$     \\
+        $g_m$     & $\beta_1\VAo$      & $\beta_2\VAo$      & $(\VAo)^2$        & $\VAo V_E$      & $\VAo\VPo$        \\
+        $e_m$     & $\beta_1 V_E$      & $\beta_2 V_E$      & $\VAo V_E$        & $V_E^2$         & $V_E\VPo$         \\
+        $y_m$     & $\beta_1\VPo$      & $\beta_2\VPo$      & $\VAo\VPo$        & $V_E\VPo$       & $(\VPo)^2$        \\
+    \end{tabular}
+    \caption{%
+        Covariances between the two mates. \textbf{Every entry carries a factor $\rho_y/\VPo$}, shown once in the corner rather than repeated in twenty-five cells.
+        The block is symmetric, and is the outer product of $(\beta_1, \beta_2, \VAo, V_E, \VPo)$ with itself --- a direct consequence of \eqref{eq:leg-rule}.
+        Setting $\rho_y = 0$ returns every entry to zero, recovering the randomly mating case of Section~1.%
+    }
+    \label{tab:pair-2v-between}
+\end{table}
+
+Three entries of Table~\ref{tab:pair-2v-between} are worth naming, because each is an assumption from Section~1 breaking.
+
+\begin{itemize}
+    \item $\Cov[\,x_{m,1},\, x_{p,2}\,] = \beta_1\beta_2\,\rho_y/\VPo \neq 0$.
+    Alleles at different loci in different individuals are correlated, and the correlation is signed by the product of their effects.
+    This is the correlation between non-IBD alleles that \assumptionid{Non-IBD-indep} rules out, and it is what will build up gametic phase disequilibrium in the offspring generation.
+    \item $\Cov[\,e_m,\, g_p\,] = \VAo V_E \,\rho_y/\VPo \neq 0$.
+    One partner's environment is correlated with the other's genetic value, which is the break of \assumptionid{Env-indep} and \assumptionid{No-IGE} flagged at the start of this section.
+    Nothing causal has been added --- no partner's genotype acts on the other's environment --- but the two are nonetheless associated, because each is a cause of a matched phenotype.
+    \item $\Cov[\,g_m,\, g_p\,] = (\VAo)^2\rho_y/\VPo$, so that
+    $$ \rho_g \;=\; \Corr[\,g_m,\, g_p\,] \;=\; \frac{(\VAo)^2 \rho_y/\VPo}{\VAo} \;=\; \rho_y\,\frac{\VAo}{\VPo} \;=\; \rho_y\,\hsqo . $$
+    Partners' genetic values are correlated, but by less than their phenotypes are: the phenotypic correlation is attenuated by the heritability, since only the heritable part of the matched phenotype reaches the genotype.
+    This is the base-population instance of the relation $\rho_g = \rho_y h^2$ derived below, and it is the quantity that drives everything that follows.
+\end{itemize}
+
+\todo{For user to do: Still need to revise rest of article below, agents should not edit below this point unless explicitly directed.}
+
 
 \begin{assumption}{AM-equilibrium}{Intergenerational equilibrium}
 Assortment has been operating at the same strength for long enough that the variance components have stopped changing from one generation to the next.
 \bundles{equilibrium assortative mating; reached after roughly six to ten generations \citep{Sunde2024NatComm}.}
 \end{assumption}
 
-\assumptionid{Primary-AM} is the substantive one, and it does real work below, so it is worth reading twice.
-It says the phenotype is a sufficient summary of an individual for the purpose of mate choice: two people with the same $y$ are equally attractive as partners regardless of how that $y$ was assembled from genes and environment.
-
-\subsubsection*{Fixing the scale}
-Section 1 could standardize the phenotype to $\Var[y]=1$ and then treat $h^2$ and $V_A$ as the same number.
-That convenience does not survive assortative mating, because $V_A$ --- and therefore $\Var[y]$ --- grows from one generation to the next until equilibrium is reached.
-Standardizing within each generation would make the scale a moving target and hide exactly the effect we are trying to measure.
-
-We therefore pin the scale to the \textbf{base population}: the randomly mating generation, labelled $(0)$, in which assortment has not yet begun.
-In that population we standardize as before, $\VPo = \VAo + V_E = 1$, so that $\hsqo = \VAo$.
-Quantities at equilibrium carry the superscript $(\mathrm{eq})$ and are measured on the \emph{same} scale, so $\VPeq > 1$ and
+\subsubsection*{Phenotypic scale}
+Assortative mating causes changes in the variance components of the trait over time.
+We standardize $\Var[y]$ to 1 in the base randomly mating population, denoted by $\VPo = \VAo + V_E = 1$, so that $\hsqo = \VAo$.
+Quantities at equilibrium carry the superscript $(\mathrm{eq})$.
+The heritability is always measured with variance components belonging to the same generation:
 $$ \hsqeq \;=\; \frac{\VAeq}{\VPeq} \;=\; \frac{\VAeq}{\VAeq + V_E} . $$
-We take the environmental variance $V_E$ to be constant across generations; only the genetic side responds to assortment.
 
-\subsubsection*{The genetic correlation between partners}
-\assumptionid{Pheno-AM} gives us $\rho_y$, but the quantity that propagates through a pedigree is $\rho_g$.
-To relate them, project the genetic value onto the phenotype,
-$$ g \;=\; \frac{\VAeq}{\VPeq}\, y \;+\; \varepsilon \;=\; \hsqeq\, y + \varepsilon , \qquad \Cov[\varepsilon, y]=0 , $$
-which is just the linear regression of $g$ on $y$, whose coefficient is $\Cov[g,y]/\Var[y] = \VAeq/\VPeq$.
-By \assumptionid{Primary-AM}, the residuals are uncorrelated both with each other and with the other partner's phenotype: $\Cov[\varepsilon_m, \varepsilon_f]=0$ and $\Cov[\varepsilon_m, y_f]=0$.
-The cross terms therefore drop out, leaving
-$$ \Cov[\,g_m,g_f\,] \;=\; (\hsqeq)^2\,\Cov[\,y_m,y_f\,] \;=\; (\hsqeq)^2\, \rho_y\, \VPeq . $$
-Dividing by $\VAeq$ to convert to a correlation gives the central relation of this section:
+\subsubsection*{Mate genetic value correlation}
+Due to the correlation in mates' phenotypic values, their genetic values are also correlated.
+Per \assumptionid{Primary-AM}:
+\begin{align*}\label{eq:am-rhog}
+    \Corr[g_m, g_p] &= \rho_y \cdot \Corr[g, y]^2 \\
+    &= \rho_y \cdot (\frac{\Cov[g, y]}{\sqrt{\Var[g] \cdot \Var[y]}})^2 \\
+    &= \rho_y \cdot \frac{\Cov[g, g + e]^2 }{\VAeq \cdot VPeq} \\
+    &= \rho_y \cdot \frac{(\Cov[g, g]  + \Cov[g, e])^2 }{\VAeq \cdot \VPeq} \\
+    &= \rho_y \cdot \frac{(\Var[g]  + 0)^2 }{\VAeq \cdot \VPeq} \\
+    &= \rho_y \cdot \frac{(\VAeq)^2 }{\VAeq \cdot \VPeq} \\
+    &= \rho_y \cdot \frac{\VAeq}{\VPeq}
+\end{align*}
 \begin{equation}\label{eq:am-rhog}
-    \boxed{\ \rho_g \;=\; \rho_y\, \hsqeq \ }
+    \boxed{\ \rho_g \;=\; \Corr[g_m, g_p] \;=\;\rho_y\, \hsqeq \ }
 \end{equation}
-The genetic correlation between partners is the phenotypic correlation filtered through the heritability, and the heritability that appears here is the one in the population where the mating is actually happening --- the equilibrium value, not the base-population value \citep{Sunde2024NatComm}.
-That distinction matters numerically, because $\hsqeq > \hsqo$; we return to it below.
 
-\subsection{Assortative mating inflates the additive variance}
+
+\subsection{Assortative mating inflates genetic variance}
+Before looking at the covariances between individuals, we will first consider the variance of the phenotype and its components in the presence of assortative mating.
+First, we'll consider the distribution of an offspring's genetic value in the presence of assortative mating.
+
+\todo{Write assumption for $M_c$ (number of causal variants) being large}
+
+\todo{Write approximation that genetic values are normally distributed due to central limit theorem}
+
+\todo{Write assumption that environmental values are normally distributed}
+
+Consequence: phenotype value is also normally distributed.
+This allows us to use the properties of multivariate normal distributions in our analysis.
+
+
+
 Partners with correlated genetic values produce offspring whose two inherited halves are correlated, which raises the variance of the offspring generation.
+\todo{The following seems to me like it should be written as an assumption. e.g. we are defining $s_o$. Furthermore, we have to justify why $g_o$ is centered around $g_m$ and $g_f$. This is trivial when talking about individual variants, but requires reusing some assumptions about uniform distribution of effect sizes across genome. So, we may need to reuse the assumptions from earlier.}
 To see how far this goes, write the offspring's genetic value in terms of the parents',
 \begin{equation}\label{eq:am-transmission}
     g_o \;=\; \tfrac12\,(g_m + g_f) \;+\; s_o ,
 \end{equation}
-where $s_o$ is the \emph{segregation} (or recombination) deviation: the departure of the transmitted haplotypes from the parental averages, which is mean-zero and uncorrelated with $g_m$ and $g_f$.
+where $s_o$ is the \emph{segregation} (or recombination) deviation: the departure of the transmitted haplotypes from the parental averages \todo{(wait this is wrong, it is the departure in genetic value, not the just the haplotypes. Once again, I think we need to be careful when working with genetic values.)}, which is mean-zero and uncorrelated with $g_m$ and $g_f$.
 
+\todo{I don't think we've sufficiently justified this next formula/section. I feel like it'd be better to start with the single-variant effect on increased genotype/effect*genotype variance , and then showing how it extends to the genetic value itself. Because, e.g., why would the segregation variance stay the same across generations even though other variance components are changing? Perhaps the increase is too neglible, but we need to demonstrate that first through an approximation.}
 The variance of $s_o$ is the one quantity in this recursion that assortment leaves alone.
 Segregation variance is generated by the shuffling of alleles \emph{within} each parent, so it depends only on allele frequencies, and under \assumptionid{Primary-AM} with no selection the allele frequencies do not change.
 Evaluating it in the base population, where $\Var[g_o]=\Var[g_m]=\VAo$ and $\rho_g=0$, gives
@@ -386,27 +566,22 @@ Then \eqref{eq:am-fixedpoint} gives $\rho_g = 0.130$, against the first-order va
 The additive variance rises from $\VAo=0.400$ to $\VAeq=0.460$, an increase of $15\%$, and the heritability from $0.400$ to $\hsqeq = 0.434$.
 
 \subsubsection*{Genic variance and gametic phase disequilibrium}
-It is worth being precise about \emph{where} the extra variance sits, because the two pieces behave differently for the rest of this section.
 Expanding $\Var[g_i]$ over pairs of variants and separating the diagonal from the off-diagonal,
 \begin{equation}\label{eq:am-VAsplit}
     \VAeq
     \;=\; \underbrace{\sum_k \E\!\left[\beta_k^2 x_{ik}^2\right]}_{\textstyle V_g}
     \;+\; \underbrace{\sum_{k}\sum_{k'\neq k} \E\!\left[\beta_k \beta_{k'} x_{ik} x_{ik'}\right]}_{\textstyle D} .
 \end{equation}
-The first term $V_g$ is the \emph{genic} variance: the sum of the variants' individual contributions, as though each locus stood alone.
+The first term $V_g$ is the \emph{genic} variance: the sum of the variants' individual contributions, equivalent to the variance of a trait's genetic values when causal variants are completely independent.
 The second term $D$ is the contribution of correlations \emph{between} variants, known as gametic phase disequilibrium \citep{Zhang2025NatGenet}.
 
-The crucial point is that $D$ does not measure linkage disequilibrium as such.
-Ordinary LD --- generated by physical linkage and by drift --- is blind to which alleles raise the trait, so the products $\beta_k\beta_{k'}$ it multiplies are as often negative as positive and the sum cancels.
-$D$ is nonzero only when LD is \emph{aligned with the effects}, that is, when trait-increasing alleles tend to be found together.
-Assortative mating produces exactly that alignment, and it is the same fact, seen from the other side, as the failure of \assumptionid{Random-effects} discussed in Section~\ref{sec:am-level1}.
+Ordinary LD generated by physical linkage and drift is not correlated with the the cross product of causal effects, unlike the LD generated by assortative mating.
+Consequently, the \assumptionid{Random-effects} assumption discussed in Section~\ref{sec:am-level1} is violated.
 
 Since allele frequencies are unchanged, the genic variance is still the base-population value, $V_g = \VAo$, and so by \eqref{eq:am-VAeq}
 \begin{equation}\label{eq:am-Dshare}
     D \;=\; \VAeq - \VAo \;=\; \rho_g\, \VAeq .
 \end{equation}
-The disequilibrium share of the equilibrium additive variance is therefore exactly $\rho_g$ --- in the worked example, $13\%$.
-This is a useful sanity check on the scale of the phenomenon: \citet{Zhang2025NatGenet} estimate that cross-autosome disequilibrium contributes $10$--$27\%$ of the SNP-based heritability of traits such as height, educational attainment and intelligence, which is the same order as the $\rho_g$ values those traits' partner correlations imply.
 
 \subsection{What carries over from Section 1}
 Before working through the levels, it is worth auditing the nine assumptions of Section 1.
