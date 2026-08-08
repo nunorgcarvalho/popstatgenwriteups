@@ -295,7 +295,7 @@ $$ \Corr[\,y_m, y_p\,] = \rho_y , $$
 where the subscripts $m$ and $p$ index the maternal and paternal member of a mated pair.
 Matching is on the phenotype \emph{only}: any covariance between the partners' trait components is a downstream consequence of this phenotypic matching, and is not specified separately.
 Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the induced correlation between partners' genetic values:
-$ \Corr[\,g_m, g_p\,] = \rhogt $, where the superscript records that --- unlike $\rho_y$, which is held fixed --- this induced correlation changes from one generation to the next.
+$ \Corr[\,g_m, g_p\,] = \rhogt $, where the superscript records that this induced correlation changes from one generation to the next, unlike $\rho_y$, which is held fixed across generations.
 \bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where partners grow more similar after mating. $\rho_y$ is often written $\mu$ or $r$ in the literature.}
 \end{assumption}
 
@@ -352,10 +352,7 @@ The quantity multiplied along a chain when it crosses a co-path is not the corre
 \end{equation}
 because a co-path with coefficient $\mu$ contributes $\Cov[a,b] = \mu\,\Var[a]\,\Var[b]$ \citep{Sunde2025NatComm}.
 The two coincide only when the matched variables have unit variance.
-
-That superscript is doing real work, so we adopt it as a convention: a parenthesized superscript names the generation a quantity belongs to, $q^{(t)}$, with $q^{(0)}$ the randomly mating base population and $q^{(\mathrm{eq})}$ the equilibrium reached under sustained assortment.
-Assortative mating inflates $\Var[y]$ from one generation to the next, so $\VPt$ moves and $\mut$ moves with it; the same holds for $\VAt$, $\hsqt$, and the genetic correlation between mates $\rhogt$.
-Of the quantities in this section only $\rho_y$ and $V_E$ are generation-invariant, and they are the only two we write without a superscript.
+Note the use of a superscript to denote the generation a quantity belongs to, since $\VPt$ changes from one generation to the next under assortative mating (described below).
 A value of $\mu$ carried unchanged from one generation to the next is therefore wrong, which is the practical reason we label a co-path with its correlation in brackets, as $[\rho_y]$, and leave $\mut$ to be derived from the diagram's own variances.
 
 Tracing chains by hand is instructive for a single pair and hopeless for a pedigree, since the number of chains grows multiplicatively with depth.
@@ -367,7 +364,7 @@ We assume a population has been randomly mating as described by assumption \assu
 The parameters defined in the previous section, such as the additive variance $V_A$ and heritability $h^2$, are measured in this base population and denoted by a $(0)$ superscript, e.g. $\VAo$ and $\hsqo$, since these terms do not remain fixed across generations under assortative mating.
 Note that $V_E$ remains fixed.
 
-Then, mates in generation $t=0$ are formed according to \assumptionid{Primary-AM}, the offspring generation $t=1$ will have a different distribution of phenotypic and genetic values than the base population.
+Then, mates in generation $t=0$ are formed according to \assumptionid{Primary-AM}.
 Below, we present the path diagram describing a single pair that assortatively mated on the focal trait with strength $\rho_y$.
 In our example, the trait's genetic component is the additive sum of two causal variants, but we present formulas that work for a trait with arbitrarily many causal variants.
 Note that because the parent population was a product of random mating, the two causal variants within an individual are uncorrelated with each other.
@@ -375,15 +372,15 @@ Note that because the parent population was a product of random mating, the two 
 \begin{figure}[H]
     \begin{floatcard}
         \input{figures/mated_pair_2v.tikz}
+        \caption{%
+            A mated pair in the base population, assorting on the phenotype with strength $\rho_y$.
+            The trait is built from two causal variants, $g_i = \beta_1 x_{i,1} + \beta_2 x_{i,2}$, and each individual's phenotype is $y_i = g_i + e_i$.
+            Genotypes and phenotypes are observed (rectangles); genetic and environmental values are latent (ellipses).
+            Self-loops are exogenous variances: each standardized genotype has variance $1$ and each environmental deviation has variance $V_E$.
+            The single thick line is the co-path, labelled with the correlation it induces.%
+        }
+        \label{fig:pair-2v}
     \end{floatcard}
-    \caption{%
-        A mated pair in the base population, assorting on the phenotype with strength $\rho_y$.
-        The trait is built from two causal variants, $g_i = \beta_1 x_{i,1} + \beta_2 x_{i,2}$, and each individual's phenotype is $y_i = g_i + e_i$.
-        Genotypes and phenotypes are observed (rectangles); genetic and environmental values are latent (ellipses).
-        Self-loops are exogenous variances: each standardized genotype has variance $1$ and each environmental deviation has variance $V_E$.
-        The single thick line is the co-path, labelled with the correlation it induces.%
-    }
-    \label{fig:pair-2v}
 \end{figure}
 
 Figure~\ref{fig:pair-2v-traced} works one such consequence through in full.
@@ -393,12 +390,12 @@ Multiplying the coefficients in the chain gives $\Cov[x_{m,1}, x_{p,2}] = \beta_
 \begin{figure}[H]
     \begin{floatcard}
         \input{figures/mated_pair_2v_traced.tikz}
+        \caption{%
+            The same model as Figure~\ref{fig:pair-2v} with one chain traced on it, and the product of its coefficients written underneath.
+            Context variances are suppressed for legibility, but the chain's own $x \leftrightarrow x$ loops are kept, since they carry two of its factors.%
+        }
+        \label{fig:pair-2v-traced}
     \end{floatcard}
-    \caption{%
-        The same model as Figure~\ref{fig:pair-2v} with one chain traced on it, and the product of its coefficients written underneath.
-        Context variances are suppressed for legibility, but the chain's own $x \leftrightarrow x$ loops are kept, since they carry two of its factors.%
-    }
-    \label{fig:pair-2v-traced}
 \end{figure}
 
 Doing the same for every pair of variables in the diagram gives the two tables below.
@@ -415,17 +412,16 @@ Within an individual (Table~\ref{tab:pair-2v-within}) nothing has changed from t
         $e_i$     & $0$            & $0$            & $0$       & $V_E$   & $V_E$     \\
         $y_i$     & $\beta_1$      & $\beta_2$      & $\VAo$    & $V_E$   & $\VPo$    \\
     \end{tabular}
-    \end{floatcard}
     \caption{%
         Covariances within one individual $i \in \{m,p\}$, identical for both members of the pair.
         Here $\VAo = \beta_1^2 + \beta_2^2$ and $\VPo = \VAo + V_E$; neither is a parameter of the model, both are read off the diagram.
         The last column --- each variable's covariance with its own phenotype --- is the only part of this table needed for computing the covariance between variables across mates.%
     }
     \label{tab:pair-2v-within}
+    \end{floatcard}
 \end{table}
 
-Between the two mates the picture is entirely new, and it has a simple shape.
-Every chain leaving one individual has to cross the co-path to reach the other, so every chain factors into a leg on the maternal side, the co-path coefficient, and a leg on the paternal side:
+The co-path induces covariance between the factors pertaining to mates such that:
 \begin{equation}\label{eq:leg-rule}
     \boxed{\ \Cov[\,a_m,\, b_p\,] \;=\; \Cov[\,a_m,\, y_m\,] \cdot \muo \cdot \Cov[\,y_p,\, b_p\,] \ }
 \end{equation}
@@ -443,27 +439,31 @@ The entire cross-mate block is therefore the outer product of a single vector --
         $e_m$     & $\beta_1 V_E$      & $\beta_2 V_E$      & $\VAo V_E$        & $V_E^2$         & $V_E\VPo$         \\
         $y_m$     & $\beta_1\VPo$      & $\beta_2\VPo$      & $\VAo\VPo$        & $V_E\VPo$       & $(\VPo)^2$        \\
     \end{tabular}
-    \end{floatcard}
     \caption{%
         Covariances between the two mates. \textbf{Every entry carries a factor $\muo = \rho_y/\VPo$}, shown once in the corner rather than repeated in twenty-five cells.
         The block is symmetric, and is the outer product of $(\beta_1, \beta_2, \VAo, V_E, \VPo)$ with itself --- a direct consequence of \eqref{eq:leg-rule}.
         Setting $\rho_y = 0$ returns every entry to zero, recovering the randomly mating case of Section~1.%
     }
     \label{tab:pair-2v-between}
+    \end{floatcard}
 \end{table}
 
-Three entries of Table~\ref{tab:pair-2v-between} are worth naming, because each is an assumption from Section~1 breaking.
+Three key results from Table~\ref{tab:pair-2v-between} are highlighted here as they break the assumptions from Section~1.
+We also generalize to a trait with $M_c$ causal variants, $g_i = \sum_{k=1}^{M_c} \beta_k x_{ik}$, for which $\VAo = \sum_k \beta_k^2$ and $\VPo = \VAo + V_E$.
+Nothing in the derivation depended on there being two: \eqref{eq:leg-rule} follows from there being a \emph{single} co-path between the mates, so each result is obtained by reading the two legs off Table~\ref{tab:pair-2v-within} with $\beta_1,\beta_2$ replaced by $\beta_k,\beta_l$.
 
 \begin{itemize}
-    \item $\Cov[\,x_{m,1},\, x_{p,2}\,] = \beta_1\beta_2\,\rho_y/\VPo \neq 0$.
+    \item $\Cov[\,x_{mk},\, x_{pl}\,] = \beta_k\beta_l\,\rho_y/\VPo \neq 0$, for \emph{every} pair of causal variants $k$ and $l$ --- the same variant in the two partners ($k=l$) included.
     Alleles at different loci in different individuals are correlated, and the correlation is signed by the product of their effects.
     This is the correlation between non-IBD alleles that \assumptionid{Non-IBD-indep} rules out, and it is what will build up gametic phase disequilibrium in the offspring generation.
+    Note that the within-individual covariance $\Cov[\,x_{mk},\, x_{ml}\,]$ is still exactly zero for $k \neq l$: at this point the disequilibrium exists only \emph{between} the partners, not yet within either of them.
     \item $\Cov[\,e_m,\, g_p\,] = \VAo V_E \,\rho_y/\VPo \neq 0$.
     One partner's environment is correlated with the other's genetic value, which is the break of \assumptionid{Env-indep} and \assumptionid{No-IGE} flagged at the start of this section.
     Nothing causal has been added --- no partner's genotype acts on the other's environment --- but the two are nonetheless associated, because each is a cause of a matched phenotype.
     \item $\Cov[\,g_m,\, g_p\,] = (\VAo)^2\rho_y/\VPo$, so that
     $$ \rhogo \;=\; \Corr[\,g_m,\, g_p\,] \;=\; \frac{(\VAo)^2 \rho_y/\VPo}{\VAo} \;=\; \rho_y\,\frac{\VAo}{\VPo} \;=\; \rho_y\,\hsqo . $$
     Partners' genetic values are correlated according to the strength of assortative mating and the heritability of the sorting trait.
+    Equivalently, this is the sum of the first result over all $M_c^2$ ordered pairs of variants, weighted by their effects: $\sum_{k}\sum_{l}\beta_k\beta_l \cdot \beta_k\beta_l\rho_y/\VPo = (\sum_k \beta_k^2)^2\rho_y/\VPo$.
 \end{itemize}
 
 \todo{For user to do: Still need to revise rest of article below, agents should not edit below this point unless explicitly directed.}

@@ -45,6 +45,10 @@
 \long\def\@makecaption#1#2{%
   \vskip\abovecaptionskip
   \begingroup\small
+    % A floatcard centres its contents; a caption is prose and must not inherit that, or every
+    % line of a wrapped caption comes out centred. Undo it locally rather than at the call site.
+    \leftskip\z@skip \rightskip\z@skip \parindent\z@
+    \parfillskip\z@ \@plus 1fil\relax
     \sbox\@tempboxa{\textbf{#1:}~#2}%
     \ifdim \wd\@tempboxa >\hsize
       \textbf{#1:}~#2\par
@@ -56,21 +60,28 @@
   \vskip\belowcaptionskip}
 \makeatother
 
-% A light panel behind a float's contents, so a figure or table reads as one object rather than
-% as loose material sitting in the text column. Same visual language as the assumption and
-% approximation boxes below, reusing `framed`'s shaded environment. The caption stays outside
-% the panel, where it belongs typographically and where \caption is known to behave.
-% Usage, inside a figure or table environment:
-%   \begin{floatcard} <tikzpicture, or tabular> \end{floatcard}
-%   \caption{...}\label{...}
-\definecolor{floatback}{RGB}{247,247,249}
+% A bordered panel around a float's contents AND its caption, so a figure or table reads as one
+% object rather than as loose material sitting in the text column. Built as an \fbox around a
+% minipage rather than on `framed`, because the caption goes inside and \caption is only reliably
+% behaved inside a box that is set in one piece.
+% Usage -- note the caption is INSIDE the environment:
+%   \begin{figure}[H]
+%     \begin{floatcard} <tikzpicture, or tabular> \caption{...}\label{...} \end{floatcard}
+%   \end{figure}
+\definecolor{floatrule}{RGB}{196,196,206}
+\newsavebox{\floatcardbox}
+\newlength{\floatcardsep}\setlength{\floatcardsep}{9pt}
 \newenvironment{floatcard}{%
-  \colorlet{shadecolor}{floatback}%
-  \begin{shaded}%
-  \setlength{\parskip}{0pt}%
+  \begin{lrbox}{\floatcardbox}%
+  \begin{minipage}{\dimexpr\linewidth-2\floatcardsep-1pt\relax}%
+  \setlength{\parskip}{0.5em}%
   \centering%
 }{%
-  \end{shaded}%
+  \end{minipage}%
+  \end{lrbox}%
+  % The contents are already typeset inside the savebox, so this colour reaches only the rule.
+  {\setlength{\fboxsep}{\floatcardsep}\setlength{\fboxrule}{0.4pt}%
+   \color{floatrule}\fbox{\usebox{\floatcardbox}}}%
 }
 
 % assumption boxes %%%%

@@ -177,6 +177,70 @@ def check_mated_pair_2v() -> int:
     return checked
 
 
+def mated_pair_general(n_variants: int) -> pm.Model:
+    """The same model with `n_variants` causal variants, for checking the general formulas."""
+    betas = [f"beta_{k}" for k in range(1, n_variants + 1)]
+    lines = [
+        "latent: g_m, e_m, g_p, e_p",
+        "positive: V_E",
+        "real: " + ", ".join(betas),
+    ]
+    for who in ("m", "p"):
+        terms = " + ".join(f"{b}*x_{who}{k}" for k, b in enumerate(betas, start=1))
+        lines.append(f"g_{who} ~ {terms}")
+        lines.append(f"y_{who} ~ g_{who} + e_{who}")
+        lines.append(f"e_{who} ~~ V_E*e_{who}")
+        for k in range(1, n_variants + 1):
+            lines.append(f"x_{who}{k} ~~ 1*x_{who}{k}")
+    lines.append("y_m -- [rho_y]*y_p")
+    return pm.from_text("\n".join(lines), name=f"mated pair, {n_variants} causal variants")
+
+
+def check_general_formulas(n_variants: int = 3) -> int:
+    """Assert the three results the writeup states for a trait with M_c causal variants.
+
+    The section derives them on a two-variant diagram and then claims them in general, so the
+    general claim is what has to be checked -- at M_c > 2, where a cross-variant term that only
+    happened to work for two variants would show up.
+    """
+    model = mated_pair_general(n_variants)
+    assert not [i for i in model.validate() if i.severity == "error"]
+    engine = pm.RAMEngine(model)
+    betas = [model.sym(f"beta_{k}") for k in range(1, n_variants + 1)]
+    V_E, rho_y = model.sym("V_E"), model.sym("rho_y")
+    V_A = sp.Add(*[b**2 for b in betas])          # sum_k beta_k^2
+    V_P = V_A + V_E
+    checked = 0
+
+    # 1. Cov[x_mk, x_pl] = beta_k beta_l rho_y / V_P, for EVERY pair including k == l.
+    for k in range(1, n_variants + 1):
+        for lidx in range(1, n_variants + 1):
+            got = engine.cov(f"x_m{k}", f"x_p{lidx}")
+            want = betas[k - 1] * betas[lidx - 1] * rho_y / V_P
+            assert sp.simplify(got - want) == 0, f"Cov[x_m{k},x_p{lidx}]: {got}"
+            checked += 1
+    # ... and within an individual it is still exactly zero, which is what makes the cross-mate
+    # term the whole of the new disequilibrium.
+    for k in range(1, n_variants + 1):
+        for lidx in range(k + 1, n_variants + 1):
+            assert engine.cov(f"x_m{k}", f"x_m{lidx}") == 0
+            checked += 1
+
+    # 2. Cov[e_m, g_p] = V_A V_E rho_y / V_P
+    assert sp.simplify(engine.cov("e_m", "g_p") - V_A * V_E * rho_y / V_P) == 0
+    # 3. Cov[g_m, g_p] = V_A^2 rho_y / V_P, hence rho_g = rho_y h^2
+    assert sp.simplify(engine.cov("g_m", "g_p") - V_A**2 * rho_y / V_P) == 0
+    rho_g = engine.cov("g_m", "g_p") / engine.var("g_m")
+    assert sp.simplify(rho_g - rho_y * V_A / V_P) == 0, rho_g
+    checked += 3
+
+    # and V_A really is the sum of squared effects, rather than that being an assumption
+    assert sp.simplify(engine.var("g_m") - V_A) == 0
+    assert sp.simplify(engine.var("y_m") - V_P) == 0
+    checked += 2
+    return checked
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="run the checks, write nothing")
@@ -184,6 +248,8 @@ def main() -> int:
 
     n = check_mated_pair_2v()
     print(f"mated_pair_2v: {n} covariance entries agree with pathMgr")
+    for m_c in (3, 5):
+        print(f"general M_c={m_c}: {check_general_formulas(m_c)} results agree with pathMgr")
 
     if args.check:
         return 0
