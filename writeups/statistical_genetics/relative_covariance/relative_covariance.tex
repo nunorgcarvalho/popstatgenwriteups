@@ -280,7 +280,6 @@ At each step, the finer variable \emph{screens off} the coarser one: once we con
 Screening is what licenses the tower property, and it is the reason the four information sets can be arranged in a single descending chain rather than a more complicated structure.
 
 \section{Additive genetics under assortative mating}\label{sec:am}
-\todo{Moving forward, let's try to be consistent w/ our terminology and always refer to "mates", not "partners" or "spouses", only "mates" or sometimes, "parents"}
 We will now do away with the assumption of random mating (particularly implied in \assumptionid{Non-IBD-indep}) and instead provide a model for assortative mating that will let us quantify its impact on phenotypic covariance.
 
 The phenotype model remains the same: we assume an additive genetic architecture (\assumptionid{Additivity}) with an independent environmental component (\assumptionid{GE-indep}).
@@ -294,10 +293,10 @@ We assume a model of assortative mating based on mates' similarity in a sorting 
 Mating is non-random such that two mates' phenotypes are correlated for some trait at the time of mating:
 $$ \Corr[\,y_m, y_p\,] = \rho_y , $$
 where the subscripts $m$ and $p$ index the maternal and paternal member of a mated pair.
-Matching is on the phenotype \emph{only}: any covariance between the partners' trait components is a downstream consequence of this phenotypic matching, and is not specified separately.
-Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the induced correlation between partners' genetic values:
+Matching is on the phenotype \emph{only}: any covariance between the mates' trait components is a downstream consequence of this phenotypic matching, and is not specified separately.
+Following the convention that a subscript names the component being correlated, we write $\rho_g$ for the induced correlation between mates' genetic values:
 $ \Corr[\,g_m, g_p\,] = \rhogt $, where the superscript records that this induced correlation changes from one generation to the next, unlike $\rho_y$, which is held fixed across generations.
-\bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where partners grow more similar after mating. $\rho_y$ is often written $\mu$ or $r$ in the literature.}
+\bundles{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly); it also excludes convergence, where mates grow more similar after mating. $\rho_y$ is often written $\mu$ or $r$ in the literature.}
 \end{assumption}
 
 \subsection{Dynamics and equilibrium}
@@ -359,7 +358,24 @@ A value of $\mu$ carried unchanged from one generation to the next is therefore 
 Tracing chains by hand is instructive for a single pair and hopeless for a pedigree, since the number of chains grows multiplicatively with depth.
 The diagrams and covariances in this section were produced with \texttt{pathMgr}, a small package written alongside this writeup: it takes a model specification, returns the covariance between any two of its variables as an algebraic expression, and emits the path diagram to go with it.
 It computes each covariance in two independent ways --- by enumerating chains exactly as above, and in closed form from the matrix identity $\bSigma = \B{F}(\bI-\bA)^{-1}\bS(\bI-\bA)^{-\intercal}\B{F}^{\intercal}$ --- and their agreement is the correctness check.
-\todo{We need to explain what the matrices $\B{F}$, $\bA$, and $\bS$ are, and how they relate to the diagram.}
+
+That identity is the diagram written as matrices, one row and column per variable.
+Collecting all the variables into a vector $\bv$, the matrix $\bA$ holds the \textbf{directed} edges --- $A_{ij}$ is the coefficient on the arrow from $j$ to $i$ --- so the whole system of structural equations is $\bv = \bA\bv + \bepsilon$, where $\bepsilon$ is the vector of disturbances.
+The symmetric matrix $\bS$ holds the \textbf{bidirected} edges: $S_{ij}$ is the value of $i \leftrightarrow j$, and its diagonal $S_{ii}$ is the self-loop, the variance of $i$'s disturbance.
+$\B{F}$ merely selects rows, keeping the variables we want reported and discarding the rest.
+
+The inverse is what does the tracing.
+In an acyclic model $\bA$ is nilpotent, so $(\bI-\bA)^{-1} = \bI + \bA + \bA^2 + \cdots$, and the $(i,u)$ entry of that sum is the total over all directed paths from $u$ to $i$ of the product of their coefficients --- one term per path, $\bA^n$ contributing the paths of length $n$.
+Sandwiching $\bS$ between it and its transpose therefore gives, for latent and observed variables alike,
+$$
+    \Sigma_{ij} \;=\; \sum_{u}\sum_{v}
+    \underbrace{\big[(\bI-\bA)^{-1}\big]_{iu}}_{i \leftarrow \cdots \leftarrow u}
+    \underbrace{S_{uv}}_{u \leftrightarrow v}
+    \underbrace{\big[(\bI-\bA)^{-1}\big]_{jv}}_{v \rightarrow \cdots \rightarrow j} ,
+$$
+which is Wright's rule term for term: a backward leg, exactly one bidirected edge, a forward leg, summed over every chain, indexed by the $u \leftrightarrow v$ it turns around on.
+The two methods are the same statement --- one enumerated, one summed in closed form --- which is why their agreement tests the implementation rather than the mathematics.
+Co-paths are the one thing that sits outside this identity and contributes further terms; there, the chain rules given above are the definition.
 
 \subsubsection{First generation of assortative mating}
 We assume a population has been randomly mating as described by assumption \assumptionid{Non-IBD-indep} up to some generation $t=0$, which can also be referred to as the base or randomly-mating population.
@@ -371,33 +387,22 @@ Below, we present the path diagram describing a single pair that assortatively m
 In our example, the trait's genetic component is the additive sum of two causal variants, but we present formulas that work for a trait with arbitrarily many causal variants.
 Note that because the parent population was a product of random mating, the two causal variants within an individual are uncorrelated with each other.
 
-\todo{I think Fig 1 and Fig 2 should just be a single figure, already highlighting the path of interest in fig2, but unlike fig2, still showing the additional exogeneous variances that aren't relevant tot he selected path}
+One chain is traced on the diagram to show the rules in use.
+It is the covariance between two \emph{different} causal variants in two \emph{different} people --- a quantity that is zero under random mating, and for which there is no common ancestor to appeal to.
+Multiplying the coefficients along it gives $\Cov[x_{m,1}, x_{p,2}] = \beta_1\beta_2\rho_y/\VPo$ by \eqref{eq:copath-mu}.
+
 \begin{figure}[H]
     \begin{floatcard}
         \input{figures/mated_pair_2v.tikz}
         \caption{%
-            A mated pair in the base population, assorting on the phenotype with strength $\rho_y$.
+            A mated pair in the base population, assorting on the phenotype with strength $\rho_y$, with one chain traced on it and the product of its coefficients written underneath.
             The trait is built from two causal variants, $g_i = \beta_1 x_{i,1} + \beta_2 x_{i,2}$, and each individual's phenotype is $y_i = g_i + e_i$.
             Genotypes and phenotypes are observed (rectangles); genetic and environmental values are latent (ellipses).
             Self-loops are exogenous variances: each standardized genotype has variance $1$ and each environmental deviation has variance $V_E$.
-            The single thick line is the co-path, labelled with the correlation it induces.%
+            The single thick line is the co-path, labelled with the correlation it induces.
+            The edges the chain does not use are faded rather than omitted, so the figure still states the whole model and any other covariance can be traced off the same picture.%
         }
         \label{fig:pair-2v}
-    \end{floatcard}
-\end{figure}
-
-Figure~\ref{fig:pair-2v-traced} works one such consequence through in full.
-It is the covariance between two \emph{different} causal variants in two \emph{different} people --- a quantity that is zero under random mating for which there is no common ancestor to appeal to.
-Multiplying the coefficients in the chain gives $\Cov[x_{m,1}, x_{p,2}] = \beta_1\beta_2\rho_y/\VPo$ by \eqref{eq:copath-mu}.
-
-\begin{figure}[H]
-    \begin{floatcard}
-        \input{figures/mated_pair_2v_traced.tikz}
-        \caption{%
-            The same model as Figure~\ref{fig:pair-2v} with one chain traced on it, and the product of its coefficients written underneath.
-            Context variances are suppressed for legibility, but the chain's own $x \leftrightarrow x$ loops are kept, since they carry two of its factors.%
-        }
-        \label{fig:pair-2v-traced}
     \end{floatcard}
 \end{figure}
 
@@ -452,21 +457,21 @@ The entire cross-mate block is therefore the outer product of a single vector --
 \end{table}
 
 Three key results from Table~\ref{tab:pair-2v-between} are highlighted here as they break the assumptions from Section~1.
-\todo{I actually think we can just use $M$ instead of $M_c$, since non-causal variants just have $\beta_k = 0$ and don't contribute to the sums. Furthermore, we don't need to rewrite the formula for $g$ since we can jus call back to the same additive definition we've been using}
-We also generalize to a trait with $M_c$ causal variants, $g_i = \sum_{k=1}^{M_c} \beta_k x_{ik}$, for which $\VAo = \sum_k \beta_k^2$ and $\VPo = \VAo + V_E$.
+We also generalize from two variants back to the genome-wide sum of \assumptionid{Additivity}, $g_i = \sum_{k=1}^{M} \beta_k x_{ik}$, for which $\VAo = \sum_k \beta_k^2$ and $\VPo = \VAo + V_E$.
+No separate count of causal variants is needed: a non-causal variant carries $\beta_k = 0$ and drops out of every sum below, so summing over all $M$ costs nothing.
 Nothing in the derivation depended on there being two: \eqref{eq:leg-rule} follows from there being a \emph{single} co-path between the mates, so each result is obtained by reading the two legs off Table~\ref{tab:pair-2v-within} with $\beta_1,\beta_2$ replaced by $\beta_k,\beta_l$.
 
 \begin{itemize}
-    \item $\Cov[\,x_{mk},\, x_{pl}\,] = \beta_k\beta_l\,\rho_y/\VPo \neq 0$, for \emph{every} pair of causal variants $k$ and $l$ --- the same variant in the two partners ($k=l$) included.
+    \item $\Cov[\,x_{mk},\, x_{pl}\,] = \beta_k\beta_l\,\rho_y/\VPo \neq 0$, for \emph{every} pair of variants $k$ and $l$ --- the same variant in the two mates ($k=l$) included, and vanishing only where one of the two is non-causal.
     Alleles at different loci in different individuals are correlated, and the correlation is signed by the product of their effects.
     This is the correlation between non-IBD alleles that \assumptionid{Non-IBD-indep} rules out, and it is what will build up gametic phase disequilibrium in the offspring generation.
-    Note that in the base population, the within-individual covariance $\Cov[\,x_{mk},\, x_{ml}\,]$ is still exactly zero for $k \neq l$; the disequilibrium exists only \emph{between} the partners.
+    Note that in the base population, the within-individual covariance $\Cov[\,x_{mk},\, x_{ml}\,]$ is still exactly zero for $k \neq l$; the disequilibrium exists only \emph{between} the mates.
     \item $\Cov[\,e_m,\, g_p\,] = \VAo V_E \,\rho_y/\VPo \neq 0$.
     One mate's environment is correlated with the other's genetic value, which is the break of \assumptionid{Env-indep} and \assumptionid{No-IGE} flagged at the start of this section.
     Despite one mate's genotype not causally affecting the other's environment, the two still become correlated due to the phenotypic matching.
     \item $\Cov[\,g_m,\, g_p\,] = (\VAo)^2\rho_y/\VPo$, so that
     $$ \rhogo \;=\; \Corr[\,g_m,\, g_p\,] \;=\; \frac{(\VAo)^2 \rho_y/\VPo}{\VAo} \;=\; \rho_y\,\frac{\VAo}{\VPo} \;=\; \rho_y\,\hsqo . $$
-    Partners' genetic values are correlated according to the strength of assortative mating and the heritability of the sorting trait.
+    Mates' genetic values are correlated according to the strength of assortative mating and the heritability of the sorting trait.
     Equivalently, this is the sum of the first result over all $M_c^2$ ordered pairs of variants, weighted by their effects: $\sum_{k}\sum_{l}\beta_k\beta_l \cdot \beta_k\beta_l\rho_y/\VPo = (\sum_k \beta_k^2)^2\rho_y/\VPo$.
 \end{itemize}
 
