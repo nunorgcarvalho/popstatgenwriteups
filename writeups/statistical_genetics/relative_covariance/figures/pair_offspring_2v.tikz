@@ -1,0 +1,116 @@
+\definecolor{pmCB03A2E}{HTML}{B03A2E}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  pmObserved/.style={draw=black, fill=white, rectangle, inner sep=0.09cm, minimum width=0.42cm, minimum height=0.34cm},
+  pmLatent/.style={draw=black, fill=white, ellipse, inner sep=0.16cm, minimum width=0.42cm, minimum height=0.34cm},
+  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.7pt},
+  pmBidirected/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, line width=0.7pt},
+  pmCopath/.style={line width=1.6pt},
+  pmLabel/.style={midway, fill=white, inner sep=1pt},
+]
+  \node[pmLatent] (g_m) at (3.300,11.600) {$g_m$};
+  \node[pmLatent] (e_m) at (6.900,11.600) {$e_m$};
+  \node[pmLatent] (g_p) at (17.900,11.600) {$g_p$};
+  \node[pmLatent] (e_p) at (21.500,11.600) {$e_p$};
+  \node[pmLatent] (z_mat_m1) at (0.000,8.400) {$z^{(m)}_{m,1}$};
+  \node[pmLatent] (z_mat_m2) at (4.600,8.400) {$z^{(m)}_{m,2}$};
+  \node[pmLatent] (z_pat_m1) at (2.000,8.400) {$z^{(p)}_{m,1}$};
+  \node[pmLatent] (z_pat_m2) at (6.600,8.400) {$z^{(p)}_{m,2}$};
+  \node[pmLatent] (z_mat_p1) at (14.600,8.400) {$z^{(m)}_{p,1}$};
+  \node[pmLatent] (z_mat_p2) at (19.200,8.400) {$z^{(m)}_{p,2}$};
+  \node[pmLatent] (z_pat_p1) at (16.600,8.400) {$z^{(p)}_{p,1}$};
+  \node[pmLatent] (z_pat_p2) at (21.200,8.400) {$z^{(p)}_{p,2}$};
+  \node[pmLatent] (z_mat_o11) at (0.150,5.000) {$z^{(m)}_{o1,1}$};
+  \node[pmLatent] (z_mat_o12) at (4.750,5.000) {$z^{(m)}_{o1,2}$};
+  \node[pmLatent] (z_pat_o11) at (14.750,5.000) {$z^{(p)}_{o1,1}$};
+  \node[pmLatent] (z_pat_o12) at (19.350,5.000) {$z^{(p)}_{o1,2}$};
+  \node[pmLatent] (z_mat_o21) at (1.850,5.000) {$z^{(m)}_{o2,1}$};
+  \node[pmLatent] (z_mat_o22) at (6.450,5.000) {$z^{(m)}_{o2,2}$};
+  \node[pmLatent] (z_pat_o21) at (16.450,5.000) {$z^{(p)}_{o2,1}$};
+  \node[pmLatent] (z_pat_o22) at (21.050,5.000) {$z^{(p)}_{o2,2}$};
+  \node[pmLatent] (g_o1) at (6.700,1.100) {$g_{o1}$};
+  \node[pmLatent] (g_o2) at (14.500,1.100) {$g_{o2}$};
+  \node[pmLatent] (e_o1) at (3.300,1.100) {$e_{o1}$};
+  \node[pmLatent] (e_o2) at (11.100,1.100) {$e_{o2}$};
+  \node[pmObserved] (x_m1) at (1.000,10.000) {$x_{m,1}$};
+  \node[pmObserved] (x_m2) at (5.600,10.000) {$x_{m,2}$};
+  \node[pmObserved] (x_p1) at (15.600,10.000) {$x_{p,1}$};
+  \node[pmObserved] (x_p2) at (20.200,10.000) {$x_{p,2}$};
+  \node[pmObserved] (y_m) at (3.300,13.200) {$y_m$};
+  \node[pmObserved] (y_p) at (17.900,13.200) {$y_p$};
+  \node[pmObserved] (x_o11) at (5.200,2.600) {$x_{o1,1}$};
+  \node[pmObserved] (x_o12) at (8.200,2.600) {$x_{o1,2}$};
+  \node[pmObserved] (y_o1) at (6.700,-0.300) {$y_{o1}$};
+  \node[pmObserved] (x_o21) at (13.000,2.600) {$x_{o2,1}$};
+  \node[pmObserved] (x_o22) at (16.000,2.600) {$x_{o2,2}$};
+  \node[pmObserved] (y_o2) at (14.500,-0.300) {$y_{o2}$};
+  \draw[pmDirected, draw=black] (z_mat_m1) -- (x_m1);
+  \draw[pmDirected, draw=black] (z_pat_m1) -- (x_m1);
+  \draw[pmDirected, draw=black] (z_mat_m2) -- (x_m2);
+  \draw[pmDirected, draw=black] (z_pat_m2) -- (x_m2);
+  \draw[pmDirected, draw=black] (z_mat_p1) -- (x_p1);
+  \draw[pmDirected, draw=black] (z_pat_p1) -- (x_p1);
+  \draw[pmDirected, draw=black] (z_mat_p2) -- (x_p2);
+  \draw[pmDirected, draw=black] (z_pat_p2) -- (x_p2);
+  \draw[pmDirected, draw=black] (x_m1) -- node[pmLabel] {$\beta_{1}$} (g_m);
+  \draw[pmDirected, draw=black] (x_m2) -- node[pmLabel] {$\beta_{2}$} (g_m);
+  \draw[pmDirected, draw=black] (x_p1) -- node[pmLabel] {$\beta_{1}$} (g_p);
+  \draw[pmDirected, draw=black] (x_p2) -- node[pmLabel] {$\beta_{2}$} (g_p);
+  \draw[pmDirected, draw=black] (g_m) -- (y_m);
+  \draw[pmDirected, draw=black] (e_m) -- (y_m);
+  \draw[pmDirected, draw=black] (g_p) -- (y_p);
+  \draw[pmDirected, draw=black] (e_p) -- (y_p);
+  \draw[pmDirected, draw=black] (z_mat_m1) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o11);
+  \draw[pmDirected, draw=black] (z_pat_m1) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o11);
+  \draw[pmDirected, draw=black] (z_mat_m2) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o12);
+  \draw[pmDirected, draw=black] (z_pat_m2) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o12);
+  \draw[pmDirected, draw=black] (z_mat_p1) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o11);
+  \draw[pmDirected, draw=black] (z_pat_p1) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o11);
+  \draw[pmDirected, draw=black] (z_mat_p2) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o12);
+  \draw[pmDirected, draw=black] (z_pat_p2) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o12);
+  \draw[pmDirected, draw=black] (z_mat_o11) -- (x_o11);
+  \draw[pmDirected, draw=black] (z_pat_o11) -- (x_o11);
+  \draw[pmDirected, draw=black] (z_mat_o12) -- (x_o12);
+  \draw[pmDirected, draw=black] (z_pat_o12) to[bend left=10] (x_o12);
+  \draw[pmDirected, draw=black] (x_o11) -- node[pmLabel] {$\beta_{1}$} (g_o1);
+  \draw[pmDirected, draw=black] (x_o12) -- node[pmLabel] {$\beta_{2}$} (g_o1);
+  \draw[pmDirected, draw=black] (g_o1) -- (y_o1);
+  \draw[pmDirected, draw=black] (e_o1) -- (y_o1);
+  \draw[pmDirected, draw=black] (z_mat_m1) -- node[pmLabel, pos=0.380, xshift=0.351cm, yshift=0.191cm] {$\frac{1}{2}$} (z_mat_o21);
+  \draw[pmDirected, draw=black] (z_pat_m1) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o21);
+  \draw[pmDirected, draw=black] (z_mat_m2) -- node[pmLabel, pos=0.380, xshift=0.351cm, yshift=0.191cm] {$\frac{1}{2}$} (z_mat_o22);
+  \draw[pmDirected, draw=black] (z_pat_m2) -- node[pmLabel] {$\frac{1}{2}$} (z_mat_o22);
+  \draw[pmDirected, draw=black] (z_mat_p1) -- node[pmLabel, pos=0.380, xshift=0.351cm, yshift=0.191cm] {$\frac{1}{2}$} (z_pat_o21);
+  \draw[pmDirected, draw=black] (z_pat_p1) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o21);
+  \draw[pmDirected, draw=black] (z_mat_p2) -- node[pmLabel, pos=0.380, xshift=0.351cm, yshift=0.191cm] {$\frac{1}{2}$} (z_pat_o22);
+  \draw[pmDirected, draw=black] (z_pat_p2) -- node[pmLabel] {$\frac{1}{2}$} (z_pat_o22);
+  \draw[pmDirected, draw=black] (z_mat_o21) to[bend right=10] (x_o21);
+  \draw[pmDirected, draw=black] (z_pat_o21) -- (x_o21);
+  \draw[pmDirected, draw=black] (z_mat_o22) -- (x_o22);
+  \draw[pmDirected, draw=black] (z_pat_o22) -- (x_o22);
+  \draw[pmDirected, draw=black] (x_o21) -- node[pmLabel] {$\beta_{1}$} (g_o2);
+  \draw[pmDirected, draw=black] (x_o22) -- node[pmLabel] {$\beta_{2}$} (g_o2);
+  \draw[pmDirected, draw=black] (g_o2) -- (y_o2);
+  \draw[pmDirected, draw=black] (e_o2) -- (y_o2);
+  \draw[pmBidirected, draw=black] (z_mat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_m1);
+  \draw[pmBidirected, draw=black] (z_mat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_m2);
+  \draw[pmBidirected, draw=black] (z_pat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_m1);
+  \draw[pmBidirected, draw=black] (z_pat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_m2);
+  \draw[pmBidirected, draw=black] (z_mat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_p1);
+  \draw[pmBidirected, draw=black] (z_mat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_p2);
+  \draw[pmBidirected, draw=black] (z_pat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_p1);
+  \draw[pmBidirected, draw=black] (z_pat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_p2);
+  \draw[pmBidirected, draw=black] (e_m) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_m);
+  \draw[pmBidirected, draw=black] (e_p) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_p);
+  \draw[pmBidirected, draw=black] (z_mat_o11) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_mat_o11);
+  \draw[pmBidirected, draw=black] (z_mat_o12) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_mat_o12);
+  \draw[pmBidirected, draw=black] (z_pat_o11) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_pat_o11);
+  \draw[pmBidirected, draw=black] (z_pat_o12) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_pat_o12);
+  \draw[pmBidirected, draw=black] (e_o1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_o1);
+  \draw[pmBidirected, draw=black] (z_mat_o21) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_mat_o21);
+  \draw[pmBidirected, draw=black] (z_mat_o22) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_mat_o22);
+  \draw[pmBidirected, draw=black] (z_pat_o21) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_pat_o21);
+  \draw[pmBidirected, draw=black] (z_pat_o22) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{4}$} (z_pat_o22);
+  \draw[pmBidirected, draw=black] (e_o2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_o2);
+  \draw[pmCopath, draw=pmCB03A2E] (y_m) -- node[pmLabel] {$\left[\rho_{y}\right]$} (y_p);
+\end{tikzpicture}

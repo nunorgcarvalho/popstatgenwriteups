@@ -9,16 +9,32 @@
   pmCopath/.style={line width=1.6pt},
   pmLabel/.style={midway, fill=white, inner sep=1pt},
 ]
-  \node[pmLatent] (g_m) at (1.000,1.600) {$g_m$};
-  \node[pmLatent] (e_m) at (-1.300,1.600) {$e_m$};
-  \node[pmLatent] (g_p) at (8.000,1.600) {$g_p$};
-  \node[pmLatent] (e_p) at (10.300,1.600) {$e_p$};
-  \node[pmObserved] (x_m1) at (0.000,3.200) {$x_{m,1}$};
-  \node[pmObserved] (x_m2) at (2.000,3.200) {$x_{m,2}$};
-  \node[pmObserved] (x_p1) at (7.000,3.200) {$x_{p,1}$};
-  \node[pmObserved] (x_p2) at (9.000,3.200) {$x_{p,2}$};
-  \node[pmObserved] (y_m) at (1.000,0.000) {$y_m$};
-  \node[pmObserved] (y_p) at (8.000,0.000) {$y_p$};
+  \node[pmLatent] (g_m) at (2.500,1.500) {$g_m$};
+  \node[pmLatent] (e_m) at (0.000,1.500) {$e_m$};
+  \node[pmLatent] (g_p) at (10.500,1.500) {$g_p$};
+  \node[pmLatent] (e_p) at (8.000,1.500) {$e_p$};
+  \node[pmLatent] (z_mat_m1) at (0.000,4.600) {$z^{(m)}_{m,1}$};
+  \node[pmLatent] (z_mat_m2) at (3.400,4.600) {$z^{(m)}_{m,2}$};
+  \node[pmLatent] (z_pat_m1) at (1.600,4.600) {$z^{(p)}_{m,1}$};
+  \node[pmLatent] (z_pat_m2) at (5.000,4.600) {$z^{(p)}_{m,2}$};
+  \node[pmLatent] (z_mat_p1) at (8.000,4.600) {$z^{(m)}_{p,1}$};
+  \node[pmLatent] (z_mat_p2) at (11.400,4.600) {$z^{(m)}_{p,2}$};
+  \node[pmLatent] (z_pat_p1) at (9.600,4.600) {$z^{(p)}_{p,1}$};
+  \node[pmLatent] (z_pat_p2) at (13.000,4.600) {$z^{(p)}_{p,2}$};
+  \node[pmObserved] (x_m1) at (0.800,3.000) {$x_{m,1}$};
+  \node[pmObserved] (x_m2) at (4.200,3.000) {$x_{m,2}$};
+  \node[pmObserved] (x_p1) at (8.800,3.000) {$x_{p,1}$};
+  \node[pmObserved] (x_p2) at (12.200,3.000) {$x_{p,2}$};
+  \node[pmObserved] (y_m) at (2.500,0.000) {$y_m$};
+  \node[pmObserved] (y_p) at (10.500,0.000) {$y_p$};
+  \draw[pmDirected, draw=pmC1F77B4, line width=1.82pt] (z_mat_m1) -- node[pmLabel, text=pmC1F77B4] {$1$} (x_m1);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_pat_m1) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_m1);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_mat_m2) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_m2);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_pat_m2) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_m2);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_mat_p1) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_p1);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_pat_p1) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_p1);
+  \draw[pmDirected, draw=pmCBBBBBB] (z_mat_p2) -- node[pmLabel, text=pmCBBBBBB] {$1$} (x_p2);
+  \draw[pmDirected, draw=pmC1F77B4, line width=1.82pt] (z_pat_p2) -- node[pmLabel, text=pmC1F77B4] {$1$} (x_p2);
   \draw[pmDirected, draw=pmC1F77B4, line width=1.82pt] (x_m1) -- node[pmLabel, text=pmC1F77B4] {$\beta_{1}$} (g_m);
   \draw[pmDirected, draw=pmCBBBBBB] (x_m2) -- node[pmLabel, text=pmCBBBBBB] {$\beta_{2}$} (g_m);
   \draw[pmDirected, draw=pmCBBBBBB] (x_p1) -- node[pmLabel, text=pmCBBBBBB] {$\beta_{1}$} (g_p);
@@ -27,12 +43,16 @@
   \draw[pmDirected, draw=pmCBBBBBB] (e_m) -- node[pmLabel, text=pmCBBBBBB] {$1$} (y_m);
   \draw[pmDirected, draw=pmC1F77B4, line width=1.82pt] (g_p) -- node[pmLabel, text=pmC1F77B4] {$1$} (y_p);
   \draw[pmDirected, draw=pmCBBBBBB] (e_p) -- node[pmLabel, text=pmCBBBBBB] {$1$} (y_p);
-  \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (x_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$1$} (x_m1);
-  \draw[pmBidirected, draw=pmCBBBBBB] (x_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$1$} (x_m2);
-  \draw[pmBidirected, draw=pmCBBBBBB] (x_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$1$} (x_p1);
-  \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (x_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$1$} (x_p2);
+  \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (z_mat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$\frac{1}{2}$} (z_mat_m1);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_mat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_mat_m2);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_pat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_pat_m1);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_pat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_pat_m2);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_mat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_mat_p1);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_mat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_mat_p2);
+  \draw[pmBidirected, draw=pmCBBBBBB] (z_pat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$\frac{1}{2}$} (z_pat_p1);
+  \draw[pmBidirected, draw=pmC1F77B4, line width=1.82pt] (z_pat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmC1F77B4] {$\frac{1}{2}$} (z_pat_p2);
   \draw[pmBidirected, draw=pmCBBBBBB] (e_m) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$V_{E}$} (e_m);
   \draw[pmBidirected, draw=pmCBBBBBB] (e_p) to[loop above, looseness=6, in=120, out=60] node[pmLabel, text=pmCBBBBBB] {$V_{E}$} (e_p);
   \draw[pmCopath, draw=pmC1F77B4, line width=4.16pt] (y_m) -- node[pmLabel, text=pmC1F77B4] {$\left[\rho_{y}\right]$} (y_p);
-  \node[align=center] at (4.500,-1.350) {$x_{m,1} \leftrightarrow x_{m,1} \rightarrow g_m \rightarrow y_m \;\text{---}\; y_p \leftarrow g_p \leftarrow x_{p,2} \leftrightarrow x_{p,2}$\\$\operatorname{Cov}\left[x_{m,1}, x_{p,2}\right] = 1 \cdot \beta_{1} \cdot 1 \cdot \frac{\rho_{y}}{\VPo} \cdot 1 \cdot \beta_{2} \cdot 1 = \frac{\beta_{1} \beta_{2} \rho_{y}}{\VPo}$};
+  \node[align=center] at (6.500,-1.350) {$z^{(m)}_{m,1} \leftrightarrow z^{(m)}_{m,1} \rightarrow x_{m,1} \rightarrow g_m \rightarrow y_m \;\text{---}\; y_p \leftarrow g_p \leftarrow x_{p,2} \leftarrow z^{(p)}_{p,2} \leftrightarrow z^{(p)}_{p,2}$\\$\operatorname{Cov}\left[z^{(m)}_{m,1}, z^{(p)}_{p,2}\right] = \frac{1}{2} \cdot 1 \cdot \beta_{1} \cdot 1 \cdot \frac{\rho_{y}}{\VPo} \cdot 1 \cdot \beta_{2} \cdot 1 \cdot \frac{1}{2} = \frac{\beta_{1} \beta_{2} \rho_{y}}{4 \VPo}$};
 \end{tikzpicture}
