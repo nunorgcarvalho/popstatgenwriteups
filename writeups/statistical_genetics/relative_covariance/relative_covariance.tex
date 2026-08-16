@@ -417,8 +417,7 @@ $$
     \;=\; \tfrac12 \cdot \beta_1 \cdot \muo \cdot \beta_2 \cdot \tfrac12
     \;=\; \frac{\beta_1\beta_2\,\rho_y}{4\,\VPo} ,
 $$
-one $\tfrac12$ for each allele's share of its genotype, and one effect size for each of the \emph{two} variants involved --- not the square of either.
-There are four such allele pairs behind any one pair of genotypes, and they are identical, so they sum back to $\Cov[x_{m,1}, x_{p,2}] = \beta_1\beta_2\rho_y/\VPo$.
+Because there are four such allele pairs behind any one pair of genotypes, they sum back to $\Cov[x_{m,1}, x_{p,2}] = \beta_1\beta_2\rho_y/\VPo$.
 
 \begin{figure}[H]
     \begin{floatcard}
@@ -436,16 +435,8 @@ There are four such allele pairs behind any one pair of genotypes, and they are 
 \end{figure}
 
 Doing the same for every pair of variables in the diagram gives the two tables below.
-They are stated at the genotype level, since that is the scale the rest of the section works at; the allele level adds only the four facts already used above, all of which hold in the base population and none of which survive into the next generation:
-$$
-    \Var\!\big[z^{(u)}_{i,k}\big] = \tfrac12, \qquad
-    \Cov\!\big[z^{(u)}_{i,k},\, z^{(v)}_{i,l}\big] = 0 \ \ \text{for } (u,k) \neq (v,l), \qquad
-    \Cov\!\big[z^{(u)}_{i,k},\, y_i\big] = \tfrac{\beta_k}{2},
-$$
-for $u,v \in \{m,p\}$ naming the parental origin.
-The middle one is two statements at once: an individual's own two alleles at the same variant are uncorrelated ($k = l$, the quantity named $\alpha$ below), and there is no gametic phase disequilibrium between different variants ($k \neq l$).
-
-Within an individual (Table~\ref{tab:pair-2v-within}) nothing has changed from the randomly mating case: these are base-population individuals, so their genotypes are still uncorrelated with each other and with their own environment.
+Within an individual (Table~\ref{tab:pair-2v-within}) nothing has changed from the randomly mating case:
+these are base-population individuals, so their genotypes are still uncorrelated with each other and with their own environment.
 
 \begin{table}[H]
     \begin{floatcard}
@@ -499,7 +490,7 @@ We also generalize from two variants to $M$ variants, where $g_i = \sum_{k=1}^{M
 
 \begin{itemize}
     \item $\Cov[\,x_{mk},\, x_{pl}\,] = \beta_k\beta_l\,\rho_y/\VPo \neq 0$, for \emph{every} pair of variants $k$ and $l$.
-    Alleles at different loci in different individuals are correlated, signed by the product of their effects and breaking the \assumptionid{Non-IBD-indep} assumption
+    Alleles at different loci in different individuals are correlated, signed by the product of their effects and breaking the \assumptionid{Non-IBD-indep} assumption.
     Note that in the base population, the within-individual covariance $\Cov[\,x_{mk},\, x_{ml}\,]$ is still exactly zero for $k \neq l$; the disequilibrium exists only \emph{between} the mates.
     \item $\Cov[\,e_m,\, g_p\,] = \VAo V_E \,\rho_y/\VPo \neq 0$.
     One mate's environment is correlated with the other's genetic value, which is the break of \assumptionid{Env-indep} and \assumptionid{No-IGE} flagged at the start of this section.
@@ -531,146 +522,355 @@ A path diagram represents the \emph{linear projection} of the random variable: t
 The exogenous variance is what the projection leaves behind.
 Subtracting \eqref{eq:transmit-mean} from \eqref{eq:transmit} gives the \emph{segregation deviation}
 \begin{equation}\label{eq:seg-def}
-    s^{(m)}_{ok} \;:=\; z^{(m)}_{ok} - \tfrac12 x_{mk} \;=\; \big(B^{(m)}_{ok} - \tfrac12\big)\big(z^{(m)}_{mk} - z^{(p)}_{mk}\big) ,
+    \epsilon^{(m)}_{ok} \;:=\; z^{(m)}_{ok} - \tfrac12 x_{mk} \;=\; \big(B^{(m)}_{ok} - \tfrac12\big)\big(z^{(m)}_{mk} - z^{(p)}_{mk}\big) ,
 \end{equation}
-which is mean-zero and uncorrelated with both of the mother's alleles.
-Squaring \eqref{eq:seg-def} and using $\Var\big[B^{(m)}_{ok}\big] = \tfrac14$ gives its variance:
-\begin{equation}\label{eq:seg-var}
-    \Var\!\big[s^{(m)}_{ok}\big]
-    \;=\; \tfrac14\,\E\!\big[(z^{(m)}_{mk} - z^{(p)}_{mk})^2\big]
-    \;=\; \tfrac14\Big(\tfrac12 + \tfrac12 - 2\,\Cov\!\big[z^{(m)}_{mk}, z^{(p)}_{mk}\big]\Big)
-    \;=\; \tfrac14 - \tfrac12\,\Cov\!\big[z^{(m)}_{mk}, z^{(p)}_{mk}\big] .
+which is mean-zero and uncorrelated with both of the mother's alleles --- a disturbance in the sense of Section~2.2.1, and drawn as one.
+The offspring's paternally inherited allele $z^{(p)}_{ok}$ is built the same way from the father's two alleles, with its own independent $B^{(p)}_{ok}$ and residual $\epsilon^{(p)}_{ok}$.
+
+\subsubsection*{Covariance between alleles}
+We now define two covariances that will be repeatedly used in deriving the consequences of assortartive mating.
+For an individual $i$ of generation $t$ and variants $k$ and $l$ where $u,v \in \{m,p\}$,
+\begin{equation}\label{eq:as-def}
+    \boxed{\
+    a^{(t)}_{kl} \;:=\; \Cov\!\big[z^{(u)}_{ik},\, z^{(v)}_{il}\big]\ \ (u \neq v),
+    \qquad
+    s^{(t)}_{kl} \;:=\; \Cov\!\big[z^{(u)}_{ik},\, z^{(u)}_{il}\big] \ }
 \end{equation}
-The offspring's paternally inherited allele $z^{(p)}_{ok}$ is built the same way from the father's two alleles, with its own coin $B^{(p)}_{ok}$ and its own residual $s^{(p)}_{ok}$.
-Every coin is independent of every other, across parental origins and across offspring: a second child of the same pair draws its own $B^{(m)}_{o'k}$ and $B^{(p)}_{o'k}$, which is what makes two siblings differ.
-Following \citet{Yengo2018NatHumBehav} we define $\alpha^{(t)}_k$ as the \emph{correlation} of the maternally and paternally inherited alleles of an individual $i$ of generation $t$ at variant $k$:
-\begin{equation}\label{eq:alpha-def}
-    \alpha^{(t)}_k \;=\; \Corr\!\big[z^{(m)}_{ik},\, z^{(p)}_{ik}\big]
-    \quad\Longrightarrow\quad
-    \Cov\!\big[z^{(m)}_{ik},\, z^{(p)}_{ik}\big]
-    \;=\; \tfrac12 \alpha^{(t)}_k .
+In words, $a$ denotes the covariance between alleles \emph{across} gametes, while $s$ denotes the covariance between alleles on the \emph{same} gamete.
+When $k=l$, $s^{(t)}_{kk}$ is the variance of an individual allele, which is fixed for all generations due to how we standardized variables according to \assumptionid{Constant-freq}:
+\begin{equation}\label{eq:skk}
+    s^{(t)}_{kk} \;\equiv\; \tfrac12 \qquad \text{for all } t ,
+\end{equation}
+We can also write the covariance between two genotypes in the same individual as the sum of four allelic covariances:
+\begin{equation}\label{eq:x-from-as}
+    \Cov[\,x_{ik},\, x_{il}\,]
+    \;=\; \sum_{u,v \in \{m,p\}} \Cov\!\big[z^{(u)}_{ik},\, z^{(v)}_{il}\big]
+    \;=\; 2\big(s^{(t)}_{kl} + a^{(t)}_{kl}\big) ,
+\end{equation}
+In the case of $k=l$, it becomes the variance of genotypes, since $s^{(t)}_{kk} \equiv \tfrac12$:
+\begin{equation}\label{eq:varx-a}
+    \Var[\,x_{ik}\,] \;=\; 2\big(s^{(t)}_{kk} + a^{(t)}_{kk}\big) \;=\; \boxed{\ 1 + 2\,a^{(t)}_{kk}\ }
 \end{equation}
 
-Of particular importance is the variance of the diploid genotype, which is inflated by $\alpha^{(t)}_k$:
-\begin{equation}\label{eq:varx-alpha}
-\begin{gathered}
-    \begin{aligned}
-        \Var[x_{ik}]
-        &\;=\; \Var\!\big[z^{(m)}_{ik} + z^{(p)}_{ik}\big] \\
-        &\;=\; \Var\!\big[z^{(m)}_{ik}\big] + \Var\!\big[z^{(p)}_{ik}\big] + 2\,\Cov\!\big[z^{(m)}_{ik}, z^{(p)}_{ik}\big] \\
-        &\;=\; \tfrac12 + \tfrac12 + 2\cdot\tfrac{\alpha^{(t)}_k}{2}
-    \end{aligned} \\[8pt]
-    \boxed{\ \Var[x_{ik}] \;=\; 1 + \alpha^{(t)}_k \ }
-\end{gathered}
+We can also now write the variance of the segregation deviation.
+The indicator $B^{(m)}_{ok}$ takes values in $\{0,1\}$, so $\big(B^{(m)}_{ok} - \tfrac12\big)^2 = \tfrac14$ with probability one, and it is independent of the alleles it selects between.
+Squaring \eqref{eq:seg-def} and taking expectations therefore factors cleanly:
+\begin{equation}\label{eq:seg-var-deriv}
+    \Var\!\big[\epsilon^{(m)}_{ok}\big]
+    \;=\; \E\!\Big[\big(B^{(m)}_{ok} - \tfrac12\big)^2\Big]\; \Var\!\big[z^{(m)}_{mk} - z^{(p)}_{mk}\big]
+    \;=\; \tfrac14\Big(\underbrace{\tfrac12}_{s^{(t)}_{kk}} + \underbrace{\tfrac12}_{s^{(t)}_{kk}} - 2\,\underbrace{a^{(t)}_{kk}}_{\Cov[z^{(m)}_{mk},\, z^{(p)}_{mk}]}\Big) ,
 \end{equation}
-In the base population there is no inbreeding and mating is random, so $\alpha^{(0)}_k = 0$ for every variant, and everything reduces to the familiar $\Var[x_{ik}] = 1$.
-
-Substituting \eqref{eq:alpha-def} back into \eqref{eq:seg-var} puts the segregation variance in the same terms:
-\begin{equation}\label{eq:seg-var-alpha}
-    \boxed{\ \Var\!\big[s^{(m)}_{ok}\big] \;=\; \frac{1 - \alpha^{(t)}_k}{4} \ }
+where the parent is of generation $t$. Collecting terms,
+\begin{equation}\label{eq:seg-var-a}
+    \boxed{\ \Var\!\big[\epsilon^{(m)}_{ok}\big] \;=\; \tfrac14 - \tfrac12\,a^{(t)}_{kk} \ }
 \end{equation}
-with $\alpha^{(t)}_k$ that of the transmitting parent.
-A parent whose two alleles are more alike contributes \emph{less} segregation variance, because it matters less which of the two the offspring received; and in the base population, where $\alpha^{(0)}_k = 0$, it takes the familiar value $\tfrac14$.
+So a parent whose two alleles are more alike contributes \emph{less} segregation variance: it matters less which of the two was transmitted.
 
-Below is a path diagram of two offspring of a mated pair that assortatively mated on the focal trait with strength $\rho_y$, for a trait with two causal variants.
-It is the diagram of Figure~\ref{fig:pair-2v} with transmission added and nothing else; every allele covariance in the offspring generation is traced out of it rather than written into it.
+\subsubsection*{First generation of offspring}
+
+In a generation-0 individual, their own alleles are uncorrelated with each other.
+At the same variant, the two alleles are non-IBD by \assumptionid{No-inbreeding} and hence independent by \assumptionid{Non-IBD-indep}; at different variants, the base population is in linkage equilibrium, which is the within-individual zero already noted below Table~\ref{tab:pair-2v-between}:
+\begin{equation}\label{eq:as-gen0}
+    \boxed{\ a^{(0)}_{kl} \;=\; 0 \ \ \text{for all } k, l ,
+    \qquad
+    s^{(0)}_{kl} \;=\; 0 \ \ (k \neq l) \ }
+\end{equation}
+Setting $a^{(0)}_{kk} = 0$ in \eqref{eq:varx-a} recovers $\Var[x_{ik}] = 1$, and in \eqref{eq:seg-var-a} recovers the familiar segregation variance of $\tfrac14$.
+
+In a generation-1 individual, this is no longer the case, which can be seen by the below path diagram of two generation-1 offspring of a mated pair that assortatively mated on the focal trait with strength $\rho_y$, for a trait with two causal variants.
+
 \begin{sidewaysfigure}
     \begin{floatcard}
         \input{figures/pair_offspring_2v.tikz}
         \caption{%
             One mated pair from the base population and two of their offspring, at the allele level, for a trait with two causal variants.
-            The parents are drawn \emph{flowing upward} --- alleles at the bottom of each block, phenotype at the top --- so that the two generations' allele rows sit adjacent and the sixteen transmission edges stay short; the cost is that each offspring's $z \rightarrow x$ edges span the figure.
             Each inherited allele is fed by \emph{both} alleles of the parent it came from, at $\tfrac12$ each, per \eqref{eq:transmit-mean}.
-            The self-loop of $\tfrac14$ on each offspring allele is its segregation variance, \eqref{eq:seg-var-alpha} evaluated at $\alpha^{(0)}_k = 0$: it is drawn as a disturbance variance because that is exactly what it is --- the part of the allele's variance its causes in the diagram do not supply.
-            The two offspring differ only through their coins being independent; nothing else distinguishes them, and $e_{o1}$ and $e_{o2}$ are separate draws.
-            Note that no $x$ anywhere carries a self-loop: $\Var[x] = 1 + \alpha^{(t)}_k$ is derived at both generations, and it takes the value $1$ in the parents and a larger one in the offspring without a single edge differing between them.%
+            The self-loop of $\tfrac14$ on each offspring allele is its segregation variance, \eqref{eq:seg-var-a} evaluated at $a^{(0)}_{kk} = 0$.%
         }
         \label{fig:pair-offspring-2v}
     \end{floatcard}
 \end{sidewaysfigure}
 
-We can use our path tracing rules to compute the correlation between maternally- and paternally-inherited alleles in the first offspring generation, $\alpha^{(1)}_k$:
-
-Exactly four chains connect the offspring's two alleles at variant $k$.
-Each traces back from $z^{(m)}_{ok}$ to \emph{one} of the mother's two alleles, turns around on that allele's variance, runs up through her genotype and phenotype, crosses the co-path, and comes back down the father's side to \emph{one} of his two alleles and into $z^{(p)}_{ok}$.
-Two choices on each side give $2\times2 = 4$ chains, one for each $u, v \in \{m,p\}$:
+We can use our path tracing rules to compute $a^{(1)}_{kl}$, the covariance between an allele on one gamete of a first-generation offspring and an allele on its other gamete.
+Exactly four chains connect an allele of the offspring to an allele on its \emph{other} gamete, at variants $k$ and $l$.
+Each traces back from $z^{(m)}_{ok}$ to \emph{one} of the mother's two alleles at variant $k$, turns around on that allele's variance, runs up through her genotype and phenotype, crosses the co-path, and comes back down the father's side to \emph{one} of his two alleles at variant $l$ and into $z^{(p)}_{ol}$.
+Two choices on each side give $2\times2 = 4$ chains identical in value, one for each $u, v \in \{m,p\}$:
 $$
 \begin{aligned}
     &z^{(m)}_{ok} \leftarrow z^{(u)}_{mk} \leftrightarrow z^{(u)}_{mk} \rightarrow x_{mk} \rightarrow g_m \rightarrow y_m \\
     \;\text{---}\;\;
-    &y_p \leftarrow g_p \leftarrow x_{pk} \leftarrow z^{(v)}_{pk} \leftrightarrow z^{(v)}_{pk} \rightarrow z^{(p)}_{ok} ,
+    &y_p \leftarrow g_p \leftarrow x_{pl} \leftarrow z^{(v)}_{pl} \leftrightarrow z^{(v)}_{pl} \rightarrow z^{(p)}_{ol} ,
 \end{aligned}
 $$
-broken across two lines at the co-path, which is exactly where it joins two valid chains into one.
-They are identical in value, since every allele carries the same variance $\tfrac12$ and the same transmission coefficient $\tfrac12$:
+Multiplying each coefficient along one chain returns:
 $$
-    \underbrace{\tfrac12}_{\text{transmission}} \cdot \underbrace{\tfrac12}_{\Var[z]} \cdot \beta_k \cdot \muo \cdot \beta_k \cdot \underbrace{\tfrac12}_{\Var[z]} \cdot \underbrace{\tfrac12}_{\text{transmission}}
-    \;=\; \frac{\beta_k^2\,\muo}{16} .
+    \underbrace{\tfrac12}_{\text{transmission}} \cdot \underbrace{\tfrac12}_{\Var[z]} \cdot \beta_k \cdot \muo \cdot \beta_l \cdot \underbrace{\tfrac12}_{\Var[z]} \cdot \underbrace{\tfrac12}_{\text{transmission}}
+    \;=\; \frac{\beta_k\beta_l\,\muo}{16} .
 $$
-Summing the four and dividing by $\sqrt{\tfrac12\cdot\tfrac12} = \tfrac12$ to convert the covariance to a correlation,
-\begin{equation}\label{eq:alpha-gen1}
-    \alpha^{(1)}_k
-    \;=\; \frac{4 \cdot \beta_k^2 \muo / 16}{1/2}
-    \;=\; \frac{\beta_k^2\,\muo}{2}
-    \;=\; \boxed{\ \frac{\beta_k^2\,\rho_y}{2\,\VPo} \ }
+Summing across the four chains and expanding $\muo$,
+\begin{equation}\label{eq:a-gen1}
+     \boxed{a^{(1)}_{kl} \;=\; \frac{\beta_k\beta_l\,\rho_y}{4\,\VPo} \ }
 \end{equation}
-
-We use the path tracing rules to compute the covariance between an individual and each of its two kinds of first-degree relative, at all three levels of the model.
-The results are collected in Table~\ref{tab:relatives-gen1}; they are stated for $M$ variants, having been derived on the two-variant diagram.
-Every entry there turns out to be its randomly mating value plus a single quantity, so we name that quantity rather than write it out five times:
-\begin{equation}\label{eq:am-increment}
-    \Delta^{(t)} \;:=\; \frac{\rho_y\,\big(V_A^{(t-1)}\big)^2}{2\,V_P^{(t-1)}}
-    \;=\; \frac{V_A^{(t-1)}}{2}\,\rho_g^{(t-1)} ,
+The same-gamete companion is easier: two alleles the offspring received from the \emph{same} parent at different variants have no chain at all connecting them, because that parent's own alleles are uncorrelated across variants due to them being of the base population, so
+\begin{equation}\label{eq:s-gen1}
+    \boxed{\ s^{(1)}_{kl} \;=\; 0 \quad (k \neq l) \ }
 \end{equation}
-the covariance that assortment adds at the genetic-value level among individuals of generation $t$.
-It carries a generation index for the same reason $\alpha^{(t)}_k$ does, and follows the same convention: both are named for the generation they \emph{describe} while being computed from the variances of the parents who produced it, one generation back.
-For the first offspring generation, $\Delta^{(1)} = \rho_y(\VAo)^2/(2\VPo)$.
-Written this way nothing is hidden inside $\rho_g$: the increment is built only from $\rho_y$ and the variances $\VAo$ and $\VPo$.
+One generation of assortment therefore produces association \emph{across} an individual's two gametes and none within either of them.
 
+We use the path tracing rules to compute the covariance between an individual and a full sibling and a parent, shown in Table~\ref{tab:relatives-gen1}.
+Every entry there turns out to be its random-mating value plus a term that depends on $\rho_y$.
 \begin{table}[H]
     \begin{floatcard}
-    \renewcommand{\arraystretch}{2.0}
-    \setlength{\tabcolsep}{5pt}
+    \renewcommand{\arraystretch}{1.9}
+    \setlength{\tabcolsep}{2pt}
+    \footnotesize
     \begin{tabular}{l|ccc}
             & self
             & full siblings
             & parent--offspring \\
         \hline
-        genotypes, same variant $k$
-            & $1 + \alpha^{(1)}_k$
-            & $\tfrac12 + \alpha^{(1)}_k$
-            & $\tfrac12 + \alpha^{(1)}_k$ \\
-        genotypes, variants $k \neq l$
-            & $\dfrac{\beta_k\beta_l\,\rho_y}{2\,\VPo}$
-            & $\dfrac{\beta_k\beta_l\,\rho_y}{2\,\VPo}$
-            & $\dfrac{\beta_k\beta_l\,\rho_y}{2\,\VPo}$ \\
+        genotypes, $k = l$
+            & $1 + \adds{\beta_k^2\rho_y/2\VPo}$
+            & $\tfrac12 + \adds{\beta_k^2\rho_y/2\VPo}$
+            & $\tfrac12 + \adds{\beta_k^2\rho_y/2\VPo}$ \\
+        genotypes, $k \neq l$
+            & $\adds{\beta_k\beta_l\rho_y/2\VPo}$
+            & $\adds{\beta_k\beta_l\rho_y/2\VPo}$
+            & $\adds{\beta_k\beta_l\rho_y/2\VPo}$ \\
         genetic values
-            & $\VAo + \Delta^{(1)}$
-            & $\tfrac{\VAo}{2} + \Delta^{(1)}$
-            & $\tfrac{\VAo}{2} + \Delta^{(1)}$ \\
+            & $\VAo + \adds{\rho_y(\VAo)^2/2\VPo}$
+            & $\tfrac12\VAo + \adds{\rho_y(\VAo)^2/2\VPo}$
+            & $\tfrac12\VAo + \adds{\rho_y(\VAo)^2/2\VPo}$ \\
         phenotypes
-            & $\VAo + \Delta^{(1)} + V_E$
-            & $\tfrac{\VAo}{2} + \Delta^{(1)}$
-            & $\tfrac{\VAo}{2} + \dfrac{\rho_y \VAo}{2}$ \\
+            & $\VAo + \adds{\rho_y(\VAo)^2/2\VPo} + V_E$
+            & $\tfrac12\VAo + \adds{\rho_y(\VAo)^2/2\VPo}$
+            & $\tfrac12\VAo + \adds{\tfrac12\rho_y\VAo}$ \\
     \end{tabular}
     \caption{%
-        Variances and covariances for an individual of the first generation produced under assortative mating, against itself and against each kind of first-degree relative: the ``self'' column is the pair $(o_1, o_1)$, ``full siblings'' is $(o_1, o_2)$, and ``parent--offspring'' is $(m, o_1)$.
-        Every entry is written as its randomly mating value plus what assortment added, and each added term is built only from $\rho_y$ and the base-population variances: $\Delta^{(1)} = \rho_y(\VAo)^2/(2\VPo)$ from \eqref{eq:am-increment}, and $\alpha^{(1)}_k = \beta_k^2\rho_y/(2\VPo)$ from \eqref{eq:alpha-gen1}.
-        Setting $\rho_y = 0$ kills both and returns the table to $1$ or $\tfrac12$, $0$, and $\VAo$ or $\VAo/2$.
-        \textbf{The added term is the same in every cell but one}: the bottom right, where it is $\rho_y\VAo/2 = \Delta^{(1)}/\hsqo$, larger by a factor $1/\hsqo$.%
+        Variances and covariances for an individual of the \textbf{first generation produced under assortative mating}, against itself and against each kind of first-degree relative: the ``self'' column is the pair $(o_1, o_1)$, ``full siblings'' is $(o_1, o_2)$, and ``parent--offspring'' is $(m, o_1)$. The first row is a genotype against a genotype at the \emph{same} variant ($k = l$), the second at two \emph{different} variants.
+        Every entry is its random-mating value plus \adds{what one generation of assortment added}.%
     }
     \label{tab:relatives-gen1}
     \end{floatcard}
 \end{table}
 
-Note that covariances for parents vs full-siblings only differ at the phenotypic level, and that the increment $\Delta^{(1)}$ is the same for both.
-The entire difference is one extra term available to the lineal pair and not to the collateral one:
+Note that covariances for parents vs full-siblings only differ at the phenotypic level due to one extra non-zero term that emerges for direct descendants:
 $$
-    \Cov[\,y_m, y_{o_1}\,] \;=\; \underbrace{\Cov[\,g_m, g_{o_1}\,]}_{\frac{\VAo}{2}(1+\rhogo)} \;+\; \underbrace{\Cov[\,e_m, g_{o_1}\,]}_{\frac{\VAo V_E\,\rho_y}{2\,\VPo}} \;=\; \frac{\VAo}{2}\big(1+\rho_y\big) ,
+\begin{aligned}
+    \Cov[\,y_m, y_{o_1}\,]
+    \;&=\; \underbrace{\Cov[\,g_m, g_{o_1}\,]}_{\tfrac12\VAo \,+\, \frac{\rho_y (\VAo)^2}{2\,\VPo}}
+    \;+\; \underbrace{\Cov[\,e_m, g_{o_1}\,]}_{\frac{\rho_y\,\VAo V_E}{2\,\VPo}} \\[4pt]
+    \;&=\; \tfrac12\VAo \;+\; \frac{\rho_y\,\VAo\big(\VAo + V_E\big)}{2\,\VPo}
+    \;=\; \tfrac12\VAo\big(1+\rho_y\big) ,
+\end{aligned}
 $$
-the second term being half the $\Cov[e_m, g_p] \neq 0$ we found between the mates themselves, inherited by their child.
-A parent's \emph{environment} is correlated with their child's genetic value; two siblings' environments are not correlated with each other's.
-This asymmetry between lineal and collateral relatives of the same degree is absent under random mating, and it is a signature of assortative mating rather than an artefact of it.
+where the last step uses $\VPo = \VAo + V_E$.
+A parent's environment is correlated with their child's genetic value --- the child carries half the alleles of the assortatively chosen partner, whose genotype is correlated with this parent's environment.
+
+\subsubsection{Dynamics}
+If we now produce a second generation of offspring, the effects of another generation of assortative mating compound on the existing effects of past assortative mating.
+Namely, unlike before, the two alleles that a parent carries are now correlated according to their effect size.
+
+It would be unwieldy to make a diagram for three generations.
+Instead we summarize the base population by its impact on the covariance of generation-1 alleles, $a^{(1)}_{kl} \neq 0$ and $s^{(1)}_{kl} = 0$.
+
+\begin{sidewaysfigure}
+    \begin{floatcard}
+        \input{figures/reduced_pair_offspring.tikz}
+        \caption{%
+            Two generation-1 individuals mating to produce one generation-2 offspring.
+            Unlike Figure~\ref{fig:pair-offspring-2v}, each parent's alleles are no longer uncorrelated.
+            No bidirectional arrow joins two alleles on the \emph{same} gamete because $s^{(1)}_{kl} = 0$ by \eqref{eq:s-gen1}.
+            The co-path still carries the correlation $\rho_y$, but contributes $\mu^{(1)} = \rho_y/V_P^{(1)}$, since $V_P$ has grown.%
+        }
+        \label{fig:reduced}
+    \end{floatcard}
+\end{sidewaysfigure}
+
+We will now observe how the formulas for $a$ and $s$ differ for generation $t=2$ and then generalize for any generation $t$, revealing that the two are recursively defined by each other.
+\paragraph{Covariance across gametes.}
+We still think in terms of the four chains described in \eqref{eq:a-gen1}, but now any chain connecting a parent's allele up to its own phenotype is no longer just $\tfrac12\beta_k$: the parent's alleles are correlated now, so a chain leaving $z^{(u)}_{ik}$ can reach the phenotype through \emph{any} other allele the parent carries.
+Collecting every route from one allele to its own individual's phenotype gives a quantity we will use repeatedly:
+\begin{equation}\label{eq:c-def}
+    c^{(t)}_k \;:=\; \Cov\!\big[\,z^{(u)}_{ik},\, y_i\,\big]
+    \;=\; \sum_{l=1}^{M} \beta_l\Big(s^{(t)}_{kl} + a^{(t)}_{kl}\Big) ,
+\end{equation}
+
+The four chains then contribute $c^{(t)}_k \cdot \mu^{(t)} \cdot c^{(t)}_l$ in total, so
+\begin{equation}\label{eq:a-recursion}
+    \boxed{\ a^{(t+1)}_{kl} \;=\; \mu^{(t)}\, c^{(t)}_k\, c^{(t)}_l
+    \;=\; \frac{\rho_y}{V_P^{(t)}}\left[\sum_{j} \beta_j\big(s^{(t)}_{kj} + a^{(t)}_{kj}\big)\right]\left[\sum_{j} \beta_j\big(s^{(t)}_{lj} + a^{(t)}_{lj}\big)\right] \ }
+\end{equation}
+
+\paragraph{Covariance within a gamete.}
+When both alleles came from the \emph{same} parent, no chain can leave that parent and therefore the co-path is not crossed:
+\begin{equation}\label{eq:s-recursion}
+    \boxed{\ s^{(t+1)}_{kl} \;=\; \tfrac14 \Cov[\,x_{ik},\, x_{il}\,] \;=\; \tfrac12\Big(s^{(t)}_{kl} + a^{(t)}_{kl}\Big) \ }
+\end{equation}
+using \eqref{eq:x-from-as} for the parent's genotype covariance.
+In other words, when picking two non-linked alleles from the same gamete in an offspring, they are equally likely to have been from the same vs different gamete in the parent.
+Therefore, the covariance between the two offspring's alleles is the average of the across- vs same-gamete covariance in the parent generation.
+
+While $s^{(1)}_{kl} = 0$, the second generation is where the same-gamete covariance becomes non-zero: $s^{(2)}_{kl} = \tfrac12 a^{(1)}_{kl} = \beta_k\beta_l\rho_y/(8\VPo)$.
+
+\subsubsection*{The two recursions, and what they need}
+Both recursions are driven by $\mu^{(t)} = \rho_y/V_P^{(t)}$, so stepping them forward needs the phenotypic variance of the parent generation as well.
+That is a sum over $a$ and $s$ too: applying \eqref{eq:x-from-as} to $\Var[g_i] = \sum_k\sum_l \beta_k\beta_l\Cov[x_{ik}, x_{il}]$,
+\begin{equation}\label{eq:VA-from-as}
+    V_A^{(t)} \;=\; 2\sum_{k}\sum_{l} \beta_k\beta_l\big(s^{(t)}_{kl} + a^{(t)}_{kl}\big)
+    \;=\; 2\sum_{k} \beta_k\, c^{(t)}_k ,
+    \qquad V_P^{(t)} = V_A^{(t)} + V_E .
+\end{equation}
+
+Table~\ref{tab:as-recursion} charts $a$ and $s$ from the base population $t=0$ forward up to an arbitrary generation $t$, where the formulas are written recursively.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{2.4}
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{l|cc}
+            & $a^{(t)}_{kl}$ \ \footnotesize(across gametes)
+            & $s^{(t)}_{kl}$ \ \footnotesize(same gamete, $k \neq l$) \\
+        \hline
+        $t = 0$ \ \footnotesize base population
+            & $0$
+            & $0$ \\
+        $t = 1$
+            & $\dfrac{\beta_k\beta_l\,\rho_y}{4\,\VPo}$
+            & $0$ \\
+        $t = 2$
+            & $\dfrac{\beta_k\beta_l\,\rho_y}{4\,V_P^{(1)}}\left(\dfrac{V_A^{(1)}}{\VAo}\right)^{\!2}$
+            & $\dfrac{\beta_k\beta_l\,\rho_y}{8\,\VPo}$ \\
+        general $t+1$
+            & $\begin{aligned}[c]
+                   \dfrac{\rho_y}{V_P^{(t)}}
+                   \;&\left[\sum_{j} \beta_j\big(s^{(t)}_{kj} + a^{(t)}_{kj}\big)\right] \\
+                   \times\;&\left[\sum_{j} \beta_j\big(s^{(t)}_{lj} + a^{(t)}_{lj}\big)\right]
+               \end{aligned}$
+            & $\tfrac12\big(s^{(t)}_{kl} + a^{(t)}_{kl}\big)$ \\
+    \end{tabular}
+    \caption{%
+        The two allele covariances, from the base population forward, for a trait with $M$ variants.
+        Note that $s^{(t)}_{kk} \equiv \tfrac12$.
+        The $t=2$ entries are the general recursion evaluated once; $V_A^{(1)}/\VAo = 1 + \tfrac12\rho_y\VAo/\VPo$.%
+    }
+    \label{tab:as-recursion}
+    \end{floatcard}
+\end{table}
+
+\todo{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point}.
+
+\subsubsection{Equilibrium}
+
+
+With the reduced diagram, the same four-chain argument that gave \eqref{eq:alpha-gen1} runs again, with two changes: the mates are now generation-1 individuals, so the co-path carries $\mu^{(1)} = \rho_y/V_P^{(1)}$; and each parent's genotype no longer has variance $1$, so the leg from an allele down to the phenotype is no longer simply $\beta_k/2$.
+Writing that leg out once,
+\begin{equation}\label{eq:effective-effect}
+    c^{(t)}_k \;:=\; \Cov[\,x_{ik},\, y_i\,] \;=\; \beta_k\big(1+\alpha^{(t)}_k\big) \;+\; \sum_{l \neq k} \beta_l \Cov[\,x_{ik}, x_{il}\,] ,
+\end{equation}
+the covariance between a variant's genotype and the phenotype it helps cause --- the quantity a genome-wide association study estimates, and equal to $\beta_k$ only in the base population.
+Then $\Cov[z^{(u)}_{ik}, y_i] = c^{(t)}_k/2$, and the four chains give
+\begin{equation}\label{eq:alpha-recursion}
+    \boxed{\ \alpha^{(t+1)}_k \;=\; 4 \cdot \frac{c^{(t)}_k}{2}\cdot \mu^{(t)} \cdot \frac{c^{(t)}_k}{2} \cdot \frac{1}{2\cdot\tfrac12} \;=\; \frac{\rho_y\,\big(c^{(t)}_k\big)^2}{2\,V_P^{(t)}} \ }
+\end{equation}
+which is exact at every generation, and reduces to \eqref{eq:alpha-gen1} at $t=0$ because $c^{(0)}_k = \beta_k$.
+
+Equation~\eqref{eq:alpha-recursion} is a recursion only once we can say what $c^{(t)}_k$ is, and \eqref{eq:effective-effect} makes that depend on every other variant.
+For a polygenic trait it collapses.
+
+\begin{approximation}{Uniform-inflation}{Assortment scales every variant's effect alike}
+The genotype--phenotype covariance at each variant grows in proportion to the additive variance,
+$$ c^{(t)}_k \;=\; \beta_k\,\frac{V_A^{(t)}}{\VAo} . $$
+\justification{This is \emph{exact} for $t \leq 1$: at $t=0$ both sides are $\beta_k$, and at $t=1$ the cross-variant sum in \eqref{eq:effective-effect} contributes $\beta_k\rhogo/2$ exactly. From $t=2$ the two sides differ by $\beta_k\alpha^{(t-1)}_k/2$, and that is small: rewriting \eqref{eq:alpha-gen1} as $\alpha^{(1)}_k = (\beta_k^2/\VAo)\,\rhogo/2$ shows it to be the variant's share of the additive variance times half the mates' genetic correlation, so for variants of equal effect it is $\rhogo/(2M)$. The relative error is therefore $O(1/M)$ --- the same order as the per-variant departure from Hardy--Weinberg itself. It is exactly zero when all variants have equal effects.}
+\end{approximation}
+
+Under \approximationid{Uniform-inflation} the whole system closes on a single quantity, $V_A^{(t)}$:
+\begin{equation}\label{eq:alpha-recursion-VA}
+    \alpha^{(t+1)}_k \;=\; \frac{\rho_y\,\beta_k^2}{2\,V_P^{(t)}}\left(\frac{V_A^{(t)}}{\VAo}\right)^{\!2} ,
+    \qquad\text{so}\qquad
+    \alpha^{(2)}_k \;=\; \frac{\rho_y\,\beta_k^2}{2\,V_P^{(1)}}\left(\frac{V_A^{(1)}}{\VAo}\right)^{\!2} ,
+\end{equation}
+with $V_A^{(1)} = \VAo\big(1 + \rhogo/2\big)$ from Table~\ref{tab:relatives-gen1}'s self column.
+
+\subsubsection*{The additive variance is the state of the system}
+The remaining ingredient is how $V_A$ itself moves.
+An offspring's genetic value is the average of its parents' plus its segregation deviations, so
+\begin{equation}\label{eq:VA-recursion}
+    V_A^{(t+1)} \;=\; \underbrace{\tfrac12 \sum_k \beta_k^2\big(1 - \alpha^{(t)}_k\big)}_{V_K^{(t)},\ \text{segregation}} \;+\; \underbrace{\tfrac12\,V_A^{(t)}\big(1 + \rho_g^{(t)}\big)}_{\text{from the parents}} ,
+\end{equation}
+the first term being \eqref{eq:seg-var-alpha} summed over variants and weighted by effects, and the second the variance of $\tfrac12(g_m + g_p)$ for mates correlated by $\rho_g^{(t)}$.
+Note that the segregation variance $V_K^{(t)}$ is \emph{not} constant across generations: parents whose alleles are correlated contribute less of it, and it falls by $\tfrac12\sum_k\beta_k^2\alpha^{(t)}_k$.
+That deficit is $O(V_A/M)$, the same order \approximationid{Uniform-inflation} already neglects, so we drop it too and take $V_K \approx \VAo/2$ from here on --- but it is worth knowing that the familiar constant-$V_K$ statement is an approximation rather than an identity.
+
+This is now a \textbf{first-order autonomous nonlinear difference equation} in the single state variable $V_A^{(t)}$: each generation's value is a fixed function of the previous generation's and of nothing else, with $\rho_y$, $V_E$ and the $\beta_k$ held constant across generations by \assumptionid{Primary-AM}, \assumptionid{Constant-freq} and the fixed environmental variance.
+Every other quantity in this section --- $V_P^{(t)}$, $\hsqt$, $\rho_g^{(t)}$, $\mut$, $\alpha^{(t)}_k$ --- is a function of $V_A^{(t)}$ rather than a state of its own, which is why one equation suffices.
+An equilibrium is a \emph{fixed point} of that map, a value left unchanged by another generation of assortment; because the map is increasing and, for $\rho_y < 1$, eventually contracting, the sequence approaches it monotonically from below rather than oscillating or diverging.
+
+Setting $V_A^{(t+1)} = V_A^{(t)} = \VAeq$ in \eqref{eq:VA-recursion} and solving,
+\begin{equation}\label{eq:VA-eq}
+    \VAeq \;=\; \frac{\VAo}{2} + \frac{\VAeq\big(1+\rho_g^{(\mathrm{eq})}\big)}{2}
+    \qquad\Longrightarrow\qquad
+    \boxed{\ \VAeq \;=\; \frac{\VAo}{1 - \rho_g^{(\mathrm{eq})}} \ }
+\end{equation}
+Substituting into \eqref{eq:alpha-recursion-VA} and using $\rho_g^{(\mathrm{eq})} = \rho_y\VAeq/\VPeq$ gives the equilibrium departure from Hardy--Weinberg:
+\begin{equation}\label{eq:alpha-eq}
+    \boxed{\ \alpha^{(\mathrm{eq})}_k \;=\; \frac{\beta_k^2}{\VAo}\cdot\frac{\rho_g^{(\mathrm{eq})}}{2\big(1 - \rho_g^{(\mathrm{eq})}\big)} \ }
+\end{equation}
+which is the generation-1 value $\alpha^{(1)}_k = (\beta_k^2/\VAo)\,\rhogo/2$ with $\rhogo/2$ replaced by $\rho_g^{(\mathrm{eq})}/\big(2(1-\rho_g^{(\mathrm{eq})})\big)$: one generation of assortment gets a fraction $1-\rho_g$ of the way to the final value.
+For variants of equal effect, $\beta_k^2 = \VAo/M$ and $\alpha^{(\mathrm{eq})} = \rho_g^{(\mathrm{eq})}/\big(2M(1-\rho_g^{(\mathrm{eq})})\big)$, which is the large-$M$ limit of the expression given by \citet{Yengo2018NatHumBehav}.
+
+Every other quantity follows from $V_A^{(t)}$, so the same treatment applies to all of them.
+Table~\ref{tab:dynamics} collects them: what each becomes in the next generation, where each settles, and what each was in the base population.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{2.2}
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{l|ccc}
+            & generation $t+1$
+            & equilibrium
+            & base, $t = 0$ \\
+        \hline
+        additive variance $V_A$
+            & $\dfrac{\VAo}{2} + \dfrac{V_A^{(t)}\big(1+\rho_g^{(t)}\big)}{2}$
+            & $\dfrac{\VAo}{1-\rho_g^{(\mathrm{eq})}}$
+            & $\VAo$ \\
+        phenotypic variance $V_P$
+            & $V_A^{(t+1)} + V_E$
+            & $\VAeq + V_E$
+            & $\VPo$ \\
+        heritability $h^2$
+            & $V_A^{(t+1)}/V_P^{(t+1)}$
+            & $\VAeq/\VPeq$
+            & $\hsqo$ \\
+        mates' genetic corr.\ $\rho_g$
+            & $\rho_y\,h^2_{(t+1)}$
+            & $\rho_y\,\hsqeq$
+            & $\rho_y\,\hsqo$ \\
+        co-path coefficient $\mu$
+            & $\rho_y/V_P^{(t+1)}$
+            & $\rho_y/\VPeq$
+            & $\rho_y/\VPo$ \\
+        within-individual $\alpha_k$
+            & $\dfrac{\rho_y\beta_k^2}{2V_P^{(t)}}\left(\dfrac{V_A^{(t)}}{\VAo}\right)^{\!2}$
+            & $\dfrac{\beta_k^2}{\VAo}\cdot\dfrac{\rho_g^{(\mathrm{eq})}}{2\big(1-\rho_g^{(\mathrm{eq})}\big)}$
+            & $0$ \\
+        segregation variance $V_K$
+            & $\tfrac12\sum_k \beta_k^2\big(1-\alpha^{(t)}_k\big)$
+            & $\tfrac12\sum_k \beta_k^2\big(1-\alpha^{(\mathrm{eq})}_k\big)$
+            & $\VAo/2$ \\
+    \end{tabular}
+    \caption{%
+        How each quantity moves from one generation to the next, and where it settles.
+        Only $V_A$ is a state variable; every row below it is a function of $V_A$ in the same generation, which is what makes the system one-dimensional.
+        The equilibrium column is the fixed point, obtained by setting the middle column equal to its own previous value and solving.
+        $\rho_y$, $V_E$ and the $\beta_k$ are the same in every column --- they are the only things assortment does not move.
+        The $V_A$ and $\alpha_k$ rows use \approximationid{Uniform-inflation}; the $V_K$ row is exact, and is the term the $V_A$ row drops.%
+    }
+    \label{tab:dynamics}
+    \end{floatcard}
+\end{table}
+
 
 \todo{For user to do: Still need to revise rest of article below, agents should not edit below this point unless explicitly directed.}
 

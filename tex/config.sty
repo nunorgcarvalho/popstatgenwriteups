@@ -61,6 +61,12 @@
   \vskip\belowcaptionskip}
 \makeatother
 
+% Emphasis for the term that assortative mating ADDS to a randomly mating value, so a reader can
+% see at a glance which half of an expression is new. Colour rather than \emph, because \emph
+% does nothing useful inside math mode -- math is already italic.
+\definecolor{addedterm}{RGB}{20,110,75}
+\newcommand{\adds}[1]{{\color{addedterm}#1}}
+
 % A bordered panel around a float's contents AND its caption, so a figure or table reads as one
 % object rather than as loose material sitting in the text column. Built as an \fbox around a
 % minipage rather than on `framed`, because the caption goes inside and \caption is only reliably
