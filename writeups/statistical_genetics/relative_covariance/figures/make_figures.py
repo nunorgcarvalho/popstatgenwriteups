@@ -340,6 +340,86 @@ def check_as_recursion(n_variants: int = 3) -> int:
     return checked
 
 
+def check_c_recursion(n_variants: int = 4) -> int:
+    """Assert the collapsed c recursion, eq:c-recursion, and the two halves it is built from.
+
+        c'_k = (1 + rho_y V_A / V_P) c_k / 2  +  beta_k (1/4 - a_kk / 2)
+
+    SYMBOLIC in an ARBITRARY state (a_kl, s_kl free symbols), not in a state reached by iterating
+    from t = 0. That is the claim the document makes -- "no assumption has been made about the
+    effect sizes, and it holds for any state whatever" -- and iterating forward from the base
+    population could not test it, since every reachable state is already rank-one-ish in beta.
+    """
+    kk = range(1, n_variants + 1)
+    beta = {k: sp.Symbol(f"beta_{k}", real=True) for k in kk}
+    rho_y, V_E = sp.symbols("rho_y V_E", positive=True)
+    half, quarter = sp.Rational(1, 2), sp.Rational(1, 4)
+
+    # a free symmetric state; s_kk is not a symbol -- it is pinned at 1/2 by eq:skk
+    sym = {}
+    for k in kk:
+        for lidx in kk:
+            key = (min(k, lidx), max(k, lidx))
+            sym.setdefault(("a",) + key, sp.Symbol(f"a_{key[0]}{key[1]}", real=True))
+            if k != lidx:
+                sym.setdefault(("s",) + key, sp.Symbol(f"s_{key[0]}{key[1]}", real=True))
+    A = lambda k, l: sym[("a", min(k, l), max(k, l))]
+    S = lambda k, l: half if k == l else sym[("s", min(k, l), max(k, l))]
+
+    c = {k: sum(beta[l] * (S(k, l) + A(k, l)) for l in kk) for k in kk}     # eq:c-def
+    V_A = 2 * sum(beta[k] * c[k] for k in kk)                              # eq:VA-from-as
+    mu = rho_y / (V_A + V_E)
+    # the document deliberately does NOT name this rho_g in the equilibrium section -- it keeps
+    # everything in V_A, V_P and rho_y -- so the checks compare against the expanded ratio.
+    inflate = rho_y * V_A / (V_A + V_E)
+
+    a_next = {(k, l): mu * c[k] * c[l] for k in kk for l in kk}            # eq:a-recursion
+    s_next = lambda k, l: half if k == l else half * (S(k, l) + A(k, l))   # eq:s-recursion, eq:skk
+
+    checked = 0
+    # the two identities eq:c-part-a leans on, checked before the step that uses them
+    assert sp.simplify(sum(beta[k] * c[k] for k in kk) - V_A / 2) == 0
+    assert sp.simplify(mu * V_A - inflate) == 0
+    checked += 2
+
+    for k in kk:
+        part_a = sum(beta[l] * a_next[(k, l)] for l in kk)                 # eq:c-part-a
+        assert sp.simplify(part_a - half * inflate * c[k]) == 0, f"(i) at k={k}"
+        part_s = sum(beta[l] * s_next(k, l) for l in kk)                   # eq:c-part-s
+        want_s = half * c[k] + quarter * beta[k] - half * beta[k] * A(k, k)
+        assert sp.simplify(part_s - want_s) == 0, f"(ii) at k={k}"
+        # eq:c-recursion itself, assembled from eq:c-def one generation on
+        c_next = sum(beta[l] * (s_next(k, l) + a_next[(k, l)]) for l in kk)
+        want = half * (1 + inflate) * c[k] + quarter * beta[k] - half * beta[k] * A(k, k)
+        assert sp.simplify(sp.together(c_next - want)) == 0, f"eq:c-recursion at k={k}"
+        checked += 3
+
+    # the readings the prose gives of the result
+    for k in kk:
+        # the bracket in eq:c-recursion IS eq:seg-var-a, not a new quantity
+        seg_var = quarter - half * A(k, k)
+        assert sp.simplify(quarter * beta[k] - half * beta[k] * A(k, k)
+                           - beta[k] * seg_var) == 0
+        checked += 1
+    # random mating: rho_y = 0 leaves c_k = beta_k / 2 a fixed point
+    assert sp.simplify((half * beta[1] / 2 + quarter * beta[1]) - half * beta[1]) == 0
+    # a null variant stays null forever, so causal vs non-causal needs no separate treatment.
+    # Checked by iterating the recursion with beta_k = 0 rather than by inspecting it: the
+    # claim is about every generation, and c enters a_kl multiplicatively.
+    null = {k: (0.0 if k == 1 else 0.4 + 0.1 * k) for k in kk}
+    c_num = {k: null[k] / 2 for k in kk}
+    for _ in range(50):
+        V_A_n = 2 * sum(null[k] * c_num[k] for k in kk)
+        rg = 0.4 * V_A_n / (V_A_n + 0.7)
+        mu_n = 0.4 / (V_A_n + 0.7)
+        c_num = {k: 0.5 * (1 + rg) * c_num[k] + null[k] * (0.25 - 0.5 * mu_n * c_num[k] ** 2)
+                 for k in kk}
+        assert c_num[1] == 0.0, "a null variant must stay null at every generation"
+    assert all(c_num[k] > 0 for k in kk if k != 1), "the others must not be null"
+    checked += 2
+    return checked
+
+
 def check_reduced_figure() -> int:
     """The reduced diagram must reproduce what the full three-generation pedigree gives."""
     model = reduced_pair_offspring()
@@ -373,7 +453,15 @@ def check_reduced_figure() -> int:
         got = 2 * engine.cov(_z("o", "mat", k), _z("o", "pat", k))
         assert sp.simplify(got - want) == 0, f"alpha^(2)_{k}: {sp.simplify(got)}"
         checked += 2
-    checked += 1
+
+    # Cov[g_m, g_p] = rho_y V_A V_A / V_P at t = 1. The document states this for the BASE
+    # population only, but eq:c-part-a uses it at general t via mu^(t) = rho_y / V_P^(t); this is
+    # that use at the first generation where V_A and V_P have actually moved, so it is not
+    # vacuous. Figure 3's caption makes the same claim about the co-path.
+    assert sp.simplify(engine.cov("g_m", "g_p") / V_A1 - rho_y * V_A1 / V_P1) == 0
+    # ... and the form eq:c-part-a actually uses, mu^(t) V_A^(t) = rho_y V_A^(t) / V_P^(t)
+    assert sp.simplify((rho_y / V_P1) * V_A1 - engine.cov("g_m", "g_p") / V_A1) == 0
+    checked += 3
     return checked
 
 
@@ -1118,6 +1206,7 @@ def main() -> int:
         print(f"relatives M={m_c}: {check_relative_table(m_c)} results agree with pathMgr")
     print(f"dynamics:      {check_dynamics()} results agree with pathMgr")
     print(f"a/s recursion: {check_as_recursion(3)} results agree with pathMgr")
+    print(f"c recursion:   {check_c_recursion(4)} results agree with pathMgr")
     print(f"reduced fig:   {check_reduced_figure()} results agree with pathMgr")
     # M = 3 only: the reduced model carries M^2 bidirected edges per parent, so the symbolic
     # cost climbs steeply and M = 4 does not exercise anything M = 3 misses here.

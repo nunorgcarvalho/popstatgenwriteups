@@ -758,10 +758,61 @@ Table~\ref{tab:as-recursion} charts $a$ and $s$ from the base population $t=0$ f
     \end{floatcard}
 \end{table}
 
-\todo{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point}.
 
 \subsubsection{Equilibrium}
+Our next goal is to solve for the values that lead to an equilibrium state in the recursive covariance formulas we expressed above.
+We begin by noticing that the $c$ term we introduced earlier simplifies substantially and makes the recursion more manageable:
 
+We rewrite the formula for $c$ from \eqref{eq:c-def} as two separate sums, each of which will be simplified:
+\begin{equation}\label{eq:c-split}
+    c^{(t+1)}_k \;=\; \sum_{l=1}^{M} \beta_l\Big(s^{(t+1)}_{kl} + a^{(t+1)}_{kl}\Big)
+    \;=\; \underbrace{\sum_{l} \beta_l\,a^{(t+1)}_{kl}}_{\text{(i)}}
+    \;+\; \underbrace{\sum_{l} \beta_l\,s^{(t+1)}_{kl}}_{\text{(ii)}} .
+\end{equation}
+
+\paragraph{(i) The across-gamete half.}
+The across-gamete part of the equation can itself be written in terms of $c$ terms from the previous generation, first described in \eqref{eq:a-recursion}.
+After pulling out common terms, we are left with a summation that can be simplified according to \eqref{eq:VA-from-as}.
+We also plug in the expression for $\mut$:
+\begin{equation}\label{eq:c-part-a}
+    \sum_{l} \beta_l\,a^{(t+1)}_{kl}
+    \;=\; \sum_{l} \beta_l\,\mut\, c^{(t)}_k c^{(t)}_l
+    \;=\; \mut\, c^{(t)}_k \underbrace{\sum_{l} \beta_l c^{(t)}_l}_{\VAt/2}
+    \;=\; \frac{\rho_y\,\VAt}{2\,\VPt}\, c^{(t)}_k ,
+\end{equation}
+The sum over $M$ variants that \eqref{eq:a-recursion} carries has now become a single ratio of variance components.
+
+\paragraph{(ii) The same-gamete half.}
+We can fill in the recursive expression for $s^{(t+1)}_{kl}$ according to \eqref{eq:s-recursion}, which lets us write it in terms of $c^{(t)}_k$ according to \eqref{eq:c-def}.
+However, we must be careful to replace the $k=l$ case with its fixed value of $s^{(t)}_{kk} \equiv \tfrac12$:
+
+\begin{equation}\label{eq:c-part-s}
+\begin{aligned}
+    \sum_{l} \beta_l\,s^{(t+1)}_{kl}
+    &\;=\; \underbrace{\tfrac12 \sum_{l} \beta_l\big(s^{(t)}_{kl} + a^{(t)}_{kl}\big)}_{c^{(t)}_k/2}
+    \;+\; \beta_k\bigg[\underbrace{\tfrac12}_{s^{(t+1)}_{kk}} \;-\; \underbrace{\tfrac12\big(\tfrac12 + a^{(t)}_{kk}\big)}_{\text{what \eqref{eq:s-recursion} would give for } k=l}\bigg] \\[4pt]
+    &\;=\; \tfrac12\,c^{(t)}_k \;+\; \beta_k\Big(\tfrac14 - \tfrac12\,a^{(t)}_{kk}\Big) .
+\end{aligned}
+\end{equation}
+
+\paragraph{The collapsed recursion.}
+Adding \eqref{eq:c-part-a} and \eqref{eq:c-part-s} gives
+\begin{equation}\label{eq:c-recursion}
+    \boxed{\ c^{(t+1)}_k \;=\; \underbrace{\tfrac12\left(1 + \frac{\rho_y\,\VAt}{\VPt}\right) c^{(t)}_k}_{\text{inherited}}
+    \;+\; \beta_k \underbrace{\Big(\tfrac14 - \tfrac12\,a^{(t)}_{kk}\Big)}_{\Var[\epsilon^{(m)}_{ok}]} \ }
+\end{equation}
+We can notice that the segregation variance \eqref{eq:seg-var-a} naturally emerges from our formula and brings with it a satisfying interpretation.
+We've previously thought of inherited alleles as having a directly-inherited component from the parent (equivalent to half the parent's genotype) plus segregation deviation that is uncorrelated with the parent's genotype.
+Both contribute covariance with the offspring's phenotype.
+The former contributes half the covariance present in the parent generation, but amplified slightly due to assortative mating predicting the total covariance of correlated variants coming from the other parent.
+The latter contributes additional variance directly proportional to that variant's effect size.
+This term is not linearly recursive, since $a^{(t)}_{kk} = \mu^{(t-1)}\big(c^{(t-1)}_k\big)^2$ by \eqref{eq:a-recursion}.
+
+The recursion is now more manageable because equation \eqref{eq:c-recursion} only tracks $M$ numbers, and the variants are coupled \emph{only} through the single ratio $\VAt/\VPt$ --- which is itself recoverable from the $c^{(t)}_k$ by \eqref{eq:VA-from-as}.
+The state of the population, as far as the dynamics are concerned, is the vector $c^{(t)}$.
+
+
+\todo{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point}.
 
 With the reduced diagram, the same four-chain argument that gave \eqref{eq:alpha-gen1} runs again, with two changes: the mates are now generation-1 individuals, so the co-path carries $\mu^{(1)} = \rho_y/V_P^{(1)}$; and each parent's genotype no longer has variance $1$, so the leg from an allele down to the phenotype is no longer simply $\beta_k/2$.
 Writing that leg out once,
