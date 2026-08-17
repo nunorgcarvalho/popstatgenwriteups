@@ -14,6 +14,7 @@ what pathMgr's RAM engine actually returns: if a hand-typed entry drifts, this s
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -420,6 +421,214 @@ def check_c_recursion(n_variants: int = 4) -> int:
     return checked
 
 
+def check_state_readouts(n_variants: int = 4) -> int:
+    """Assert the restructured section's central claim: c is the state, the rest are readouts.
+
+    The section is now organized around the claim that (c, a_kk) advances on its own and that
+    V_A, V_P, a_kl and s_kl are computed FROM it rather than tracked alongside it. That is a
+    claim about the whole trajectory, not about any one equation, so it is checked by running
+    the two systems side by side for many generations and comparing every readout.
+
+    Also pins eq:c-def and eq:c-gen1 against the path diagrams, since c is now introduced as a
+    covariance in its own right rather than as an abbreviation for a sum.
+    """
+    kk = list(range(1, n_variants + 1))
+    betas = {k: 0.62 - 0.09 * (k - 1) for k in kk}          # deliberately unequal
+    V_E, rho_y = 0.71, 0.38
+    V_A0 = sum(b * b for b in betas.values())
+    V_P0 = V_A0 + V_E
+    checked = 0
+
+    # -- eq:c-def and eq:c-gen1 against Figure 2's model ---------------------------------------
+    subs = {sp.Symbol(f"beta_{k}", real=True): betas[k] for k in kk}
+    subs[sp.Symbol("V_E", positive=True)] = V_E
+    subs[sp.Symbol("rho_y", real=True)] = rho_y
+
+    def num(expr):
+        expr = sp.sympify(expr)
+        return float(sp.N(expr.subs({v: subs[v] for v in expr.free_symbols if v in subs})))
+
+    e1 = pm.RAMEngine(pair_offspring_general(n_variants))
+    for k in kk:
+        # the base-population parents: c^(0)_k = beta_k / 2  (eq:as-gen0)
+        for origin in ("mat", "pat"):
+            assert abs(num(e1.cov(_z("m", origin, k), "y_m")) - betas[k] / 2) < 1e-12
+            checked += 1
+        # their generation-1 offspring: eq:c-gen1, and it must not depend on which gamete
+        want = betas[k] / 2 * (1 + rho_y * V_A0 / (2 * V_P0))
+        for origin in ("mat", "pat"):
+            got = num(e1.cov(_z("o1", origin, k), "y_o1"))
+            assert abs(got - want) < 1e-12, f"c^(1)_{k} via {origin}: {got} != {want}"
+            checked += 1
+        # eq:c-def is an expansion of that same covariance over every variant, not just k
+        expand = sum(betas[l] * num(e1.cov(_z("o1", "mat", k), f"x_o1{l}")) for l in kk)
+        assert abs(expand - want) < 1e-12, f"eq:c-def expansion at k={k}"
+        checked += 1
+    # eq:VA-from-as at t = 1, against the diagram's own genetic variance
+    V_A1 = num(e1.var("g_o1"))
+    assert abs(V_A1 - 2 * sum(betas[k] * betas[k] / 2 * (1 + rho_y * V_A0 / (2 * V_P0))
+                              for k in kk)) < 1e-12
+    assert abs(V_A1 - V_A0 * (1 + rho_y * V_A0 / (2 * V_P0))) < 1e-12
+    checked += 2
+
+    # -- the closure claim, over a long trajectory ---------------------------------------------
+    # (A) the full system the section derives: two M x M matrices.
+    a = {(k, l): 0.0 for k in kk for l in kk}
+    s = {(k, l): (0.5 if k == l else 0.0) for k in kk for l in kk}
+
+    def step_as(a, s):
+        c = {k: sum(betas[l] * (s[(k, l)] + a[(k, l)]) for l in kk) for k in kk}   # eq:c-def
+        V_A = 2 * sum(betas[k] * c[k] for k in kk)                                 # eq:VA-from-as
+        mu = rho_y / (V_A + V_E)
+        return ({(k, l): mu * c[k] * c[l] for k in kk for l in kk},                # eq:a-recursion
+                {(k, l): (0.5 if k == l else 0.5 * (s[(k, l)] + a[(k, l)]))        # eq:s-recursion
+                 for k in kk for l in kk}, c, V_A)
+
+    # (B) the state the section claims is sufficient: c and the diagonal of a. No s at all.
+    c_b = {k: betas[k] / 2 for k in kk}
+    a_kk = {k: 0.0 for k in kk}
+
+    def step_c(c, a_kk):
+        V_A = 2 * sum(betas[k] * c[k] for k in kk)
+        V_P = V_A + V_E
+        nxt = {k: 0.5 * (1 + rho_y * V_A / V_P) * c[k]                             # eq:c-recursion
+               + betas[k] * (0.25 - 0.5 * a_kk[k]) for k in kk}
+        return nxt, {k: (rho_y / V_P) * c[k] ** 2 for k in kk}, V_A, V_P
+
+    a_history, c_trace = [], []
+    for _ in range(150):
+        a_history.append(a)
+        c_trace.append(dict(c_b))
+        a_n, s_n, c_a, V_A_a = step_as(a, s)
+        c_b_n, a_kk_n, V_A_b, V_P_b = step_c(c_b, a_kk)
+        # c and V_A agree at every generation
+        assert max(abs(c_a[k] - c_b[k]) for k in kk) < 1e-12, "c diverged"
+        assert abs(V_A_a - V_A_b) < 1e-12, "V_A diverged"
+        # every off-diagonal a_kl is a readout of c, not part of the state
+        mu_b = rho_y / V_P_b
+        assert max(abs(a_n[(k, l)] - mu_b * c_b[k] * c_b[l])
+                   for k in kk for l in kk) < 1e-12, "a_kl is not a readout of c"
+        a, s, c_b, a_kk = a_n, s_n, c_b_n, a_kk_n
+    checked += 3
+
+    # eq:c-closed: the same trajectory with V_A, V_P and a_kk all substituted away, so that only
+    # past c values and (beta, rho_y, V_E) appear. Run as a SEPARATE second-order iteration rather
+    # than by rearranging the first, since the document's claim is that this form stands alone.
+    def V_A_of(cc):
+        return 2 * sum(betas[j] * cc[j] for j in kk)
+
+    c_prev, c_cur = None, {k: betas[k] / 2 for k in kk}
+    for t in range(150):
+        assert max(abs(c_cur[k] - c_trace[t][k]) for k in kk) < 1e-12, f"eq:c-closed at t={t}"
+        drag = ({k: 0.0 for k in kk} if c_prev is None else
+                {k: rho_y * betas[k] * c_prev[k] ** 2 / (2 * (V_A_of(c_prev) + V_E)) for k in kk})
+        c_prev, c_cur = c_cur, {
+            k: 0.5 * (1 + 2 * rho_y * sum(betas[j] * c_cur[j] for j in kk)
+                      / (V_A_of(c_cur) + V_E)) * c_cur[k] + 0.25 * betas[k] - drag[k]
+            for k in kk}
+    checked += 1
+
+    # s as the discounted history of a, the form printed in the readout list. OFF-DIAGONAL only:
+    # s_kk is pinned at 1/2 by eq:skk and is not governed by eq:s-recursion, so the unrolling
+    # does not apply there -- which is the same k = l exception eq:c-part-s has to correct for.
+    for k, lidx in ((1, n_variants), (2, 3)):
+        unrolled = sum(0.5 ** (j + 1) * a_history[len(a_history) - 1 - j][(k, lidx)]
+                       for j in range(len(a_history)))
+        assert abs(s[(k, lidx)] - unrolled) < 1e-12, f"s unrolling at {k},{lidx}"
+        checked += 1
+    return checked
+
+
+def check_equilibrium() -> int:
+    """Assert the equilibrium section: the exact per-variant quadratic, and what the
+    [Uniform-inflation] approximation costs.
+
+    Numeric, and with MIXED-SIGN effects: eq:c-eq claims beta_k enters the denominator only as
+    beta_k^2, so c_k inherits its sign from the numerator alone. An all-positive spectrum could
+    not test that.
+    """
+    b = {1: 0.62, 2: -0.44, 3: 0.31, 4: -0.18, 5: 0.09}     # deliberately unequal, mixed signs
+    kk = list(b)
+    V_E, rho_y = 0.71, 0.38
+    V_A0 = sum(v * v for v in b.values())
+    V_P0 = V_A0 + V_E
+    h0 = V_A0 / V_P0
+    checked = 0
+
+    # -- the exact fixed point, reached by iterating eq:c-recursion --------------------------
+    c = {k: b[k] / 2 for k in kk}
+    a_kk = {k: 0.0 for k in kk}
+    for _ in range(6000):
+        V_A = 2 * sum(b[j] * c[j] for j in kk)
+        V_P = V_A + V_E
+        nxt = {k: 0.5 * (1 + rho_y * V_A / V_P) * c[k] + b[k] * (0.25 - 0.5 * a_kk[k])
+               for k in kk}
+        a_kk = {k: (rho_y / V_P) * c[k] ** 2 for k in kk}
+        c = nxt
+    V_A = 2 * sum(b[j] * c[j] for j in kk)
+    V_P = V_A + V_E
+    mu, rho_g = rho_y / V_P, rho_y * V_A / V_P
+    u = 1 - rho_g
+
+    # eq:c-eq-quadratic -- the fixed point must satisfy it, at every variant
+    for k in kk:
+        resid = 2 * mu * b[k] * c[k] ** 2 + 2 * u * c[k] - b[k]
+        assert abs(resid) < 1e-12, f"eq:c-eq-quadratic at k={k}: {resid}"
+        checked += 1
+    # eq:c-eq -- the rationalized positive root, and the sign claim
+    for k in kk:
+        root = b[k] / (u + math.sqrt(u * u + 2 * mu * b[k] ** 2))
+        assert abs(root - c[k]) < 1e-12, f"eq:c-eq at k={k}"
+        assert (root > 0) == (b[k] > 0), "c_k must inherit the sign of beta_k"
+        checked += 2
+    # the rho_y = 0 limit stated under eq:c-eq
+    for k in kk:
+        assert abs(b[k] / (1 + math.sqrt(1.0)) - b[k] / 2) < 1e-15
+        checked += 1
+    # Summing eq:c-eq over variants must reproduce V_A. The document no longer prints this
+    # implicit form -- the prose says only that the M radicals cannot be gathered -- but the
+    # identity is what that claim is about, so it stays checked.
+    lhs = 2 * sum(b[k] ** 2 / (u + math.sqrt(u * u + 2 * mu * b[k] ** 2)) for k in kk)
+    assert abs(lhs - V_A) < 1e-12, "sum of eq:c-eq over variants"
+    checked += 1
+
+    # -- the approximation, and the closed forms it buys -------------------------------------
+    # eq:rhog-eq, then eq:VA-eq. Checked against the CLOSED recursion (drop the drag term),
+    # which is what the approximation actually corresponds to -- not against the exact fixed
+    # point, which it only approximates.
+    disc = 1 - 4 * rho_y * h0 * (1 - h0)
+    assert disc >= 0, "eq:rhog-eq discriminant must be non-negative"
+    rho_g_ap = (1 - math.sqrt(disc)) / (2 * (1 - h0))
+    assert abs((1 - h0) * rho_g_ap**2 - rho_g_ap + rho_y * h0) < 1e-14   # eq:rhog-quadratic
+    V_A_ap = V_A0 / (1 - rho_g_ap)                                       # eq:VA-eq
+    V_ap = V_A0
+    for _ in range(6000):
+        rg = rho_y * V_ap / (V_ap + V_E)
+        V_ap = 0.5 * (1 + rg) * V_ap + 0.5 * V_A0
+    assert abs(V_ap - V_A_ap) < 1e-9, "eq:VA-eq vs the drag-free recursion"
+    # self-consistency: rho_g computed from V_A_ap must reproduce rho_g_ap
+    assert abs(rho_y * V_A_ap / (V_A_ap + V_E) - rho_g_ap) < 1e-12
+    checked += 4
+    # the h0 = 1 degenerate case the text calls out
+    assert abs((1 - 1.0) * rho_y**2 - rho_y + rho_y * 1.0) < 1e-15
+    # ... and that the discriminant is non-negative across the whole admissible square
+    for i in range(51):
+        for j in range(51):
+            ry, hh = i / 50, j / 50
+            assert 1 - 4 * ry * hh * (1 - hh) >= -1e-15
+    checked += 2
+
+    # -- the justification's error term -------------------------------------------------------
+    # relative error in V_A of order rho_g / (2(1-rho_g) M_e), with M_e the effective count.
+    M_e = V_A0**2 / sum(v**4 for v in b.values())
+    predicted = rho_g / (2 * (1 - rho_g) * M_e)
+    actual = (V_A_ap - V_A) / V_A
+    assert actual > 0, "the approximation should overestimate V_A"
+    assert 0.5 < actual / predicted < 2.0, f"error term off by {actual / predicted:.2f}x"
+    checked += 2
+    return checked
+
+
 def check_reduced_figure() -> int:
     """The reduced diagram must reproduce what the full three-generation pedigree gives."""
     model = reduced_pair_offspring()
@@ -454,14 +663,30 @@ def check_reduced_figure() -> int:
         assert sp.simplify(got - want) == 0, f"alpha^(2)_{k}: {sp.simplify(got)}"
         checked += 2
 
-    # Cov[g_m, g_p] = rho_y V_A V_A / V_P at t = 1. The document states this for the BASE
-    # population only, but eq:c-part-a uses it at general t via mu^(t) = rho_y / V_P^(t); this is
-    # that use at the first generation where V_A and V_P have actually moved, so it is not
-    # vacuous. Figure 3's caption makes the same claim about the co-path.
-    assert sp.simplify(engine.cov("g_m", "g_p") / V_A1 - rho_y * V_A1 / V_P1) == 0
-    # ... and the form eq:c-part-a actually uses, mu^(t) V_A^(t) = rho_y V_A^(t) / V_P^(t)
-    assert sp.simplify((rho_y / V_P1) * V_A1 - engine.cov("g_m", "g_p") / V_A1) == 0
-    checked += 3
+    # eq:VA-from-as and eq:hsq-t at t = 1, in BOTH forms the document prints: the ratio of
+    # variance components, and the same thing written out in betas and c's.
+    c1 = {k: engine.cov(_z("m", "mat", k), "y_m") for k in (1, 2)}
+    from_c = 2 * sum(betas[k] * c1[k] for k in (1, 2))
+    assert sp.simplify(from_c - V_A1) == 0, "eq:VA-from-as boxed form at t = 1"
+    assert sp.simplify(V_A1 / V_P1 - from_c / (from_c + V_E)) == 0, "eq:hsq-t in betas and c's"
+    checked += 2
+
+    # eq:rhog-t at t = 1, derived rather than assumed: the document builds it from the co-path
+    # rule plus Cov[g_i, y_i] = V_A, at general t. This checks it at the first generation where
+    # V_A and V_P have actually moved, so it is not vacuous, and in every form printed.
+    # both mates have genetic variance V_A^(t), which is the step that turns the correlation's
+    # sqrt(Var Var) denominator into a plain V_A^(t) -- asserted rather than left to sympy, which
+    # will not reduce sqrt(V_A^2) without a positivity assumption on the symbols.
+    assert sp.simplify(engine.var("g_m") - V_A1) == 0
+    assert sp.simplify(engine.var("g_p") - V_A1) == 0
+    rho_g1 = engine.cov("g_m", "g_p") / V_A1
+    assert sp.simplify(rho_g1 - (rho_y / V_P1) * V_A1) == 0, "rho_g = mu V_A"
+    assert sp.simplify(rho_g1 - rho_y * V_A1 / V_P1) == 0, "rho_g = rho_y V_A / V_P"
+    assert sp.simplify(rho_g1 - rho_y * (V_A1 / V_P1)) == 0, "rho_g = rho_y h^2"
+    # the intermediate the derivation leans on: a genetic value against its own phenotype is V_A
+    for who in ("m", "p"):
+        assert sp.simplify(engine.cov(f"g_{who}", f"y_{who}") - V_A1) == 0
+    checked += 7
     return checked
 
 
@@ -979,6 +1204,44 @@ def check_relative_table(n_variants: int = 3) -> int:
     ) == 0
     checked += 2
 
+    # tab:relatives-gen1 as it is now printed: every added term through rho_g instead of
+    # rho_y / V_P. These are algebraic rewrites of the assertions above, which is exactly where a
+    # slip would go unnoticed -- the rho_y forms would still pass -- so each is checked against the
+    # diagram independently rather than against its own rho_y version.
+    for k in kk:
+        share = betas[k] ** 2 / V_A                       # variant k's share of V_A
+        assert sp.simplify(engine.var(f"x_o1{k}") - (1 + share * rho_g / 2)) == 0
+        assert sp.simplify(engine.cov(f"x_o1{k}", f"x_o2{k}")
+                           - (sp.Rational(1, 2) + share * rho_g / 2)) == 0
+        checked += 2
+        for lidx in kk:
+            if lidx == k:
+                continue
+            want = betas[k] * betas[lidx] * rho_g / (2 * V_A)
+            assert sp.simplify(engine.cov(f"x_o1{k}", f"x_o2{lidx}") - want) == 0
+            checked += 1
+    # eq:a-gen1-rhog, the allele-level statement the same rewrite gives
+    for k in kk:
+        for lidx in kk:
+            want = betas[k] * betas[lidx] * rho_g / (4 * V_A)
+            got = engine.cov(_z("o1", "mat", k), _z("o1", "pat", lidx))
+            assert sp.simplify(got - want) == 0, f"eq:a-gen1-rhog at {k},{lidx}"
+            checked += 1
+    # eq:c-gen1's rho_g form, and the genetic-value and phenotype rows
+    for k in kk:
+        assert sp.simplify(engine.cov(_z("o1", "mat", k), "y_o1")
+                           - betas[k] / 2 * (1 + rho_g / 2)) == 0, "eq:c-gen1 in rho_g"
+        checked += 1
+    assert sp.simplify(engine.var("g_o1") - V_A * (1 + rho_g / 2)) == 0
+    assert sp.simplify(engine.var("y_o1") - (V_A * (1 + rho_g / 2) + V_E)) == 0
+    assert sp.simplify(engine.cov("g_o1", "g_o2") - V_A / 2 * (1 + rho_g)) == 0
+    assert sp.simplify(engine.cov("y_o1", "y_o2") - V_A / 2 * (1 + rho_g)) == 0
+    assert sp.simplify(engine.cov("g_m", "g_o1") - V_A / 2 * (1 + rho_g)) == 0
+    # the one cell that carries rho_y rather than rho_g -- the point the caption now makes
+    assert sp.simplify(engine.cov("y_m", "y_o1") - V_A / 2 * (1 + rho_y)) == 0
+    assert sp.simplify(engine.cov("y_m", "y_o1") - engine.cov("y_o1", "y_o2")) != 0
+    checked += 7
+
     # The parent-offspring phenotype display, underbrace by underbrace as the document prints it.
     # The point of writing it expanded rather than through rho_g is that V_P cancels, and it only
     # cancels because the two terms carry V_A and V_E over the SAME V_P -- so both are checked
@@ -1207,6 +1470,8 @@ def main() -> int:
     print(f"dynamics:      {check_dynamics()} results agree with pathMgr")
     print(f"a/s recursion: {check_as_recursion(3)} results agree with pathMgr")
     print(f"c recursion:   {check_c_recursion(4)} results agree with pathMgr")
+    print(f"state&readouts: {check_state_readouts(4)} results agree with pathMgr")
+    print(f"equilibrium:   {check_equilibrium()} results agree with pathMgr")
     print(f"reduced fig:   {check_reduced_figure()} results agree with pathMgr")
     # M = 3 only: the reduced model carries M^2 bidirected edges per parent, so the symbolic
     # cost climbs steeply and M = 4 does not exercise anything M = 3 misses here.
