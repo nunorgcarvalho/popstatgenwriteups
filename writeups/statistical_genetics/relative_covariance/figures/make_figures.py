@@ -601,6 +601,22 @@ def check_equilibrium() -> int:
     rho_g_ap = (1 - math.sqrt(disc)) / (2 * (1 - h0))
     assert abs((1 - h0) * rho_g_ap**2 - rho_g_ap + rho_y * h0) < 1e-14   # eq:rhog-quadratic
     V_A_ap = V_A0 / (1 - rho_g_ap)                                       # eq:VA-eq
+    # eq:hsq-eq, in BOTH boxed forms plus the intermediate. These are algebraic rewrites of
+    # V_A/(V_A+V_E), so a slip in either would leave the V_A checks green -- each is compared
+    # against the ratio directly, not against the other.
+    h_direct = V_A_ap / (V_A_ap + V_E)
+    box1 = V_A0 / (V_A0 + (1 - rho_g_ap) * V_E)
+    mid = h0 / (h0 + (1 - rho_g_ap) * (1 - h0))
+    box2 = h0 / (1 - rho_g_ap * (1 - h0))
+    for label, val in (("eq:hsq-eq box 1", box1), ("eq:hsq-eq middle", mid),
+                       ("eq:hsq-eq box 2", box2)):
+        assert abs(val - h_direct) < 1e-14, label
+        checked += 1
+    # the shortened rho_g route: substituting box 2 into rho_g = rho_y h^2 must give the same
+    # quadratic the long route gave, so eq:rhog-eq is unchanged by the shortcut
+    assert abs(rho_g_ap - rho_y * box2) < 1e-14, "rho_g = rho_y * eq:hsq-eq box 2"
+    assert abs(rho_g_ap - rho_g_ap**2 * (1 - h0) - rho_y * h0) < 1e-14, "eq:rhog-quadratic line 2"
+    checked += 2
     V_ap = V_A0
     for _ in range(6000):
         rg = rho_y * V_ap / (V_ap + V_E)
@@ -616,6 +632,76 @@ def check_equilibrium() -> int:
         for j in range(51):
             ry, hh = i / 50, j / 50
             assert 1 - 4 * ry * hh * (1 - hh) >= -1e-15
+    checked += 2
+
+    # -- eq:VA-eq-exact, step by step -------------------------------------------------------
+    # Built from the FULL a and s matrices rather than from the closed forms, so the split into
+    # "one rule for every pair" plus a diagonal correction is checked as bookkeeping, not assumed.
+    a_s, s_s = {}, {}
+    aa = {(k, l): 0.0 for k in kk for l in kk}
+    ss = {(k, l): (0.5 if k == l else 0.0) for k in kk for l in kk}
+    for _ in range(6000):
+        cc = {k: sum(b[l] * (ss[(k, l)] + aa[(k, l)]) for l in kk) for k in kk}
+        VA = 2 * sum(b[k] * cc[k] for k in kk)
+        m = rho_y / (VA + V_E)
+        aa = {(k, l): m * cc[k] * cc[l] for k in kk for l in kk}
+        ss = {(k, l): (0.5 if k == l else 0.5 * (ss[(k, l)] + aa[(k, l)])) for k in kk for l in kk}
+    cc = {k: sum(b[l] * (ss[(k, l)] + aa[(k, l)]) for l in kk) for k in kk}
+    VA = 2 * sum(b[k] * cc[k] for k in kk)
+    m, rgx = rho_y / (VA + V_E), rho_y * VA / (VA + V_E)
+    cov = lambda k, l: 2 * (ss[(k, l)] + aa[(k, l)])          # eq:x-from-as, from the state
+
+    # the ingredients the derivation names
+    assert max(abs(ss[(k, l)] - aa[(k, l)]) for k in kk for l in kk if k != l) < 1e-15
+    assert max(abs(cov(k, l) - 4 * aa[(k, l)]) for k in kk for l in kk if k != l) < 1e-15
+    assert max(abs(cov(k, k) - (1 + 2 * aa[(k, k)])) for k in kk) < 1e-15
+    checked += 3
+    # the split, term by term
+    total = sum(b[k] * b[l] * cov(k, l) for k in kk for l in kk)
+    rule = sum(b[k] * b[l] * 4 * aa[(k, l)] for k in kk for l in kk)
+    diag = sum(b[k] ** 2 * ((1 + 2 * aa[(k, k)]) - 4 * aa[(k, k)]) for k in kk)
+    assert abs(total - VA) < 1e-12 and abs(rule + diag - total) < 1e-12
+    # the square, and its collapse to rho_g V_A
+    assert abs(rule - 4 * m * sum(b[k] * cc[k] for k in kk) ** 2) < 1e-12
+    assert abs(rule - rgx * VA) < 1e-12
+    S_exact = sum(b[k] ** 2 * aa[(k, k)] for k in kk)
+    assert abs(diag - (V_A0 - 2 * S_exact)) < 1e-12
+    # eq:VA-eq-exact solved
+    assert abs(VA - (V_A0 - 2 * S_exact) / (1 - rgx)) < 1e-12
+    checked += 5
+
+    # eq:VA-eq-drag and eq:VA-eq-correction: the approximated drag, and that keeping it is a
+    # strict improvement on eq:VA-eq -- the point of printing the correction at all.
+    drag = rgx / (2 * V_A0 * (1 - rgx)) * sum(v**4 for v in b.values())
+    plain = V_A0 / (1 - rgx)
+    corrected = plain * (1 - rgx / (2 * (1 - rgx)) * sum(v**4 for v in b.values()) / V_A0**2)
+    assert abs(corrected - (V_A0 - drag) / (1 - rgx)) < 1e-12, "eq:VA-eq-correction factoring"
+    assert abs(corrected - VA) < abs(plain - VA), "the correction must reduce the error"
+    checked += 2
+
+    # eq:Me-def and eq:Me-bound: M_e as defined, its relation to O'Connor's 3M/kappa, and the
+    # bound by which [Large-Me] delivers the small per-variant share it is also used for.
+    # [Small-effects] no longer exists as a separate box -- the two were merged, and the bound is
+    # what licenses using either form, so it is checked rather than trusted.
+    M_e = V_A0**2 / sum(v**4 for v in b.values())
+    n = len(kk)
+    E2, E4 = V_A0 / n, sum(v**4 for v in b.values()) / n
+    kappa = E4 / E2**2
+    assert abs(M_e - n / kappa) < 1e-12, "M_e == M/kappa"
+    assert abs(3 * n / kappa - 3 * M_e) < 1e-12, "O'Connor's 3M/kappa is 3x ours"
+    max_share = max(v * v for v in b.values()) / V_A0
+    assert max_share <= 1 / math.sqrt(M_e) + 1e-12, "eq:Me-bound"
+    assert M_e >= 1 / max_share - 1e-9, "the reverse direction claimed in [Large-Me]"
+    # equal effects must give M_e = M exactly, as the text claims
+    eq_b = {j: math.sqrt(1.0 / 7) for j in range(1, 8)}
+    eq_Me = sum(v * v for v in eq_b.values())**2 / sum(v**4 for v in eq_b.values())
+    assert abs(eq_Me - 7) < 1e-12, "M_e = M at equal effects"
+    checked += 5
+
+    # [VA-inflation]'s justification: the error written through M_e, and its SIGN
+    assert abs(rho_g / (2 * (1 - rho_g)) / M_e
+               - rho_g / (2 * (1 - rho_g)) * sum(v**4 for v in b.values()) / V_A0**2) < 1e-14
+    assert V_A0 / (1 - rho_g) > V_A, "dropping the term must OVERSTATE V_A, as the box claims"
     checked += 2
 
     # -- the justification's error term -------------------------------------------------------

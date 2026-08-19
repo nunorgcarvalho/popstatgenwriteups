@@ -941,61 +941,122 @@ Under equilibrium, we fill in the same value, $c_k^{(eq)}$ for all states of $c_
 \end{gathered}
 \end{equation}
 Only the $+$ root is admissible: the $-$ root gives a $c^{(\mathrm{eq})}_k$ of the opposite sign to $\beta_k$, and does not reduce to the base-population value when assortment is switched off.
-The boxed line is that root with the numerator's difference of square roots cleared, which cancels one power of $\beta_k$ and leaves the $\beta_k^2 \to 0$ behaviour visible.
-Setting $\rho_y = 0$ makes both $\mueq$ and $\rhogeq$ zero and returns $c^{(\mathrm{eq})}_k = \beta_k/2$, the base-population value of \eqref{eq:as-gen0}, as it must under random mating.
-Note also that $\beta_k$ enters the denominator only as $\beta_k^2$, so a variant's sign is irrelevant to the size of its equilibrium covariance; $c^{(\mathrm{eq})}_k$ simply inherits it from the numerator.
 
-However, we still have the problem that $\mueq$ and $\rhogeq$ depend on $\VAeq$, which itself depends on the sum of $c^{(eq)}_k$, the quantity we are solving for.
-Summing \eqref{eq:c-eq} over variants does not resolve this, because each variant carries its own square root containing its own $2\mueq\beta_k^2$, so the $M$ terms cannot be gathered into one.
+However, we still have the problem that $\mueq$ and $\rhogeq$ depend on $\VAeq$, which itself depends on the sum of $c^{(eq)}_k$ for all $k$, which are quantities we are solving for.
+Summing \eqref{eq:c-eq} over variants does not resolve this, because each variant carries its own square root containing its own $2\mueq\beta_k^2$, so the $M$ terms cannot be cleanly gathered into one.
 To make obtaining a closed form solution manageable, we need to apply an approximation that is justified by the following assumptions:
 
-\begin{assumption}{Small-effects}{No variant explains an appreciable share of the additive variance}
-Each causal variant's squared effect is a negligible fraction of the base population's additive variance:
-$$\frac{\beta_k^2}{\VAo} \;\ll\; 1 \qquad \text{for every } k .$$
-\bundles{the polygenic, or infinitesimal, model with large $M$.}
+\begin{assumption}{Large-Me}{The additive variance is spread across many variants}
+Taking inspiration from \citet{OConnor2019AJHG}, define the \emph{effective number of variants} as
+\begin{equation}\label{eq:Me-def}
+    \boxed{\ M_e \;:=\; \frac{\big(\VAo\big)^2}{\sum_k \beta_k^4} \;=\; \frac{\big(\sum_k \beta_k^2\big)^2}{\sum_k \beta_k^4} \ }
+\end{equation}
+This is closely related to the same quantity defined in \citet{OConnor2019AJHG}, albeit ours is smaller by a factor of three because we are aiming for the property that $M_e = M$ when all variants have the same effect size, rather than when all variants have the same \emph{Gaussian prior}.
+
+Specifically, we assume that the effective number of variants is large:
+$$M_e \;\gg\; 1 .$$
+
+Equivalently, no single variant explains an appreciable share of the additive variance.
+Since $\sum_j \beta_j^4 \geq \beta_k^4$ for any single $k$, rearranging \eqref{eq:Me-def} gives
+\begin{equation}\label{eq:Me-bound}
+    \frac{\beta_k^2}{\VAo} \;\leq\; \frac{1}{\sqrt{M_e}} \qquad \text{for every } k ,
+\end{equation}
+so $M_e \gg 1$ forces every variance share below $M_e^{-1/2} \ll 1$.
+\bundles{the polygenic, or infinitesimal, model with large $M$; $M_e$ is estimable from summary statistics \citep{OConnor2019AJHG}.}
 \end{assumption}
 
 \begin{assumption}{Moderate-AM}{Assortment is not maximal}
 The genetic correlation between mates stays bounded away from its ceiling, $\rhogeq < 1$, so that $1 - \rhogeq$ is not close to zero.
-Because $\rhogeq = \rho_y\hsqeq$, reaching the ceiling requires $\rho_y$ and $\hsqeq$ to \emph{both} approach one, so this is a weak requirement in practice.
 \bundles{any trait that is not both highly heritable and highly assorted.}
 \end{assumption}
 
 \begin{approximation}{Uniform-inflation}{Assortment inflates every variant's covariance with the phenotype alike}
-$$
+\begin{equation}\label{eq:c-eq-approx}
+\begin{gathered}
     c^{(\mathrm{eq})}_k \;=\; \frac{\beta_k}{\big(1-\rhogeq\big)
-    + \sqrt{\big(1-\rhogeq\big)^2 + \underbrace{2\,\mueq\,\beta_k^2}_{\text{negligible}}}}
-    \;\approx\; \frac{\beta_k}{2\big(1-\rhogeq\big)}
-$$
+    + \sqrt{\big(1-\rhogeq\big)^2 + \underbrace{2\,\mueq\,\beta_k^2}_{\text{negligible}}}} \\[8pt]
+    \boxed{\ c^{(\mathrm{eq})}_k \;\approx\; \frac{\beta_k}{2\big(1-\rhogeq\big)}\ }
+\end{gathered}
+\end{equation}
 Every variant is therefore inflated above its base-population value $\tfrac12\beta_k$ by the same factor $1/(1-\rhogeq)$, whatever its effect size.
 \justification{The neglected term, relative to the one it sits beside, is
 $$\frac{2\,\mueq\,\beta_k^2}{\big(1-\rhogeq\big)^2}
-\;=\; \underbrace{\frac{2\,\rhogeq}{1-\rhogeq}}_{\text{\assumptionid{Moderate-AM}}} \cdot \underbrace{\frac{\beta_k^2}{\VAo}}_{\text{\assumptionid{Small-effects}}} ,$$
+\;=\; \underbrace{\frac{2\,\rhogeq}{1-\rhogeq}}_{\text{\assumptionid{Moderate-AM}}} \cdot \underbrace{\frac{\beta_k^2}{\VAo}}_{\text{\assumptionid{Large-Me}}} ,$$
 using $\mueq = \rhogeq/\VAeq$ together with the $\VAeq = \VAo/(1-\rhogeq)$ that this approximation itself yields below in \eqref{eq:VA-eq}.
-The first factor is bounded by \assumptionid{Moderate-AM} and the second is small by \assumptionid{Small-effects}, so neither alone suffices.
-All that's required is that the product of the two is close to 0.
-Summed over variants, the resulting relative error in $\VAeq$ is of order $\dfrac{\rhogeq}{2\big(1-\rhogeq\big)} \cdot \dfrac{\sum_k\beta_k^4}{\big(\VAo\big)^2}$, in which the last factor is the reciprocal of the \emph{effective} number of variants and equals $1/M$ when effects are equal.}
+The first factor is bounded by \assumptionid{Moderate-AM} and the second is small by \assumptionid{Large-Me} via \eqref{eq:Me-bound}, so neither alone suffices.
+All that's required is that the product of the two is close to 0.}
 \end{approximation}
 
-The denominator no longer depends on $k$, so it comes straight out of the sum in \eqref{eq:VA-from-as}:
-\begin{equation}\label{eq:VA-eq}
+We'll make use of this approximation to obtain a clean formula for $\VAeq$, but first, we derive the exact formula.
+Expanding $\Var[g_i]$ over all pairs of variants, every off-diagonal covariance is $4a^{(\mathrm{eq})}_{kl}$ --- that is \eqref{eq:x-from-as} with $s^{(\mathrm{eq})}_{kl} = a^{(\mathrm{eq})}_{kl}$, the fixed point of \eqref{eq:s-recursion} --- while the diagonal is instead $1 + 2a^{(\mathrm{eq})}_{kk}$ by \eqref{eq:varx-a}.
+We apply the off-diagonal rule to every pair and then correct the one term it does not govern, using
+$a^{(\mathrm{eq})}_{kl} = \mueq c^{(\mathrm{eq})}_k c^{(\mathrm{eq})}_l$ from \eqref{eq:a-recursion},
+$\mueq\VAeq = \rhogeq$ from \eqref{eq:rhog-t},
+and $\sum_k \beta_k c^{(\mathrm{eq})}_k = \tfrac12\VAeq$ from \eqref{eq:VA-from-as}:
+\begin{equation}\label{eq:VA-eq-exact}
 \begin{gathered}
-    \VAeq \;=\; 2\sum_k \beta_k\, c^{(\mathrm{eq})}_k
-    \;\approx\; 2\sum_k \beta_k \cdot \frac{\beta_k}{2\big(1-\rhogeq\big)}
-    \;=\; \frac{\sum_k \beta_k^2}{1-\rhogeq} \\[6pt]
-    \boxed{\ \VAeq \;=\; \frac{\VAo}{1-\rhogeq}\ }
+\begin{aligned}
+    \VAeq \;&=\; \sum_k\sum_l \beta_k\beta_l \Cov[\,x_{ik},\, x_{il}\,] \\[4pt]
+    \;&=\; \underbrace{\sum_k\sum_l \beta_k\beta_l\,4a^{(\mathrm{eq})}_{kl}}_{\text{one rule for every pair}}
+    \;+\; \underbrace{\sum_k \beta_k^2\Big[\big(1 + 2a^{(\mathrm{eq})}_{kk}\big) - 4a^{(\mathrm{eq})}_{kk}\Big]}_{\text{diagonal correction}} \\[4pt]
+    \;&=\; 4\,\mueq\Big(\sum_k \beta_k c^{(\mathrm{eq})}_k\Big)^{\!2}
+    \;+\; \sum_k \beta_k^2\big(1 - 2a^{(\mathrm{eq})}_{kk}\big) \\[4pt]
+    \;&=\; \underbrace{\mueq\big(\VAeq\big)^2}_{\rhogeq\,\VAeq}
+    \;+\; \VAo \;-\; 2\sum_k \beta_k^2 a^{(\mathrm{eq})}_{kk} \\[4pt]
+    \VAeq\big(1-\rhogeq\big) \;&=\; \VAo \;-\; 2\sum_k \beta_k^2 a^{(\mathrm{eq})}_{kk}
+\end{aligned} \\[8pt]
+    \boxed{\ \VAeq \;=\; \frac{\VAo - 2\sum_k \beta_k^2\, a^{(\mathrm{eq})}_{kk}}{1-\rhogeq}\ }
 \end{gathered}
 \end{equation}
-This formula for $\VAeq$ is easily interpretable, but $\rhogeq$ still relies on $\VAeq$ through \eqref{eq:rhog-t}.
+
+We use \eqref{eq:a-recursion} to write $a$ in terms of $c$ and then plug in the approximated formula for $c$ from \eqref{eq:c-eq-approx}:
+\begin{equation}\label{eq:VA-eq-drag}
+\begin{aligned}
+    2\sum_k \beta_k^2\, a^{(\mathrm{eq})}_{kk}
+    \;&=\; 2\,\mueq \sum_k \beta_k^2 \big(c^{(\mathrm{eq})}_k\big)^2
+    \;\approx\; 2\,\mueq \sum_k \beta_k^2\,\frac{\beta_k^2}{4\big(1-\rhogeq\big)^2} \\[4pt]
+    \;&=\; \frac{\mueq}{2\big(1-\rhogeq\big)^2}\sum_k \beta_k^4 \\[4pt]
+    \;&=\; \frac{\rhogeq}{2\,\VAo\big(1-\rhogeq\big)}\sum_k \beta_k^4 ,
+\end{aligned}
+\end{equation}
+the last step using $\mueq = \rhogeq\big(1-\rhogeq\big)/\VAo$, which is the exact $\mueq = \rhogeq/\VAeq$ with $\VAeq$ replaced by the very approximation we are in the middle of deriving.
+This justified because this value of $\VAeq$ is used only to \emph{measure the size} of a term we are about to discard, and the error in this discarded term is guaranteed to be smaller than the error in the term we are approximating.
+
+Substituting that back into \eqref{eq:VA-eq-exact} and factoring out $\VAo/\big(1-\rhogeq\big)$,
+\begin{equation}\label{eq:VA-eq-correction}
+    \VAeq \;\approx\; \frac{\VAo}{1-\rhogeq}\left[1 \;-\; \frac{\rhogeq}{2\big(1-\rhogeq\big)} \cdot \frac{\sum_k \beta_k^4}{\big(\VAo\big)^2}\right]
+\end{equation}
+The last factor of \eqref{eq:VA-eq-correction} is exactly $1/M_e$ by \eqref{eq:Me-def}, so the whole correction is $\rhogeq/\big[2(1-\rhogeq)M_e\big]$ --- an error controlled by the effective number of variants rather than by any individual effect size.
+
+\begin{approximation}{VA-inflation}{The additive variance inflates by a single factor}
+The bracketed correction in \eqref{eq:VA-eq-correction} is negligible, leaving the additive variance at equilibrium as the base-population value scaled by one factor that depends on nothing but the genetic correlation between mates:
+\begin{equation}\label{eq:VA-eq}
+    \boxed{\ \VAeq \;=\; \frac{\VAo}{1-\rhogeq}\ }
+\end{equation}
+\justification{Written with \eqref{eq:Me-def}, the neglected term is a relative error in $\VAeq$ of
+$$\frac{\rhogeq}{2\big(1-\rhogeq\big)} \cdot \frac{1}{M_e} ,$$
+small by \assumptionid{Large-Me} and bounded by \assumptionid{Moderate-AM}.
+The error is signed: dropping the term \emph{overstates} $\VAeq$, since a variant's own departure from Hardy--Weinberg drags its contribution down.}
+\end{approximation}
+
+We can also write a formula for the equilibrium heritability:
+\begin{equation}\label{eq:hsq-eq}
+\begin{gathered}
+    \hsqeq \;=\; \frac{\VAeq}{\VPeq} \;=\; \frac{\VAeq}{\VAeq + V_E}
+    \;=\; \frac{\VAo/\big(1-\rhogeq\big)}{\VAo/\big(1-\rhogeq\big) + V_E} \\[8pt]
+    \boxed{\ \hsqeq \;=\; \frac{\VAo}{\VAo + \big(1-\rhogeq\big)V_E}\ } \\[8pt]
+    \hsqeq \;=\; \frac{\hsqo}{\hsqo + \big(1-\rhogeq\big)\big(1-\hsqo\big)} \\[8pt]
+    \boxed{\ \hsqeq \;=\; \frac{\hsqo}{1 - \rhogeq\big(1-\hsqo\big)}\ }
+\end{gathered}
+\end{equation}
+
+These formulas for $\VAeq$ and $\hsqeq$ are easily interpretable, but $\rhogeq$ still relies on either $\VAeq$ or $\hsqeq$ through \eqref{eq:rhog-t}.
 We can define $\rhogeq$ purely in terms of the starting parameters to resolve the circularity.
 
 \begin{equation}\label{eq:rhog-quadratic}
 \begin{aligned}
-    \rhogeq \;&=\; \frac{\rho_y\,\VAeq}{\VAeq + V_E}
-    \;=\; \rho_y\,\frac{\VAo/\big(1-\rhogeq\big)}{\VAo/\big(1-\rhogeq\big) + V_E} \\[4pt]
-    \;&=\; \rho_y\,\frac{\VAo}{\VAo + \big(1-\rhogeq\big)V_E} \\[4pt]
-    \rhogeq\,\VAo \;+\; \rhogeq\big(1-\rhogeq\big)V_E \;&=\; \rho_y\,\VAo \\[4pt]
-    \big(\rhogeq\big)^2 V_E \;-\; \rhogeq\,\VPo \;+\; \rho_y\,\VAo \;&=\; 0 \\[4pt]
+    \rhogeq \;&=\; \rho_y\,\hsqeq \;=\; \frac{\rho_y\,\hsqo}{1 - \rhogeq\big(1-\hsqo\big)} \\[4pt]
+    \rhogeq \;-\; \big(\rhogeq\big)^2\big(1-\hsqo\big) \;&=\; \rho_y\,\hsqo \\[4pt]
     \big(1 - \hsqo\big)\big(\rhogeq\big)^2 \;-\; \rhogeq \;+\; \rho_y\,\hsqo \;&=\; 0
 \end{aligned}
 \end{equation}
@@ -1005,11 +1066,6 @@ We can define $\rhogeq$ purely in terms of the starting parameters to resolve th
 The $-$ root is the admissible one and the discriminant is never negative.
 
 \todo{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point}.
-
-\begin{assumption}{AM-equilibrium}{Intergenerational equilibrium}
-Assortment has been operating at the same strength for long enough that the variance components have stopped changing from one generation to the next.
-\bundles{equilibrium assortative mating; reached after roughly six to ten generations \citep{Sunde2024NatComm}.}
-\end{assumption}
 
 \subsection{Assortative mating inflates genetic variance}
 Before looking at the covariances between individuals, we will first consider the variance of the phenotype and its components in the presence of assortative mating.
