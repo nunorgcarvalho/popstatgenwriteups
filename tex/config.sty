@@ -33,8 +33,14 @@
 \setlength{\parskip}{0.75em}
 
 % highlights
+% \todo -- work to be done.  \unsure -- a claim the author doubts.
+% \comment -- neither: a note about the manuscript itself (scope markers, instructions to
+% collaborators, reminders about what a region is for).  Set in italic as well as coloured, so a
+% comment is distinguishable from a todo at a glance even in greyscale or on a monochrome printout.
 \newcommand{\todo}[1]{\textcolor{blue}{#1}}
 \newcommand{\unsure}[1]{\textcolor{orange}{#1}}
+\definecolor{commentink}{RGB}{110,85,145}
+\newcommand{\comment}[1]{{\color{commentink}\itshape #1}}
 
 % floats %%%%
 % Captions are set smaller than body text with a bold label, so a caption is visibly not body

@@ -715,6 +715,100 @@ def check_equilibrium() -> int:
     return checked
 
 
+def check_g_transmit(n_variants: int = 2) -> int:
+    """Assert eq:g-transmit and eq:g-seg-var -- the drop from alleles to genetic values.
+
+    The claim is that g_o = g_m/2 + g_p/2 + eps_o is an EXACT linear model, so the checks take
+    the expectation over all 2^M Bernoulli configurations per parent explicitly, with the allele
+    second moments (a_kl, s_kl, and the cross-mate covariances) left as free symbols. Iterating
+    the recursion to equilibrium would not test this: the independence claims must hold for an
+    arbitrary state, and a state reached from t = 0 is a special one.
+
+    M = 2 is enough: every claim is about the independence of coins, and two variants already
+    give a same-variant pair, a cross-variant pair, a cross-parent pair and a cross-sib pair.
+    The symbolic cost grows like 4^M, so a larger M buys nothing and costs minutes.
+    """
+    import itertools
+
+    ks = list(range(1, n_variants + 1))
+    half = sp.Rational(1, 2)
+    zm = {k: sp.Symbol(f"zm{k}") for k in ks}      # mother, maternal gamete
+    zp = {k: sp.Symbol(f"zp{k}") for k in ks}      # mother, paternal gamete
+    wm = {k: sp.Symbol(f"wm{k}") for k in ks}      # father, maternal gamete
+    wp = {k: sp.Symbol(f"wp{k}") for k in ks}
+    beta = {k: sp.Symbol(f"beta_{k}", real=True) for k in ks}
+    A = {(min(k, l), max(k, l)): sp.Symbol(f"a_{min(k,l)}{max(k,l)}") for k in ks for l in ks}
+    S = {(min(k, l), max(k, l)): sp.Symbol(f"s_{min(k,l)}{max(k,l)}")
+         for k in ks for l in ks if k != l}
+    X = {(k, l): sp.Symbol(f"x_{k}{l}") for k in ks for l in ks}   # cross-mate
+
+    def moment(p1, u1, k, p2, u2, l):
+        if p1 != p2:                                   # different individuals
+            return X[(k, l)]
+        if k == l:
+            return half if u1 == u2 else A[(k, k)]
+        return S[(min(k, l), max(k, l))] if u1 == u2 else A[(min(k, l), max(k, l))]
+
+    sub = {}
+    for k in ks:
+        for l in ks:
+            for n1, d1, pp1, uu1 in (("zm", zm, 0, "m"), ("zp", zp, 0, "p"),
+                                     ("wm", wm, 1, "m"), ("wp", wp, 1, "p")):
+                for n2, d2, pp2, uu2 in (("zm", zm, 0, "m"), ("zp", zp, 0, "p"),
+                                         ("wm", wm, 1, "m"), ("wp", wp, 1, "p")):
+                    sub[d1[k] * d2[l]] = moment(pp1, uu1, k, pp2, uu2, l)
+    E = lambda e: sp.expand(e).subs(sub)
+
+    cfgs = list(itertools.product([0, 1], repeat=n_variants))
+    epsM = lambda c: {k: (sp.Rational(c[i]) - half) * (zm[k] - zp[k]) for i, k in enumerate(ks)}
+    epsP = lambda c: {k: (sp.Rational(c[i]) - half) * (wm[k] - wp[k]) for i, k in enumerate(ks)}
+    eps_o = lambda c1, c2: sum(beta[k] * (epsM(c1)[k] + epsP(c2)[k]) for k in ks)
+    g_m = sum(beta[k] * (zm[k] + zp[k]) for k in ks)
+    g_p = sum(beta[k] * (wm[k] + wp[k]) for k in ks)
+    avg2 = lambda f: sum(f(c1, c2) for c1 in cfgs for c2 in cfgs) / len(cfgs) ** 2
+    checked = 0
+
+    # the three bulleted properties, in the order the document lists them
+    for parent in (g_m, g_p):
+        assert sp.expand(avg2(lambda a, b: E(eps_o(a, b) * parent))) == 0
+        checked += 1
+    for k in ks:                                       # different variants, same parent
+        for l in ks:
+            if k == l:
+                continue
+            v = sum(E(epsM(c)[k] * epsM(c)[l]) for c in cfgs) / len(cfgs)
+            assert sp.expand(v) == 0, f"cross-variant at {k},{l}"
+            checked += 1
+    # the two parents, and two sibs (independent coin draws each)
+    assert sp.expand(avg2(lambda a, b: E(sum(beta[k]*epsM(a)[k] for k in ks)
+                                           * sum(beta[k]*epsP(b)[k] for k in ks)))) == 0
+    # two sibs: their coin draws are independent, so E[eps_1 eps_2] = E[eps_1] E[eps_2] and it
+    # suffices that each has mean zero. Checked that way rather than by a 2^(4M) double sum.
+    mean_eps = avg2(lambda a, b: sp.expand(eps_o(a, b)))
+    assert sp.expand(mean_eps) == 0, "each sib's residual must have mean zero"
+    checked += 2
+
+    # eq:g-seg-var, and that ONE parent's share is half of it -- the factor that is easy to drop
+    var_eps = avg2(lambda a, b: E(eps_o(a, b) ** 2))
+    want = sum(beta[k] ** 2 * (half - A[(k, k)]) for k in ks)
+    assert sp.expand(var_eps - want) == 0, "eq:g-seg-var"
+    one = sum(E(sum(beta[k] * epsM(c)[k] for k in ks) ** 2) for c in cfgs) / len(cfgs)
+    assert sp.expand(2 * one - want) == 0, "each parent contributes exactly half"
+    checked += 2
+
+    # eq:g-transmit itself: g_o built from eq:transmit must equal the boxed decomposition
+    for c1 in cfgs[:2]:
+        for c2 in cfgs[:2]:
+            z_om = {k: sp.Rational(c1[i]) * zm[k] + (1 - sp.Rational(c1[i])) * zp[k]
+                    for i, k in enumerate(ks)}
+            z_op = {k: sp.Rational(c2[i]) * wm[k] + (1 - sp.Rational(c2[i])) * wp[k]
+                    for i, k in enumerate(ks)}
+            g_o = sum(beta[k] * (z_om[k] + z_op[k]) for k in ks)
+            assert sp.expand(g_o - (g_m / 2 + g_p / 2 + eps_o(c1, c2))) == 0
+            checked += 1
+    return checked
+
+
 def check_reduced_figure() -> int:
     """The reduced diagram must reproduce what the full three-generation pedigree gives."""
     model = reduced_pair_offspring()
@@ -773,6 +867,105 @@ def check_reduced_figure() -> int:
     for who in ("m", "p"):
         assert sp.simplify(engine.cov(f"g_{who}", f"y_{who}") - V_A1) == 0
     checked += 7
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
+# Figure 4: the genetic-value-level diagram. Alleles and genotypes are gone; what is left is
+# eq:g-transmit -- two 1/2 edges into each offspring's genetic value and a disturbance carrying
+# eq:g-seg-var. Everything is at equilibrium, so V_A and rho_g are the equilibrium values and the
+# diagram must reproduce Var[g_o] = V_A on its own.
+# ----------------------------------------------------------------------------------------------
+
+#: the equilibrium disturbance on an offspring's genetic value, (1/2) V_A (1 - rho_g), written in
+#: the model's own free parameters so that pathMgr derives rho_g rather than being handed it.
+_G_SEG = "(V_A*(1 - rho_y*V_A/(V_A+V_E))/2)"
+
+
+def g_only_pair_offspring() -> pm.Model:
+    """Genetic values only. The environment is not drawn as its own node: since e enters only
+    through y and is uncorrelated with everything else, it is equivalent -- and smaller -- to
+    carry V_E as exogenous variance ON the phenotype. Var[y] = V_A + V_E either way."""
+    kids = ("o1", "o2")
+    lines = [
+        "latent: " + ", ".join(f"g_{w}" for w in ("m", "p") + kids),
+        "positive: V_A, V_E",
+        "real: rho_y",
+        *[f"label: {v}_{w} = ${v}_{w}$" for w in ("m", "p") for v in "gy"],
+        *[f"label: {v}_{k} = ${v}_{{{k[0]}_{k[1]}}}$" for k in kids for v in "gy"],
+        # founders: the equilibrium genetic variance is exogenous to the diagram
+        "g_m ~~ V_A*g_m",
+        "g_p ~~ V_A*g_p",
+        # eq:g-transmit, twice: each offspring gets 1/2 from each parent plus its own disturbance
+        *[f"g_{k} ~ 1/2*g_m + 1/2*g_p" for k in kids],
+        *[f"g_{k} ~~ {_G_SEG}*g_{k}" for k in kids],
+        # the environment, folded into the phenotype as its own disturbance
+        *[f"y_{w} ~ g_{w}" for w in ("m", "p") + kids],
+        *[f"y_{w} ~~ V_E*y_{w}" for w in ("m", "p") + kids],
+        "y_m -- [rho_y]*y_p",
+    ]
+    return pm.from_text("\n".join(lines), name="genetic values only, at equilibrium")
+
+
+# pathMgr draws every self-loop ABOVE its node, so a node sitting directly beneath another has
+# its loop label land on the one above. Each phenotype is therefore offset sideways from its own
+# genetic value rather than placed under it -- diagonal edges, but no collisions.
+G_ONLY_LAYOUT = Layout({
+    "y_m": (0.6, 5.2), "y_p": (9.4, 5.2),
+    "g_m": (2.0, 3.4), "g_p": (8.0, 3.4),
+    # the two disturbance labels are wide, so the offspring are set far enough apart that the
+    # labels do not touch above them
+    "g_o1": (3.3, 1.6), "g_o2": (6.7, 1.6),
+    "y_o1": (2.1, 0.0), "y_o2": (7.9, 0.0),
+})
+
+
+def check_g_only_figure() -> int:
+    """Assert the genetic-value diagram reproduces the allele-level results at equilibrium.
+
+    The disturbance is written in the model's own parameters, so Var[g_o] = V_A is a real test:
+    if eq:g-seg-var had the wrong factor the diagram would not be stationary, and that is exactly
+    the error the author's first draft made (one parent's share instead of both).
+    """
+    model = g_only_pair_offspring()
+    assert not [i for i in model.validate() if i.severity == "error"], model.validate()
+    e = pm.RAMEngine(model)
+    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    rho_g = rho_y * V_A / V_P
+    checked = 0
+
+    # eq:rhog-t, at the genetic-value level
+    assert sp.simplify(e.cov("g_m", "g_p") - rho_g * V_A) == 0
+    # stationarity: an offspring's genetic variance must come back to V_A
+    for k in ("o1", "o2"):
+        assert sp.simplify(e.var(f"g_{k}") - V_A) == 0, f"Var[g_{k}]"
+        assert sp.simplify(e.var(f"y_{k}") - V_P) == 0
+        checked += 2
+    # the two first-degree covariances, and that they coincide at the GENETIC level
+    for a, b in (("g_o1", "g_o2"), ("g_m", "g_o1"), ("g_p", "g_o1")):
+        assert sp.simplify(e.cov(a, b) - V_A * (1 + rho_g) / 2) == 0, f"Cov[{a},{b}]"
+        checked += 1
+    # ... but NOT at the phenotypic level: parent-offspring carries rho_y, siblings rho_g.
+    # This is the asymmetry tab:relatives-gen1 records, and it must survive the reduction.
+    assert sp.simplify(e.cov("y_o1", "y_o2") - V_A * (1 + rho_g) / 2) == 0
+    assert sp.simplify(e.cov("y_m", "y_o1") - V_A * (1 + rho_y) / 2) == 0
+    assert sp.simplify(e.cov("y_m", "y_o1") - e.cov("y_o1", "y_o2")) != 0
+    checked += 4
+
+    # Fisher's law, as Eftedal et al. state it: correlations fall by (1+rho_g)/2 per degree.
+    # Checked by tracing one extra generation rather than by asserting the closed form.
+    h2 = V_A / V_P
+    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - h2 * (1 + rho_g) / 2) == 0
+    assert sp.simplify(e.cov("g_m", "g_m") - V_A) == 0
+    checked += 2
+
+    # the disturbance string really is eq:g-seg-var. sympify must be given the MODEL's symbols,
+    # not fresh ones -- pathMgr declares V_A and V_E positive, and a bare sympify would build
+    # unconstrained duplicates that never cancel.
+    assert sp.simplify(sp.sympify(_G_SEG, locals={"V_A": V_A, "V_E": V_E, "rho_y": rho_y})
+                       - V_A * (1 - rho_g) / 2) == 0
+    checked += 1
     return checked
 
 
@@ -1558,6 +1751,8 @@ def main() -> int:
     print(f"c recursion:   {check_c_recursion(4)} results agree with pathMgr")
     print(f"state&readouts: {check_state_readouts(4)} results agree with pathMgr")
     print(f"equilibrium:   {check_equilibrium()} results agree with pathMgr")
+    print(f"g transmit:    {check_g_transmit(2)} results agree with pathMgr")
+    print(f"g-only figure: {check_g_only_figure()} results agree with pathMgr")
     print(f"reduced fig:   {check_reduced_figure()} results agree with pathMgr")
     # M = 3 only: the reduced model carries M^2 bidirected edges per parent, so the symbolic
     # cost climbs steeply and M = 4 does not exercise anything M = 3 misses here.
@@ -1648,6 +1843,32 @@ def main() -> int:
         )
     )
     print(f"wrote {reduced.relative_to(HERE.parent)}")
+
+    # Figure 4: genetic values only. The disturbance's raw expression is long and the document
+    # has already named it, so it is relabelled to the name the surrounding text uses; every
+    # other label here is a single symbol and needs no help.
+    g_only = g_only_pair_offspring()
+    V_A_s, V_E_s, rho_y_s = (g_only.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    seg = V_A_s * (1 - rho_y_s * V_A_s / (V_A_s + V_E_s)) / 2
+    target = HERE / "g_only_pair_offspring.tikz"
+    target.write_text(
+        to_tikz(
+            g_only,
+            layout=G_ONLY_LAYOUT,
+            style=DiagramStyle(
+                show_variances=True,
+                show_unit_coefficients=False,
+                latex_names={seg: r"\tfrac12 V_A\big(1-\rho_g\big)"},
+                # The four transmission edges converge on two nodes, so their midpoint labels
+                # pile up in the middle of the figure -- and all four read 1/2, so they carry no
+                # information the caption cannot. Same call as Figure 3's bidirected edges: the
+                # pattern of arrows is what the diagram contributes, the value is in eq:g-transmit.
+                label_overrides={(f"g_{w}", f"g_{k}"): ""
+                                 for w in ("m", "p") for k in ("o1", "o2")},
+            ),
+        )
+    )
+    print(f"wrote {target.relative_to(HERE.parent)}")
 
     stale = HERE / "mated_pair_2v_traced.tikz"
     if stale.exists():

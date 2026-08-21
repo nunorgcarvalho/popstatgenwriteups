@@ -1009,6 +1009,7 @@ and $\sum_k \beta_k c^{(\mathrm{eq})}_k = \tfrac12\VAeq$ from \eqref{eq:VA-from-
 \end{gathered}
 \end{equation}
 
+We'll see in a later section that half of this numerator, $\tfrac12\big(\VAo - 2\sum_k \beta_k^2 a^{(\mathrm{eq})}_{kk}\big)$, will come up again as the variance of the deviation of offspring genetic values from their parents' average.
 We use \eqref{eq:a-recursion} to write $a$ in terms of $c$ and then plug in the approximated formula for $c$ from \eqref{eq:c-eq-approx}:
 \begin{equation}\label{eq:VA-eq-drag}
 \begin{aligned}
@@ -1065,7 +1066,61 @@ We can define $\rhogeq$ purely in terms of the starting parameters to resolve th
 \end{equation}
 The $-$ root is the admissible one and the discriminant is never negative.
 
-\todo{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point}.
+\subsection{Covariance between relatives}
+Now that we have derived the statistical properties of the population at equilibrium under assortative mating, we will determine the expected covariance between pairs of individuals given some set of information, similar to Section 1 of this write-up.
+
+\subsubsection{Inheritance of genetic values}
+Rather than modelling the inheritance of allele states from parent to offspring, we will instead model the transmission of genetic values themselves.
+From here on we work only at equilibrium, and drop the $(\mathrm{eq})$ superscript for legibility: $V_A$, $V_P$, $h^2$, $\rho_g$ and $\mu$ now denote the equilibrium values solved for above.
+
+We can extend the logic of \eqref{eq:transmit}--\eqref{eq:seg-def} to decompose the genetic value of an offspring as being the average of their parents' genetic values plus an independent residual term.
+Summing the transmitted alleles over variants, weighted by their effects, and substituting \eqref{eq:seg-def} for each one:
+
+
+\begin{equation}\label{eq:g-transmit}
+\begin{gathered}
+\begin{aligned}
+    g_o \;&=\; \sum_k \beta_k\, x_{ok} \;=\; \sum_k \beta_k\big(z^{(m)}_{ok} + z^{(p)}_{ok}\big) \\[4pt]
+    \;&=\; \sum_k \beta_k\Big(\tfrac12 x_{mk} + \epsilon^{(m)}_{ok} \;+\; \tfrac12 x_{pk} + \epsilon^{(p)}_{ok}\Big) \\[4pt]
+    \;&=\; \tfrac12 g_m \;+\; \tfrac12 g_p
+    \;+\; \underbrace{\sum_k \beta_k\big(\epsilon^{(m)}_{ok} + \epsilon^{(p)}_{ok}\big)}_{\textstyle \varepsilon_o}
+\end{aligned} \\[8pt]
+    \boxed{\ g_o \;=\; \tfrac12 g_m \;+\; \tfrac12 g_p \;+\; \varepsilon_o \ }
+\end{gathered}
+\end{equation}
+
+We write the aggregate residual as $\varepsilon_o$ rather than $\epsilon_o$: unlike the per-variant deviations $\epsilon^{(u)}_{ok}$ it is built from, it is weighted by the effect sizes, so it is measured on the scale of a genetic value rather than of an allele.
+Since each $\epsilon^{(u)}_{ok}$ is uncorrelated with \emph{every} allele carried by the parent it came from, their weighted sum $\varepsilon_o$ is also going to be uncorrelated with $g_m$ and $g_p$ and everything upstream of it.
+As a consequence, we can easily compute the variance of this genetic value deviation, making use of \eqref{eq:seg-var-a}:
+\begin{equation}\label{eq:g-seg-var}
+\begin{gathered}
+\begin{aligned}
+    \Var[\varepsilon_o] \;&=\; \sum_k\sum_l \beta_k\beta_l \Cov\!\big[\epsilon^{(m)}_{ok} + \epsilon^{(p)}_{ok},\; \epsilon^{(m)}_{ol} + \epsilon^{(p)}_{ol}\big] \\[4pt]
+    \;&=\; \sum_k \beta_k^2\Big(\Var\!\big[\epsilon^{(m)}_{ok}\big] + \Var\!\big[\epsilon^{(p)}_{ok}\big]\Big)
+    \;=\; \sum_k \beta_k^2\big(\tfrac12 - a_{kk}\big)
+\end{aligned} \\[8pt]
+    \boxed{\ \Var[\varepsilon_o] \;=\; \tfrac12 V_A\big(1 - \rho_g\big) \ }
+\end{gathered}
+\end{equation}
+The boxed form is \eqref{eq:VA-eq-exact} rearranged, since $V_A\big(1-\rho_g\big) = \VAo - 2\sum_k \beta_k^2 a_{kk}$.
+Under random mating it reduces to the familiar $\tfrac12\VAo$, and each offspring's residual is the within-family variance: the spread in genetic value among children of the same two parents.
+
+Because $\varepsilon_o$ is uncorrelated with both parents and across siblings, \eqref{eq:g-transmit} is a linear model of exactly the kind Section~2.2.1 draws: two directed edges of $\tfrac12$ into the offspring's genetic value, and a disturbance carrying \eqref{eq:g-seg-var}.
+We can therefore draw a simplified path diagram that omits individual alleles and genotypes.
+We'll also omit the explicit environmental term and instead code it as exogeneous variance on the phenotype.
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \input{figures/g_only_pair_offspring.tikz}
+        \caption{%
+            A mated pair and two of their offspring at equilibrium, with inheritance happening at the level of genetic values, rather than alleles.
+            The environment appears only as the $V_E$ on each phenotype's own self-loop, so $\Var[y] = V_A + V_E$ as before.%
+        }
+        \label{fig:g-only}
+    \end{floatcard}
+\end{figure}
+
+\comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
 
 \subsection{Level 0 --- unchanged}
 Conditioning on both individuals' causal genotypes and the true effect sizes leaves nothing to average over, so \eqref{eq:level0} holds exactly as written.
@@ -1287,6 +1342,8 @@ Reduced to one sentence: assortative mating adds a second channel of resemblance
 Everything else in this section is bookkeeping for that one fact.
 
 \todo{Still to do in this section: the explicit disequilibrium relatedness matrix at Level 1 and its estimation in samples of unrelated individuals; the exact size of the residual term in \approximationid{GPD-pedigree}; and the non-equilibrium case, where a mismatch between observed and predicted correlations dates the onset of assortment \citep{Sunde2024NatComm}.}
+
+\comment{For agents, the above is the end of the do-not-edit region opened earlier; everything from here down may be edited again, the bibliography included.}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
