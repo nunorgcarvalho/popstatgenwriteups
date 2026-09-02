@@ -1,12 +1,13 @@
 \definecolor{pmCB03A2E}{HTML}{B03A2E}
 \begin{tikzpicture}[
   every node/.style={font=\small},
-  pmObserved/.style={draw=black, fill=white, rectangle, inner sep=0.09cm, minimum width=0.42cm, minimum height=0.34cm},
-  pmLatent/.style={draw=black, fill=white, ellipse, inner sep=0.16cm, minimum width=0.42cm, minimum height=0.34cm},
+  pmObserved/.style={draw=black, fill=white, rectangle, inner sep=0.06cm, minimum width=0.38cm, minimum height=0.34cm},
+  pmLatent/.style={draw=black, fill=white, ellipse, inner xsep=0.07cm, inner ysep=0.13cm, minimum width=0.38cm, minimum height=0.34cm},
   pmDirected/.style={-{Stealth[length=2mm]}, line width=0.7pt},
   pmBidirected/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, line width=0.7pt},
   pmCopath/.style={line width=1.6pt},
   pmLabel/.style={midway, fill=white, inner sep=1pt},
+  pmLabelAt/.style={fill=white, inner sep=1pt},
 ]
   \node[pmLatent] (g_m) at (3.600,9.100) {$g_{m}$};
   \node[pmLatent] (e_m) at (8.200,9.100) {$e_{m}$};
@@ -68,25 +69,33 @@
   \draw[pmDirected, draw=black] (g_o) -- (y_o);
   \draw[pmDirected, draw=black] (e_o) -- (y_o);
   \draw[pmBidirected, draw=black] (z_mat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_m1);
-  \draw[pmBidirected, draw=black] (z_mat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_m2);
-  \draw[pmBidirected, draw=black] (z_pat_m1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_m1);
+  \draw[pmBidirected, draw=black] (z_mat_m2) to[loop, looseness=4.5, in=165, out=105] (z_mat_m2);
+  \node[pmLabelAt] at (4.304,6.792) {$\frac{1}{2}$};
+  \draw[pmBidirected, draw=black] (z_pat_m1) to[loop, looseness=4.5, in=75, out=15] (z_pat_m1);
+  \node[pmLabelAt] at (2.896,6.792) {$\frac{1}{2}$};
   \draw[pmBidirected, draw=black] (z_pat_m2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_m2);
   \draw[pmBidirected, draw=black] (z_mat_m1) to[bend left=30] (z_pat_m1);
   \draw[pmBidirected, draw=black] (z_mat_m1) to[bend left=30] (z_pat_m2);
   \draw[pmBidirected, draw=black] (z_mat_m2) to[bend left=30] (z_pat_m1);
   \draw[pmBidirected, draw=black] (z_mat_m2) to[bend left=30] (z_pat_m2);
   \draw[pmBidirected, draw=black] (z_mat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_p1);
-  \draw[pmBidirected, draw=black] (z_mat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_mat_p2);
-  \draw[pmBidirected, draw=black] (z_pat_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_p1);
+  \draw[pmBidirected, draw=black] (z_mat_p2) to[loop, looseness=4.5, in=165, out=105] (z_mat_p2);
+  \node[pmLabelAt] at (17.304,6.792) {$\frac{1}{2}$};
+  \draw[pmBidirected, draw=black] (z_pat_p1) to[loop, looseness=4.5, in=75, out=15] (z_pat_p1);
+  \node[pmLabelAt] at (15.896,6.792) {$\frac{1}{2}$};
   \draw[pmBidirected, draw=black] (z_pat_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\frac{1}{2}$} (z_pat_p2);
   \draw[pmBidirected, draw=black] (z_mat_p1) to[bend left=30] (z_pat_p1);
   \draw[pmBidirected, draw=black] (z_mat_p1) to[bend left=30] (z_pat_p2);
   \draw[pmBidirected, draw=black] (z_mat_p2) to[bend left=30] (z_pat_p1);
   \draw[pmBidirected, draw=black] (z_mat_p2) to[bend left=30] (z_pat_p2);
-  \draw[pmBidirected, draw=black] (z_mat_o1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\tfrac14 - \tfrac12 a^{(1)}_{11}$} (z_mat_o1);
-  \draw[pmBidirected, draw=black] (z_pat_o1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\tfrac14 - \tfrac12 a^{(1)}_{11}$} (z_pat_o1);
-  \draw[pmBidirected, draw=black] (z_mat_o2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\tfrac14 - \tfrac12 a^{(1)}_{22}$} (z_mat_o2);
-  \draw[pmBidirected, draw=black] (z_pat_o2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\tfrac14 - \tfrac12 a^{(1)}_{22}$} (z_pat_o2);
+  \draw[pmBidirected, draw=black] (z_mat_o1) to[loop, looseness=6, in=300, out=240] (z_mat_o1);
+  \node[pmLabelAt] at (1.100,3.086) {$\tfrac14 - \tfrac12 a^{(1)}_{11}$};
+  \draw[pmBidirected, draw=black] (z_pat_o1) to[loop, looseness=4.5, in=255, out=195] (z_pat_o1);
+  \node[pmLabelAt] at (13.290,3.293) {$\tfrac14 - \tfrac12 a^{(1)}_{11}$};
+  \draw[pmBidirected, draw=black] (z_mat_o2) to[loop, looseness=4.5, in=345, out=285] (z_mat_o2);
+  \node[pmLabelAt] at (6.910,3.293) {$\tfrac14 - \tfrac12 a^{(1)}_{22}$};
+  \draw[pmBidirected, draw=black] (z_pat_o2) to[loop, looseness=6, in=300, out=240] (z_pat_o2);
+  \node[pmLabelAt] at (19.100,3.086) {$\tfrac14 - \tfrac12 a^{(1)}_{22}$};
   \draw[pmBidirected, draw=black] (e_m) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_m);
   \draw[pmBidirected, draw=black] (e_p) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_p);
   \draw[pmBidirected, draw=black] (e_o) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (e_o);

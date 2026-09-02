@@ -1,0 +1,66 @@
+\definecolor{pmCB03A2E}{HTML}{B03A2E}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  pmObserved/.style={draw=black, fill=white, rectangle, inner sep=0.06cm, minimum width=0.38cm, minimum height=0.34cm},
+  pmLatent/.style={draw=black, fill=white, ellipse, inner xsep=0.07cm, inner ysep=0.13cm, minimum width=0.38cm, minimum height=0.34cm},
+  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.7pt},
+  pmBidirected/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, line width=0.7pt},
+  pmCopath/.style={line width=1.6pt},
+  pmLabel/.style={midway, fill=white, inner sep=1pt},
+  pmLabelAt/.style={fill=white, inner sep=1pt},
+]
+  \node[pmLatent] (g_p1) at (0.000,3.400) {$g_{p_1}$};
+  \node[pmLatent] (g_p2) at (3.800,3.400) {$g_{p_2}$};
+  \node[pmLatent] (g_p3) at (7.600,3.400) {$g_{p_3}$};
+  \node[pmLatent] (g_p4) at (11.400,3.400) {$g_{p_4}$};
+  \node[pmLatent] (g_o1) at (1.900,1.800) {$g_{o_1}$};
+  \node[pmLatent] (g_o3) at (5.700,1.800) {$g_{o_3}$};
+  \node[pmLatent] (g_o2) at (9.500,1.800) {$g_{o_2}$};
+  \node[pmObserved] (y_p1) at (0.000,5.200) {$y_{p_1}$};
+  \node[pmObserved] (y_p2) at (3.800,5.200) {$y_{p_2}$};
+  \node[pmObserved] (y_p3) at (7.600,5.200) {$y_{p_3}$};
+  \node[pmObserved] (y_p4) at (11.400,5.200) {$y_{p_4}$};
+  \node[pmObserved] (y_o1) at (1.900,0.000) {$y_{o_1}$};
+  \node[pmObserved] (y_o3) at (5.700,0.000) {$y_{o_3}$};
+  \node[pmObserved] (y_o2) at (9.500,0.000) {$y_{o_2}$};
+  \draw[pmDirected, draw=black] (g_p1) -- (g_o1);
+  \draw[pmDirected, draw=black] (g_p2) -- (g_o1);
+  \draw[pmDirected, draw=black] (g_p2) -- (g_o3);
+  \draw[pmDirected, draw=black] (g_p3) -- (g_o3);
+  \draw[pmDirected, draw=black] (g_p3) -- (g_o2);
+  \draw[pmDirected, draw=black] (g_p4) -- (g_o2);
+  \draw[pmDirected, draw=black] (g_p1) -- (y_p1);
+  \draw[pmDirected, draw=black] (g_p2) -- (y_p2);
+  \draw[pmDirected, draw=black] (g_p3) -- (y_p3);
+  \draw[pmDirected, draw=black] (g_p4) -- (y_p4);
+  \draw[pmDirected, draw=black] (g_o1) -- (y_o1);
+  \draw[pmDirected, draw=black] (g_o3) -- (y_o3);
+  \draw[pmDirected, draw=black] (g_o2) -- (y_o2);
+  \draw[pmBidirected, draw=black] (g_p1) to[loop, looseness=6, in=210, out=150] (g_p1);
+  \node[pmLabelAt] at (-0.928,3.400) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_p2) to[loop, looseness=6, in=75, out=15] (g_p2);
+  \node[pmLabelAt] at (4.571,4.132) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_p3) to[loop, looseness=6, in=75, out=15] (g_p3);
+  \node[pmLabelAt] at (8.371,4.132) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_p4) to[loop, looseness=6, in=30, out=330] (g_p4);
+  \node[pmLabelAt] at (12.328,3.400) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_o1) to[loop, looseness=11, in=120, out=60] (g_o1);
+  \node[pmLabelAt] at (1.900,3.199) {$\tfrac12 V_A\big(1-\rho_g\big)$};
+  \draw[pmBidirected, draw=black] (g_o3) to[loop, looseness=11, in=120, out=60] (g_o3);
+  \node[pmLabelAt] at (5.700,3.199) {$\tfrac12 V_A\big(1-\rho_g\big)$};
+  \draw[pmBidirected, draw=black] (g_o2) to[loop, looseness=11, in=120, out=60] (g_o2);
+  \node[pmLabelAt] at (9.500,3.199) {$\tfrac12 V_A\big(1-\rho_g\big)$};
+  \draw[pmBidirected, draw=black] (y_p1) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_p1);
+  \draw[pmBidirected, draw=black] (y_p2) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_p2);
+  \draw[pmBidirected, draw=black] (y_p3) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_p3);
+  \draw[pmBidirected, draw=black] (y_p4) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_p4);
+  \draw[pmBidirected, draw=black] (y_o1) to[loop, looseness=6, in=30, out=330] (y_o1);
+  \node[pmLabelAt] at (2.709,0.000) {$V_{E}$};
+  \draw[pmBidirected, draw=black] (y_o3) to[loop, looseness=6, in=30, out=330] (y_o3);
+  \node[pmLabelAt] at (6.509,0.000) {$V_{E}$};
+  \draw[pmBidirected, draw=black] (y_o2) to[loop, looseness=6, in=30, out=330] (y_o2);
+  \node[pmLabelAt] at (10.309,0.000) {$V_{E}$};
+  \draw[pmCopath, draw=pmCB03A2E] (y_p1) -- node[pmLabel] {$[\rho_y]$} (y_p2);
+  \draw[pmCopath, draw=pmCB03A2E] (y_p2) -- node[pmLabel] {$[\rho_y]$} (y_p3);
+  \draw[pmCopath, draw=pmCB03A2E] (y_p3) -- node[pmLabel] {$[\rho_y]$} (y_p4);
+\end{tikzpicture}

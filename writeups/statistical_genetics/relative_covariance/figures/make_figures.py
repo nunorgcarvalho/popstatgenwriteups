@@ -907,16 +907,20 @@ def g_only_pair_offspring() -> pm.Model:
     return pm.from_text("\n".join(lines), name="genetic values only, at equilibrium")
 
 
-# pathMgr draws every self-loop ABOVE its node, so a node sitting directly beneath another has
-# its loop label land on the one above. Each phenotype is therefore offset sideways from its own
-# genetic value rather than placed under it -- diagonal edges, but no collisions.
+# Each phenotype sits directly below its own genetic value, so the four g -> y edges are vertical
+# and a reader can read each person as a column. This is the arrangement the figure wants, and it
+# was briefly not available: pathMgr used to draw every self-loop ABOVE its node, which put each
+# parent's V_A label on the phenotype above it, so the phenotypes had to be offset sideways to get
+# out of the way. Loops now choose a free side per node, and the offset is no longer needed.
+# Measured on the way back: this layout has no collisions and no ambiguous labels, and it places
+# the two offspring disturbances SYMMETRICALLY (loops mirrored at 180/0, each with a leader),
+# which the sideways version did not -- there g_o1 sat inline and g_o2 was pushed out.
 G_ONLY_LAYOUT = Layout({
-    "y_m": (0.6, 5.2), "y_p": (9.4, 5.2),
+    "y_m": (2.0, 5.2), "y_p": (8.0, 5.2),
     "g_m": (2.0, 3.4), "g_p": (8.0, 3.4),
-    # the two disturbance labels are wide, so the offspring are set far enough apart that the
-    # labels do not touch above them
+    # the two disturbance labels are wide; this separation is what lets both step out sideways
     "g_o1": (3.3, 1.6), "g_o2": (6.7, 1.6),
-    "y_o1": (2.1, 0.0), "y_o2": (7.9, 0.0),
+    "y_o1": (3.3, 0.0), "y_o2": (6.7, 0.0),
 })
 
 
@@ -965,6 +969,345 @@ def check_g_only_figure() -> int:
     # unconstrained duplicates that never cancel.
     assert sp.simplify(sp.sympify(_G_SEG, locals={"V_A": V_A, "V_E": V_E, "rho_y": rho_y})
                        - V_A * (1 - rho_g) / 2) == 0
+    checked += 1
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
+# Section 2.3: expected covariance between relatives, by (modified) degree.
+#
+# Every model here is at equilibrium and genetic-value level, and every co-path is declared by its
+# RAW coefficient mu rather than by a correlation. That is not a style choice: as soon as one
+# individual has two mates -- which is every half-relative and every in-law -- the correlation form
+# cannot be resolved, because the second co-path changes the variance the first one was normalised
+# against. pathMgr raises CoPathVarianceError rather than returning a wrong number.
+# ----------------------------------------------------------------------------------------------
+
+_MU = "(rho_y/(V_A+V_E))"
+_SEG_G = "(V_A*(1 - rho_y*V_A/(V_A+V_E))/2)"      # eq:g-seg-var, in the model's own parameters
+
+
+def _pedigree(founders, kids, matings, name):
+    """Build a genetic-value-level pedigree at equilibrium and return (model, engine).
+
+    founders: names whose genetic variance is exogenous (V_A).
+    kids:     (child, parent, parent) triples, each carrying eq:g-transmit and eq:g-seg-var.
+    matings:  (a, b) pairs joined by a co-path of raw coefficient mu.
+    """
+    people = list(founders) + [c for c, _, _ in kids]
+    lines = [
+        "positive: V_A, V_E",
+        "real: rho_y",
+        "latent: " + ", ".join(f"g_{p}" for p in people),
+        *[f"g_{f} ~~ V_A*g_{f}" for f in founders],
+    ]
+    for c, a, b in kids:
+        lines += [f"g_{c} ~ 1/2*g_{a} + 1/2*g_{b}", f"g_{c} ~~ {_SEG_G}*g_{c}"]
+    for n in people:
+        lines += [f"y_{n} ~ g_{n}", f"y_{n} ~~ V_E*y_{n}"]
+    lines += [f"y_{a} -- {_MU}*y_{b}" for a, b in matings]
+    model = pm.from_text("\n".join(lines), name=name)
+    bad = [i for i in model.validate() if i.severity == "error"]
+    assert not bad, (name, bad)
+    return model, pm.RAMEngine(model)
+
+
+#: A step-sibling pedigree, which is the smallest one exhibiting every mating count the section
+#: uses. Four parents in a row, joined by three matings, and one child per mating. Reading left to
+#: right, p1--p2 are the parents of o1, p2--p3 of o3, and p3--p4 of o2.
+#:
+#: Giving the MIDDLE mating a child is what makes the figure show the classes it is cited for
+#: rather than only the mating counts. o3 shares p2 with o1 and p3 with o2, so (o1,o3) and (o2,o3)
+#: are half-sibling pairs -- and the n=2 pairs (p1,p3) and (p2,p4) are then exactly the "non-shared
+#: parents of a half-sibling pair" the text uses as its n=2 example, visible in the same picture
+#: instead of asserted about an absent one. It also makes o1 and o2 step-siblings in the sense
+#: Eftedal et al. operationalise (pairs not related by blood with a half-sibling in common), which
+#: the two-child version did not.
+STEP_SIB_PARENTS = ("p1", "p2", "p3", "p4")
+STEP_SIB_MATINGS = (("p1", "p2"), ("p2", "p3"), ("p3", "p4"))
+STEP_SIB_KIDS = (("o1", "p1", "p2"), ("o3", "p2", "p3"), ("o2", "p3", "p4"))
+
+
+def step_sib_pedigree():
+    return _pedigree(STEP_SIB_PARENTS, STEP_SIB_KIDS, STEP_SIB_MATINGS, "step-sibling pedigree")
+
+
+#: Every person is a column: phenotype above the genetic value for the parents, below it for the
+#: children, matching Figure 4. The three co-paths are the three horizontal segments along the top.
+#:
+#: The two spacings are both load-bearing. `_DX` has to be at least 3.8 or each child's
+#: segregation label, which is wide, touches the two parent nodes above it (4 label-node
+#: collisions at 3.4). It also has to be no MORE than that: the picture is 13.26cm wide at 3.8
+#: and this is an upright figure inside a `floatcard`, so on A4 with 1in margins there is about
+#: 15cm to play with once the box is drawn. That is the lesson from Figure 2, where a
+#: collision-free placement pushed labels outside the node span and made the page overfull -- the
+#: collision metric cannot see a bounding box, so the width is chosen here rather than discovered
+#: in the LaTeX log. Dropping the children to 1.8 rather than Figure 4's 1.6 is what buys the
+#: clearance at the narrower spacing.
+_DX = 3.8
+STEP_SIB_LAYOUT = Layout({
+    **{f"y_{w}": (_DX * i, 5.2) for i, w in enumerate(STEP_SIB_PARENTS)},
+    **{f"g_{w}": (_DX * i, 3.4) for i, w in enumerate(STEP_SIB_PARENTS)},
+    "g_o3": (1.5 * _DX, 1.8),
+    "y_o3": (1.5 * _DX, 0.0),
+    "g_o1": (_DX / 2, 1.8), "g_o2": (2.5 * _DX, 1.8),
+    "y_o1": (_DX / 2, 0.0), "y_o2": (2.5 * _DX, 0.0),
+})
+
+
+def check_step_sib_figure() -> int:
+    """Assert every claim the step-sibling figure's caption makes about it.
+
+    The caption lists which pairs sit at each mating count, so the caption is a set of assertions
+    and this is the test of it: a relabelled or re-wired pedigree would break here rather than
+    quietly ship a figure whose caption is wrong.
+    """
+    model, e = step_sib_pedigree()
+    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    h2, rho_g = V_A / V_P, rho_y * V_A / V_P
+    checked = 0
+
+    # the pedigree is at equilibrium: every genetic value has variance V_A, every phenotype V_P.
+    # The children are the real test -- their variance is 1/2+1/2 plus eq:g-seg-var, and it only
+    # comes out at V_A because the parents were mates rather than independent.
+    for w in STEP_SIB_PARENTS + ("o1", "o2", "o3"):
+        assert sp.simplify(e.var(f"g_{w}") - V_A) == 0, f"Var[g_{w}]"
+        assert sp.simplify(e.var(f"y_{w}") - V_P) == 0, f"Var[y_{w}]"
+        checked += 2
+
+    # n = 1: the three mated pairs themselves
+    for a, b in STEP_SIB_MATINGS:
+        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - rho_g * V_A) == 0, f"n=1 {a},{b}"
+        checked += 1
+    # n = 2: two people who share a mate. p1 and p3 share p2; p2 and p4 share p3.
+    for a, b in (("p1", "p3"), ("p2", "p4")):
+        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - rho_g * rho_y * V_A) == 0, f"n=2 {a},{b}"
+        checked += 1
+    # n = 3: the two outermost parents, connected by the whole chain of three matings
+    assert sp.simplify(e.cov("g_p1", "g_p4") - rho_g * rho_y**2 * V_A) == 0, "n=3 p1,p4"
+    checked += 1
+
+    # the step-siblings themselves: an in-law pair at modified degree 2, per eq:inlaw
+    inlaw = h2 * rho_g * ((1 + rho_y) / 2) ** 2
+    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - inlaw) == 0, "step-sibs"
+    checked += 1
+    # and they are NOT what the plain degree law would give at d = 2, which is the point of the
+    # class existing at all
+    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - h2 * ((1 + rho_g) / 2) ** 2) != 0
+    checked += 1
+
+    # The middle child makes two HALF-SIBLING pairs: o3 shares p2 with o1 and p3 with o2. These
+    # are what the n=2 pairs above are for -- (p1,p3) are the non-shared parents of (o1,o3), and
+    # (p2,p4) of (o2,o3) -- so asserting both here ties the mating count to the class it prices.
+    half = h2 * ((1 + rho_g) / 2) ** 2 * (1 + 2 * rho_g + rho_y * rho_g) / (1 + rho_g) ** 2
+    for a, b, unshared in (("o1", "o3", ("p1", "p3")), ("o3", "o2", ("p2", "p4"))):
+        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - half) == 0, f"half-sibs {a},{b}"
+        # What the half-relative multiplier is worth, exactly. The plain degree law does not treat
+        # the unshared parents as unrelated -- it implicitly gives them rho_g^2 V_A, the value they
+        # would have if separated by two GENETIC legs. The excess is therefore the difference
+        # between their true n=2 covariance and that, carried down one meiosis each (the 1/4).
+        # This is eq:half's closing remark stated as an equation: replace rho_g*rho_y by rho_g^2
+        # and the excess is zero, i.e. eq:half collapses onto eq:collateral.
+        plain = h2 * ((1 + rho_g) / 2) ** 2
+        excess = sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - plain)
+        true_n2 = e.cov(f"g_{unshared[0]}", f"g_{unshared[1]}")
+        assert sp.simplify(excess - (true_n2 - rho_g**2 * V_A) / (4 * V_P)) == 0, \
+            f"half-sib excess is the n=2 chain's departure from rho_g^2, {a},{b}"
+        checked += 2
+    # o1 and o2 are still step-siblings, not half-siblings: no shared parent, so their value is
+    # eq:inlaw above and not `half`. Pinned so a re-wiring cannot silently make them siblings.
+    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - half) != 0, "o1,o2 must not be half-sibs"
+    checked += 1
+
+    # A step-PARENT pair: p3 is mated to o1's parent p2 but is not o1's parent. This is the
+    # modified degree 1 case that eq:inlaw excludes, and it is worth pinning because it confirms
+    # WHY the exclusion is there. One side of the connecting mating has a step and the other has
+    # none, so exactly ONE factor of (1+rho_y)/2 appears -- not the two of eq:inlaw. The count of
+    # those factors is the number of sides carrying at least one step, which is what makes
+    # dtilde = 2 the smallest case with the symmetric squared form.
+    for kid, step_parent in (("o1", "p3"), ("o2", "p2")):
+        expected = rho_g * V_A * (1 + rho_y) / 2
+        assert sp.simplify(e.cov(f"g_{kid}", f"g_{step_parent}") - expected) == 0, \
+            f"step-parent {kid},{step_parent}"
+        # and NOT the all-rho_g form, which is the error eq:inlaw is guarding against
+        assert sp.simplify(e.cov(f"g_{kid}", f"g_{step_parent}") - rho_g * V_A * (1 + rho_g) / 2) != 0
+        checked += 2
+
+    return checked
+
+
+def check_one_step_rules() -> int:
+    """Assert eq:cross-mating and eq:one-step, and that their stated condition is necessary.
+
+    Both are boxed with a precondition -- no chain from i to P may cross any of P's matings -- and
+    a precondition nobody tests is a precondition nobody believes. So this checks a case where it
+    holds and a case where it does not, and pins the wrong answer that follows from ignoring it.
+    """
+    checked = 0
+
+    # P and Pm are mates with two children A and B; B mates Bm and they have a child j.
+    # i = A is a SIBLING of B, so no chain from A to B crosses a mating of B: condition holds.
+    model, e = _pedigree(
+        ("P", "Pm", "Bm"),
+        (("A", "P", "Pm"), ("B", "P", "Pm"), ("j", "B", "Bm")),
+        (("P", "Pm"), ("B", "Bm")),
+        "sibling pair, one with a child",
+    )
+    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    rho_g = rho_y * V_A / V_P
+
+    # the condition itself, stated as the thing it actually means: Cov[g_A, e_B] = 0
+    assert sp.simplify(e.cov("g_A", "y_B") - e.cov("g_A", "g_B")) == 0, "Cov[g_A, e_B] != 0"
+    checked += 1
+    base = e.cov("g_A", "g_B")
+    # eq:cross-mating: crossing B's mating scales A's covariance by rho_g
+    assert sp.simplify(e.cov("g_A", "g_Bm") - rho_g * base) == 0, "eq:cross-mating"
+    checked += 1
+    # eq:one-step: descending to B's child scales it by (1+rho_g)/2
+    assert sp.simplify(e.cov("g_A", "g_j") - (1 + rho_g) / 2 * base) == 0, "eq:one-step"
+    checked += 1
+
+    # NOW THE CONDITION VIOLATED, which is the case the text works through. o1 is a child of p2
+    # by p1, so o1 reaches p3 both through p2's phenotype AND through p1, who was matched to that
+    # phenotype. Cov[g_o1, e_p2] is therefore nonzero and eq:cross-mating does not apply.
+    m2, e2 = step_sib_pedigree()
+    V_A2, V_E2, rho_y2 = (m2.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P2 = V_A2 + V_E2
+    rho_g2 = rho_y2 * V_A2 / V_P2
+    assert sp.simplify(e2.cov("g_o1", "y_p2") - e2.cov("g_o1", "g_p2")) != 0, \
+        "the condition should FAIL for a child of P"
+    checked += 1
+    # the true value, and the value the rule would have given -- the two the document prints
+    truth = rho_g2 * (1 + rho_y2) * V_A2 / 2
+    naive = rho_g2 * (1 + rho_g2) * V_A2 / 2
+    assert sp.simplify(e2.cov("g_o1", "g_p3") - truth) == 0, "step-child true value"
+    assert sp.simplify(e2.cov("g_o1", "g_p2") * rho_g2 - naive) == 0, "step-child naive value"
+    assert sp.simplify(truth - naive) != 0, "the two must differ"
+    checked += 3
+
+    return checked
+
+
+def check_degree_classes() -> int:
+    """Assert every closed form Section 2.3 states, class by class, against traced pedigrees.
+
+    Each class is built as its own pedigree rather than carved out of one big one, so a mistake in
+    one cannot mask a mistake in another, and so the mating structure of each class is explicit.
+    """
+    checked = 0
+
+    def syms(m):
+        V_A, V_E, ry = (m.sym(s) for s in ("V_A", "V_E", "rho_y"))
+        V_P = V_A + V_E
+        return V_A, V_E, ry, V_P, V_A / V_P, ry * V_A / V_P, ry / V_P   # .., h2, rho_g, mu
+
+    # -- the mating rule: crossing k matings costs rho_g rho_y^(k-1) V_A ---------------------
+    chain = [(f"X{i}", f"X{i+1}") for i in range(1, 5)]
+    m, e = _pedigree([f"X{i}" for i in range(1, 6)], [], chain, "mating chain")
+    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
+    for k in (1, 2, 3, 4):
+        got = e.cov("g_X1", f"g_X{1+k}")
+        assert sp.simplify(got - rg * ry**(k-1) * V_A) == 0, f"mating rule at k={k}"
+        checked += 1
+    # the two leg values, which are what generate rho_g vs rho_y
+    assert sp.simplify(e.cov("g_X1", "g_X2") - mu * V_A * V_A) == 0      # g leg, g leg
+    assert sp.simplify(e.cov("y_X1", "g_X2") - mu * V_P * V_A) == 0      # y leg, g leg
+    assert sp.simplify(ry / rg - V_P / V_A) == 0                          # rho_y = rho_g / h^2
+    checked += 3
+
+    # -- collateral full relatives: h2 * rate^d, and phenotypic == genetic -------------------
+    # A-B mated; sibs S1,S2; S1 marries C -> K1; S2 marries E -> K2; K1 marries H -> GC
+    m, e = _pedigree(
+        ["A", "B", "C", "E", "H"],
+        [("S1", "A", "B"), ("S2", "A", "B"), ("K1", "S1", "C"), ("K2", "S2", "E"),
+         ("GC", "K1", "H")],
+        [("A", "B"), ("S1", "C"), ("S2", "E"), ("K1", "H")],
+        "collateral and direct",
+    )
+    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
+    rate = (1 + rg) / 2
+    for a, b, d in (("S1", "S2", 1), ("S2", "K1", 2), ("K1", "K2", 3)):
+        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - V_A * rate**d) == 0, f"collateral g {a},{b}"
+        # no environmental cross term for a collateral pair, so the phenotypic correlation is
+        # the genetic covariance over V_P -- this is the claim that makes the degree law clean
+        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") - e.cov(f"g_{a}", f"g_{b}")) == 0
+        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - h2 * rate**d) == 0
+        checked += 3
+
+    # -- direct relatives: exactly ONE factor becomes (1+rho_y)/2 ----------------------------
+    for a, b, d in (("S1", "K1", 1), ("S1", "GC", 2)):
+        # the GENETIC covariance still follows the plain degree law ...
+        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - V_A * rate**d) == 0, f"direct g {a},{b}"
+        # ... but the phenotypic one does not, and the excess is exactly one swapped factor
+        want = h2 * rate**(d - 1) * (1 + ry) / 2
+        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - want) == 0, f"direct y {a},{b}"
+        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - h2 * rate**d) != 0
+        checked += 3
+
+    # -- half siblings: Nagylaki, and NOT the plain degree-2 law -----------------------------
+    # P2 has children with P1 and with P3; the two children are half-sibs through P2
+    m, e = _pedigree(["P1", "P2", "P3"], [("H1", "P1", "P2"), ("H2", "P3", "P2")],
+                     [("P1", "P2"), ("P2", "P3")], "half sibs")
+    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
+    rate = (1 + rg) / 2
+    # the two unshared parents are co-mates of P2, and THAT is the whole of the multiplier
+    assert sp.simplify(e.cov("g_P1", "g_P3") - ry * rg * V_A) == 0, "co-mates = rho_y rho_g V_A"
+    assert sp.simplify(e.cov("g_H1", "g_H2") - V_A * (1 + 2*rg + ry*rg) / 4) == 0, "Nagylaki"
+    # Nagylaki's form as a multiplier on the plain degree-2 law
+    assert sp.simplify(e.cov("g_H1", "g_H2") / V_P
+                       - h2 * rate**2 * (1 + 2*rg + ry*rg) / (1 + rg)**2) == 0
+    # half-sibs are collateral, so phenotypic == genetic
+    assert sp.simplify(e.cov("y_H1", "y_H2") - e.cov("g_H1", "g_H2")) == 0
+    # and it is strictly ABOVE the unmultiplied law, since rho_y > rho_g
+    assert sp.simplify(sp.factor(e.cov("g_H1", "g_H2") - V_A * rate**2)) != 0
+    checked += 5
+
+    # -- step siblings (in-law, modified degree 2) -------------------------------------------
+    # M-F currently mated; M had C1 with A, F had C2 with B
+    m, e = _pedigree(["M", "F", "A", "B"], [("C1", "M", "A"), ("C2", "F", "B")],
+                     [("A", "M"), ("M", "F"), ("F", "B")], "step sibs")
+    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
+    # ours: h2 * rho_g * ((1+rho_y)/2)^2 -- the rate factor carries rho_y, not rho_g
+    ours = h2 * rg * ((1 + ry) / 2)**2
+    assert sp.simplify(e.cov("y_C1", "y_C2") / V_P - ours) == 0, "step sibs"
+    # Eftedal et al. give h2 * rho_g * ((1+rho_g)/2)^2; the two differ, and ours is larger
+    theirs = h2 * rg * ((1 + rg) / 2)**2
+    assert sp.simplify(ours - theirs) != 0, "the two in-law forms must differ"
+    num = {V_A: sp.Rational(1), V_E: sp.Rational(1), ry: sp.Rational(1, 2)}
+    assert float(ours.subs(num)) > float(theirs.subs(num))
+    checked += 3
+
+    # -- in-laws at general modified degree --------------------------------------------------
+    # An "in-law ladder": C1 is one step from M, and C2/D2/E2 are one/two/three steps from F.
+    # The law must hold at every dtilde, not only at the step-sibling value of 2 -- checked
+    # because the all-rho_y form DOES hold at dtilde = 2 and fails at 3, so a single point
+    # would have licensed the wrong general formula.
+    m, e = _pedigree(["M", "F", "A", "B", "G", "J"],
+                     [("C1", "M", "A"), ("C2", "F", "B"), ("D2", "C2", "G"), ("E2", "D2", "J")],
+                     [("A", "M"), ("M", "F"), ("F", "B"), ("C2", "G"), ("D2", "J")],
+                     "in-law ladder")
+    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
+    law = lambda dt: h2 * rg * ((1 + ry) / 2)**2 * ((1 + rg) / 2)**(dt - 2)
+    for b, dt in (("C2", 2), ("D2", 3), ("E2", 4)):
+        assert sp.simplify(e.cov("y_C1", f"y_{b}") / V_P - law(dt)) == 0, f"in-law dtilde={dt}"
+        checked += 1
+    # the all-rho_y form is right at dtilde = 2 and WRONG beyond it -- the trap this guards
+    assert sp.simplify(e.cov("y_C1", "y_C2") / V_P - h2 * rg * ((1 + ry) / 2)**2) == 0
+    assert sp.simplify(e.cov("y_C1", "y_D2") / V_P - h2 * rg * ((1 + ry) / 2)**3) != 0
+    checked += 2
+
+    # dtilde is SUFFICIENT: two pedigrees of the same modified degree but different shape
+    # (1 step + 3 steps versus 2 steps + 2 steps) must agree, which is what licenses indexing
+    # in-laws by a single number at all.
+    m2, e2 = _pedigree(["M", "F", "A", "B", "K", "G"],
+                       [("C1", "M", "A"), ("D1", "C1", "K"), ("C2", "F", "B"), ("D2", "C2", "G")],
+                       [("A", "M"), ("M", "F"), ("F", "B"), ("C1", "K"), ("C2", "G")],
+                       "in-law, symmetric 2+2")
+    V_A2, V_E2, ry2, V_P2, h22, rg2, mu2 = syms(m2)
+    law2 = h22 * rg2 * ((1 + ry2) / 2)**2 * ((1 + rg2) / 2)**2
+    assert sp.simplify(e2.cov("y_D1", "y_D2") / V_P2 - law2) == 0, "in-law 2+2 shape"
     checked += 1
     return checked
 
@@ -1753,6 +2096,9 @@ def main() -> int:
     print(f"equilibrium:   {check_equilibrium()} results agree with pathMgr")
     print(f"g transmit:    {check_g_transmit(2)} results agree with pathMgr")
     print(f"g-only figure: {check_g_only_figure()} results agree with pathMgr")
+    print(f"one-step rules: {check_one_step_rules()} results agree with pathMgr")
+    print(f"degree classes: {check_degree_classes()} results agree with pathMgr")
+    print(f"step-sib fig:  {check_step_sib_figure()} results agree with pathMgr")
     print(f"reduced fig:   {check_reduced_figure()} results agree with pathMgr")
     # M = 3 only: the reduced model carries M^2 bidirected edges per parent, so the symbolic
     # cost climbs steeply and M = 4 does not exercise anything M = 3 misses here.
@@ -1798,13 +2144,26 @@ def main() -> int:
 
     # Figure 2: the pair plus two offspring. No highlight -- this figure's job is to state the
     # model, and the previous one has already shown the tracing rules in use.
+    # The eight offspring self-loops carry the segregation variance, and placement leans each one
+    # away from its sibling -- o1's up-left, o2's up-right -- except the two on the OUTERMOST
+    # alleles, which have open air beside them and so go flat sideways. That is collision-free but
+    # it puts their labels ~1.15cm outside the node span, and this figure is a sidewaysfigure whose
+    # width is already at the page limit: the overhang alone made it 14.7pt overfull. Sending just
+    # those two straight down keeps the figure inside the text block at no cost -- still zero
+    # collisions and zero ambiguous labels -- where forcing ALL eight down (or up) for uniformity
+    # costs 8 label-edge collisions, because the inner six have nowhere vertical to go.
+    outer_loops = {
+        _z("o1", "mat", 1): (270.0, 6.0),
+        _z("o2", "pat", 2): (270.0, 6.0),
+    }
     offspring = HERE / "pair_offspring_2v.tikz"
     offspring.write_text(
         to_tikz(
             pair_offspring_2v(),
             layout=PAIR_OFFSPRING_2V_LAYOUT,
             style=DiagramStyle(
-                show_variances=True, show_unit_coefficients=False, latex_names=names
+                show_variances=True, show_unit_coefficients=False, latex_names=names,
+                loop_overrides=outer_loops,
             ),
         )
     )
@@ -1814,14 +2173,21 @@ def main() -> int:
     # V_P, and the document has already given each of them a name, so every one is relabelled to
     # the name the surrounding text uses. `label_overrides` is keyed on the edge, so this cannot
     # silently relabel the wrong thing.
-    # The four within-parent bidirected edges are left UNLABELLED. Their values are one equation
-    # above the figure in the document, and eight labels among four closely spaced allele nodes
-    # collide with the node text -- tried it, the render is unreadable. The pattern of arrows is
-    # what this figure contributes; the numbers are eq:reduction.
-    overrides = {
-        (_z(who, "mat", k), _z(who, "pat", lidx)): ""
+    # The eight within-parent bidirected edges are left UNLABELLED, and stay that way now that
+    # placement has improved enough to make labelling them an option. Re-measured: labelling all
+    # eight with the document's own symbol a^(1)_kl is collision-free, but four of them come out
+    # ATTRIBUTABLE TO THE WRONG EDGE (ambiguous 2 -> 6, the worst by 1.59 cm). That is structural,
+    # not a placement failure -- four bidirected edges among four collinear nodes have overlapping
+    # midpoints, and widening the allele row does not fix it (tried 13/15/17/19 cm spans: 5, 9, 6,
+    # 7 ambiguous). Labelling only the four same-variant edges IS clean, but it would imply the
+    # k != l pairs are different or zero when a^(1)_kl is one formula for every k and l -- a
+    # partial labelling here states something false, where no labelling states nothing.
+    # So: the pattern of arrows is what this figure contributes; the value is eq:a-gen1.
+    suppressed = frozenset(
+        (_z(who, "mat", k), _z(who, "pat", lidx))
         for who in ("m", "p") for k in (1, 2) for lidx in (1, 2)
-    }
+    )
+    overrides = {}
     for k in (1, 2):
         for origin in ("mat", "pat"):
             node = _z("o", origin, k)
@@ -1839,6 +2205,7 @@ def main() -> int:
                 show_unit_coefficients=False,
                 latex_names=names,
                 label_overrides=overrides,
+                suppressed_labels=suppressed,
             ),
         )
     )
@@ -1863,8 +2230,50 @@ def main() -> int:
                 # pile up in the middle of the figure -- and all four read 1/2, so they carry no
                 # information the caption cannot. Same call as Figure 3's bidirected edges: the
                 # pattern of arrows is what the diagram contributes, the value is in eq:g-transmit.
-                label_overrides={(f"g_{w}", f"g_{k}"): ""
-                                 for w in ("m", "p") for k in ("o1", "o2")},
+                suppressed_labels=frozenset((f"g_{w}", f"g_{k}")
+                                            for w in ("m", "p") for k in ("o1", "o2")),
+            ),
+        )
+    )
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # Figure 5: the step-sibling pedigree that the mating-count definition is read off. Same
+    # conventions as Figure 4, so the two can be compared directly; the disturbance is relabelled
+    # to the document's name for it for the same reason.
+    ss_model, _ = step_sib_pedigree()
+    V_A_s, V_E_s, rho_y_s = (ss_model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    ss_seg = V_A_s * (1 - rho_y_s * V_A_s / (V_A_s + V_E_s)) / 2
+    target = HERE / "step_sib_pedigree.tikz"
+    target.write_text(
+        to_tikz(
+            ss_model,
+            layout=STEP_SIB_LAYOUT,
+            style=DiagramStyle(
+                show_variances=True,
+                show_unit_coefficients=False,
+                latex_names={
+                    ss_seg: r"\tfrac12 V_A\big(1-\rho_g\big)",
+                    # This pedigree has to declare its co-paths by the raw mu, because p2 and p3
+                    # each have two mates and the correlation form cannot be resolved then. Left
+                    # alone that prints rho_y/(V_A+V_E) on all three lines, which is both ugly
+                    # and against the document's convention of labelling a co-path with the
+                    # correlation it induces (see the text below eq:copath-mu). At equilibrium
+                    # that correlation is rho_y, so this restores the label Figure 4 carries.
+                    rho_y_s / (V_A_s + V_E_s): r"[\rho_y]",
+                },
+                # pathMgr subscripts a trailing digit on its own (g_o1 -> g_{o_1}) for a variable
+                # it infers, but not for one named in an explicit `latent:` line, which is how
+                # _pedigree declares these. Set them by hand so this figure matches Figure 4 and
+                # the caption's own $p_1$, $o_1$ notation.
+                node_label_overrides={
+                    f"{v}_{w}": rf"{v}_{{{w[0]}_{w[1]}}}"
+                    for v in ("g", "y") for w in STEP_SIB_PARENTS + ("o1", "o2", "o3")
+                },
+                # all four transmission edges read 1/2 and pile up between the two generations;
+                # same call as Figures 3 and 4, and the value is in eq:g-transmit
+                suppressed_labels=frozenset((f"g_{parent}", f"g_{child}")
+                                            for child, a, b in STEP_SIB_KIDS
+                                            for parent in (a, b)),
             ),
         )
     )
