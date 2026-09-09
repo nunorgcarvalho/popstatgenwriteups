@@ -300,6 +300,13 @@ $ \Corr[\,g_m, g_p\,] = \rhogt $, where the superscript records that this induce
 \end{assumption}
 
 \subsection{Dynamics and equilibrium}
+To make modelling the dynamics of populations easier, we will make the following assumption: 
+
+\begin{assumption}{Discrete-generations}{Discrete, non-overlapping generations}
+The population is partitioned into generations indexed by $t$, and every individual mates within their own generation.
+\bundles{no overlapping generations and no age structure; in particular no mating between individuals of different generations, and no individual contributing offspring to more than one generation.}
+\end{assumption}
+
 When starting from a randomly mating population, one generation of assortative mating causes the immediate offspring generation to exhibit different phenotypic and genetic properties on expectation.
 Luckily, if the parameters of assortative mating remain fixed, an equilibrium is reached such that stable properties of the population can be studied.
 We will first explore how assortative mating affects statistical properties of the population during the first few generations, then we will solve for the parameter values that lead to an equilibrium state.
@@ -1098,11 +1105,11 @@ As a consequence, we can easily compute the variance of this genetic value devia
     \;&=\; \sum_k \beta_k^2\Big(\Var\!\big[\epsilon^{(m)}_{ok}\big] + \Var\!\big[\epsilon^{(p)}_{ok}\big]\Big)
     \;=\; \sum_k \beta_k^2\big(\tfrac12 - a_{kk}\big)
 \end{aligned} \\[8pt]
-    \boxed{\ \Var[\varepsilon_o] \;=\; \tfrac12 V_A\big(1 - \rho_g\big) \ }
+    \boxed{\ \Var[\varepsilon_o] \;=\; \tfrac12 V_A\big(1 - \rho_g\big) \approx \tfrac12 \VAo \ }
 \end{gathered}
 \end{equation}
-The boxed form is \eqref{eq:VA-eq-exact} rearranged, since $V_A\big(1-\rho_g\big) = \VAo - 2\sum_k \beta_k^2 a_{kk}$.
-Under random mating it reduces to the familiar $\tfrac12\VAo$, and each offspring's residual is the within-family variance: the spread in genetic value among children of the same two parents.
+Note that under \approximationid{VA-inflation}, which is \eqref{eq:VA-eq} rearranged to $V_A\big(1-\rho_g\big) = \VAo$, this is equivalent to half of the additive variance under random mating.
+This means that the residual genetic variance of a child around the parental mean is determined by the additive variance under random mating and therefore is not impacted by assortative mating.
 
 Because $\varepsilon_o$ is uncorrelated with both parents and across siblings, \eqref{eq:g-transmit} is a linear model of exactly the kind Section~\ref{sec:path-analysis} draws: two directed edges of $\tfrac12$ into the offspring's genetic value, and a disturbance carrying \eqref{eq:g-seg-var}.
 We can therefore draw a simplified path diagram that omits individual alleles and genotypes.
@@ -1119,45 +1126,409 @@ We'll also omit the explicit environmental term and instead code it as exogeneou
     \end{floatcard}
 \end{figure}
 
+Similar to Table~\ref{tab:relatives-gen1}, we can summarize the covariance between the genetic and phenotypic values across mate pairs and across parent--offspring pairs, now at equilibrium rather than in the first generation.
+These expressions are exact if we hold \assumptionid{No-inbreeding}, \assumptionid{Discrete-generations}, and \assumptionid{AM-equilibrium}.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.9}
+    \setlength{\tabcolsep}{6pt}
+    \footnotesize
+    \begin{tabular}{l|cc}
+            & mate pair $(m,p)$
+            & parent--offspring $(m,o_1)$ \\
+        \hline
+        $\Cov[\,g_m,\; g_\ast\,]$
+            & $\rho_g V_A$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$ \\
+        $\Cov[\,g_m,\; y_\ast\,]$
+            & $\rho_y V_A$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$ \\
+        $\Cov[\,y_m,\; g_\ast\,]$
+            & $\rho_y V_A$
+            & $\tfrac12 V_A\big(1+\rho_y\big)$ \\
+        $\Cov[\,y_m,\; y_\ast\,]$
+            & $\rho_y V_P$
+            & $\tfrac12 V_A\big(1+\rho_y\big)$ \\
+    \end{tabular}
+    \caption{%
+        Covariances read off Figure~\ref{fig:g-only} at equilibrium, where $\ast$ stands for the second member of the pair named by the column.%
+    }
+    \label{tab:g-only-cov}
+    \end{floatcard}
+\end{table}
+
+Note the asymmetry that arises:
+The covariance between a parent's genetic value and their offspring's phenotype is lower than the covariance between a parent's phenotypic value and their offspring's genetic value.
+This is because the parent's environment (which is part of their phenotype) predicts the genetic value their offspring inherits from the other parent but not the offspring's environmental value, which remains random under our current model.
+
+To help us develop a generalizable framework later, we can also conceive of an abstract ``mean-parent'' that averages the genetic, environmental, and phenotypic values of a pair of mates:
+\begin{equation}\label{eq:mean-parent}
+    g_{mp} \;=\; \tfrac12\big(g_m + g_p\big), \qquad
+    e_{mp} \;=\; \tfrac12\big(e_m + e_p\big), \qquad
+    y_{mp} \;=\; \tfrac12\big(y_m + y_p\big) \;=\; g_{mp} + e_{mp}
+\end{equation}
+We can obtain the variance of the mean-parent is obtainable from Table~\ref{tab:g-only-cov}:
+\begin{equation}\label{eq:mean-parent-var}
+\begin{gathered}
+\begin{aligned}
+    \Var[g_{mp}] \;&=\; \tfrac14\Big(\Var[g_m] + \Var[g_p] + 2\Cov[\,g_m,\, g_p\,]\Big)
+    \;=\; \tfrac14\big(2V_A + 2\rho_g V_A\big) \\[4pt]
+    \Var[y_{mp}] \;&=\; \tfrac14\Big(\Var[y_m] + \Var[y_p] + 2\Cov[\,y_m,\, y_p\,]\Big)
+    \;=\; \tfrac14\big(2V_P + 2\rho_y V_P\big)
+\end{aligned} \\[8pt]
+    \boxed{\ \Var[g_{mp}] \;=\; \tfrac12 V_A\big(1+\rho_g\big)\ } \qquad\qquad
+    \boxed{\ \Var[y_{mp}] \;=\; \tfrac12 V_P\big(1+\rho_y\big)\ }
+\end{gathered}
+\end{equation}
+
+We can then encode the genetic value of the offspring as being a linear function of this mean-parent's genetic value, which collapses \eqref{eq:g-transmit} to a single edge:
+\begin{equation}\label{eq:g-transmit-mp}
+    \boxed{\ g_o \;=\; g_{mp} \;+\; \varepsilon_o \ }
+\end{equation}
+The residual $\varepsilon_o$ still carries \eqref{eq:g-seg-var} and is still uncorrelated with both parents, hence with $g_{mp}$, so the two terms partition the offspring's genetic variance exactly:
+\begin{equation}\label{eq:g-partition}
+    \Var[g_o] \;=\; \Var[g_{mp}] + \Var[\varepsilon_o]
+    \;=\; \tfrac12 V_A\big(1+\rho_g\big) + \tfrac12 V_A\big(1-\rho_g\big) \;=\; V_A
+\end{equation}
+
+We can then similarly write a table for the covariance in genetic and phenotypic values of offspring to their own mean-parent.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.9}
+    \setlength{\tabcolsep}{10pt}
+    \footnotesize
+    \begin{tabular}{l|ccc}
+            & $\Var[\,\cdot\,]$
+            & $\Cov[\,\cdot,\; g_o\,]$
+            & $\Cov[\,\cdot,\; y_o\,]$ \\
+        \hline
+        $\cdot = g_{mp}$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$ \\
+        $\cdot = y_{mp}$
+            & $\tfrac12 V_P\big(1+\rho_y\big)$
+            & $\tfrac12 V_A\big(1+\rho_y\big)$
+            & $\tfrac12 V_A\big(1+\rho_y\big)$ \\
+    \end{tabular}
+    \caption{%
+        Variances of a mean-parent and its covariances with one of its offspring, at equilibrium.
+        The two right-hand columns reproduce the parent--offspring column of Table~\ref{tab:g-only-cov}, since averaging two exchangeable parents returns the same covariance of each parent with the child they share.%
+    }
+    \label{tab:mean-parent-cov}
+    \end{floatcard}
+\end{table}
+
+\iffalse   % ------ commented out: superseded by the framework being written above ------
+\subsubsection{Vocabulary}\label{sec:vocab}
+The rest of this section leans on a small number of terms, which we fix here and use consistently.
+Several of them mirror the path-analysis vocabulary of Section~\ref{sec:path-analysis}; where they do, the correspondence is deliberate and is noted.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.5}
+    \footnotesize
+    \begin{tabular}{@{}lp{0.76\textwidth}@{}}
+        \textbf{step} & One move between individuals: \emph{up a meiosis} (offspring to parent), \emph{down a meiosis} (parent to offspring), or \emph{across a mating}. \\
+        \textbf{segment} & A run of meioses with no mating in it. Its two ends must have a common ancestor, and every up meiosis comes before every down meiosis, so a segment turns around exactly once. A segment may be a single individual. Corresponds to the stretch of a Wright chain between two co-path crossings. \\
+        \textbf{path} & A whole connection between two individuals: $n{+}1$ segments joined by $n$ matings. Corresponds to a \emph{chain} in Wright's sense; we reserve the word ``chain'' for the path-diagram object of Section~\ref{sec:path-analysis} and say ``path'' when we mean the pedigree. \\
+        \textbf{primary path} & The path retained by \approximationid{Shortest-path}: the one crossing the fewest meioses. \\
+        \textbf{turn} & The individual or couple at which a segment reverses direction --- its most recent common ancestor. \\
+        \textbf{full} / \textbf{half} & A property of a \emph{segment}, not of a pair: \emph{full} when both members of a mated couple are common ancestors of the segment's ends, \emph{half} when only one is. \\
+        \textbf{lineal} / \textbf{collateral} & A pair is \emph{lineal} when one descends from the other, and \emph{collateral} when neither does. A lineal segment turns at one of its own ends. \\
+        $N_m$ & The number of meioses on a path, up and down together. \\
+        $n$ & The number of matings a path crosses. \\
+        $d$ & Degree of relatedness, defined by the random-mating covariance $2^{-d}V_A$. \\
+    \end{tabular}
+    \caption{%
+        Terms used throughout Section~\ref{sec:am}'s treatment of relatives.
+        The one deliberate departure from everyday usage is \emph{full} and \emph{half}: we attach them to a segment rather than to a pair, because a path may contain more than one segment and each carries its own answer.%
+    }
+    \label{tab:vocab}
+    \end{floatcard}
+\end{table}
+
+Two of these need a little more care than a table row allows.
+
+The first is what makes two routes through a pedigree \emph{the same path}.
+At every meiosis a route may ascend through either parent, and it may cross the mating that joins them; we treat all of those variants as one path, because they implicate the same individuals in the same order once a couple is read as a unit.
+This is what lets a full-sibling pair have a single path between them: the route through the mother and the route through the father are not competing paths but two ways of traversing one segment, and the segment records the fact by being \emph{full} rather than \emph{half}.
+
+The second is that a segment's \emph{turn} may be a couple or a single individual, and that is exactly the full/half distinction.
+Full siblings turn at their parent couple; half siblings turn at the one parent they share.
+\fi        % ------ end of commented-out Vocabulary section ------
+
 \subsubsection{Tracing paths between relatives}
 
-In a pedigree, the path between two individuals can be traced through a combination of three types of \emph{steps}: going up a meiosis (offspring $\rightarrow$ parent), going down a meiosis (parent $\rightarrow$ offspring), and crossing a mating (mother --- father).
-To come up with a generalized formula for the covariance between any two such relatives later, it will help to split the shortest \emph{path} connecting the two into individual \emph{chains} that are separated by \emph{matings}.
-For example, a path connecting individual A to individual D is better understood if split into a chain connecting A to B, then a mating connecting B to C, and then another chain connecting C to D.
-Chains cannot consist of matings, and require the two individuals at the ends of the chain to have a common ancestor.
-Note that this common ancestor can be one of the individuals at the chain's ends themselves, or even both individuals in the case where a chain simply connects an individual back to themselves (e.g.\ A $\rightarrow$ A).
-Furthermore, for a particular chain, one needs to specify whether the two chain ends' individuals are connected by one common ancestor vs two.
-For example, full-siblings share both parents as common ancestors, while half-siblings only share one.
-We generalize the full- vs half- terminology to distinguish these two types of relatives.
-Finally, if a chain consists of both up and down meioses, all up meioses must be crossed before any down meiosis is crossed.
-Note the similarity between Wright's path tracing rules discussed earlier and the rules we use here to define a path between two individuals: up and down meioses are analogous to going against and with a directed edge, common ancestors are analogous to double-headed arrows, and matings are analogous to co-paths.
+When tracing through a pedigree, three types of \emph{steps} can be performed: going up a meiosis (offspring $\rightarrow$ parent), going down a meiosis (parent $\rightarrow$ offspring), and crossing a mating (mother --- father).
+We will use these simple bulding blocks to construct a generalizable framework for expressing the covariance between any two individuals in a pedigree.
+First, we formalize the following notation and terminology.
 
-Before we begin writing formulas for the covariance between two individuals, we need to establish an assumption that then leads to a useful approximation:
+Throughout, a parenthesized superscript names a generation and a bare superscript a number of steps.
 
-\begin{assumption}{Single-path}{One path dominates any pair's connection}
-The shortest path connecting two individuals in a pedigree is much shorter than any other path connecting them.
-\bundles{an outbred pedigree with no loops, the \assumptionid{No-inbreeding} assumption, exclusion of doubled relationships such as two siblings marrying two siblings.}
+\begin{itemize}
+    \item $t_X$ denotes the generation that an individual $X$ belongs to, according to \assumptionid{Discrete-generations}.
+    \item $m(X)$ and $p(X)$ denote the two parents, mother and father, of an individual $X$.
+    \item $\Anc^{(t)}(X)$, defined for $t \leq t_X$, is the set of unique ancestors of $X$ at generation $t$, which can be obtained recursively:
+    \begin{equation*}
+        \Anc^{(t_X)}(X) \;=\; \{X\},
+        \qquad\qquad
+        \Anc^{(t-1)}(X) \;=\; \bigcup_{Y \,\in\, \Anc^{(t)}(X)} \big\{\, m(Y),\; p(Y) \,\big\} .
+    \end{equation*}
+    Dropping the superscript collects every generation, $\Anc(X) = \bigcup_{t \leq t_X} \Anc^{(t)}(X)$, so that $X \in \Anc(X)$.
+    \item $\mu(X) = \{X\} \cup \{\, Y : X \text{ and } Y \text{ have mated} \,\}$ is the set of individuals that $X$ has mated with, including themselves, so that $\mu$ is a single step of mating.
+    Not every mating guarantees the existence of offspring, but every offspring guarantees the existence of a mating.
+    Mates belong to the same generation, so a step of $\mu$ never leaves generation $t_X$.
+    \item $\Mu(X)$ is the set of individuals that are either $X$ or have mated with someone in $\Mu(X)$, so that $\Mu$ is arbitrarily many steps of mating.
+    Writing $\mu^k$ for $k$ steps, it can be defined recursively in the same shape as the ancestor sets:
+    \begin{equation*}
+        \mu^{0}(X) \;=\; \{X\},
+        \qquad
+        \mu^{k}(X) \;=\; \bigcup_{Y \,\in\, \mu^{k-1}(X)} \mu(Y),
+        \qquad
+        \Mu(X) \;=\; \bigcup_{k \,\geq\, 0} \mu^{k}(X) .
+    \end{equation*}
+    The number of matings separating two individuals is the fewest steps that reach one from the other, $N_\mu(X,Y) = \min\{\, k : Y \in \mu^{k}(X) \,\}$, which is $0$ when $X = Y$ and $\infty$ when $Y \notin \Mu(X)$.
+    \item $\Mubar^{(t)}(X,Y)$ denotes all individuals of generation $t$ which lie on a mating chain possessing an ancestor of $X$ and a (possibly overlapping) ancestor of $Y$:
+    \begin{equation*}
+        \Mubar^{(t)}(X,Y) \;=\; \Big\{\, Z \,:\, t_Z = t, \ \ \
+        \Mu(Z) \cap \Anc^{(t)}(X) \neq \emptyset, \ \ \
+        \Mu(Z) \cap \Anc^{(t)}(Y) \neq \emptyset \,\Big\} .
+    \end{equation*}
+    Every member of a mating chain has the same $\Mu$, so this set is closed under mating: $\mu(Z) \subseteq \Mubar^{(t)}(X,Y)$ for each of its members $Z$.
+\end{itemize}
+
+In order for closed form solutions to be more manageable, we assume the following constrain to pedigree structure:
+
+\begin{assumption}{Single-recent-mating-chain}{Two individuals are connected by a single most recent mating chain}
+    For any two probands $A$ and $B$, we assume that there is some generation $t_{AB} \leq t_A, t_B$ for which:
+    \begin{itemize}
+        \item $\Mubar^{(t)}(A,B)$ is empty for $t > t_{AB}$, so that $t_{AB} = \max\big\{\, t : \Mubar^{(t)}(A,B) \neq \emptyset \,\big\}$
+        \item There are exactly two ancestors at generation $t_{AB}$ of $A$ which lie on a mating chain with an ancestor of $B$, and vice-versa.
+        Using the short-hand $\Muhat(A,B) = \Mubar^{(t_{AB})}(A,B)$,
+        \begin{equation*}
+            \Big|\, \Anc^{(t_{AB})}(A) \cap \Muhat(A,B) \,\Big| \;=\;
+            \Big|\, \Anc^{(t_{AB})}(B) \cap \Muhat(A,B) \,\Big| \;=\; 2
+        \end{equation*}
+        \item The matings in $\Muhat(A,B)$ do not form a loop.
+        Each member $Z$ sits at $|\mu(Z)| - 1$ matings and each mating is counted from both of its ends, so the chain is a tree exactly when its matings number one fewer than its members:
+        \begin{equation*}
+            \frac12 \sum_{Z \,\in\, \Muhat(A,B)} \Big(\, \big|\mu(Z)\big| - 1 \,\Big)
+            \;=\; \big|\Muhat(A,B)\big| - 1
+        \end{equation*}
+        Written this way the condition also forces the chain to be a single one, since a $\Muhat(A,B)$ falling into two separate chains would have two fewer matings than members.
+    \end{itemize}
+    In more conversational terms, it means a single mating chain connects the two pairs of ancestors of each of two probands at the most recent generation possible.
+    Furthermore, the mating chain must be linear and cannot form a loop.
+\bundles{an outbred, loop-free pedigree.}
 \end{assumption}
-\begin{approximation}{Shortest-path}{Only the shortest path carries covariance}
-The covariance between two individuals is taken to be the covariance implied by the shortest path connecting them; every other path is dropped.
-\justification{As will be shown later, the covariance implied by a path roughly decays geometrically with the number of steps taken.
-Under the \assumptionid{Single-path} assumption, the covariance implied by the shortest path will be much larger than that of all other paths.
-At the limit where two distinct paths of equal length exist, such as in doubled relationships, the true covariance can be double that which is implied by the shortest path.}
+
+\comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
+
+Suppose we have two distinct probands, $A$ and $B$, of two possibly different generations, $t_A$ and $t_B$.
+For either proband, we can look back one generation and identify the two parents of that proband, e.g. $m(A)$ and $p(A)$.
+We can repeat the same for each parent to obtain grandparents, and so on, identifying a maximum of $2^{(t - t_i)}$ unique ancestors at generation $t$ for each proband.
+Suppose that for some generation $t_{AB}$, the ancestors of $A$ and $B$ are such that at least one ancestor of $A$ is either 1) also an ancestor of $B$, or 2) mated to an ancestor of $B$, or 3) mated to someone who mated an ancestor of $B$, and so on, for up to a theoretically infinite number of matings in a chain.
+So, for any pair of ancestor identified for each proband, $A'$ and $B'$, we can quantify the number of matings $N_\mu$ that separate them, ranging from $N_\mu = 0$ when $A' = B'$ to $N_\mu = \infty$ when no chain of matings exist to connect $A'$ and $B'$.
+In the below figure, we observe a family structure where $N_\mu = 0, 1, 2, 3$ can be observed:
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \input{figures/step_sib_pedigree.tikz}
+        \caption{%
+            A pedigree of four parents joined by three matings, with one child per mating, drawn at the level of genetic values as in Figure~\ref{fig:g-only}.
+            Reading left to right, $p_1$ and $p_2$ are the parents of $o_1$, $p_2$ and $p_3$ of $o_3$, and $p_3$ and $p_4$ of $o_2$.
+            Each parent is $N_\mu = 0$ to themselves.
+            Each parent is $N_\mu = 1$ to their own mate, e.g.\ $(p_1,p_2)$; $N_\mu = 2$ to their mate's other mate, e.g.\ $(p_1,p_3)$ and $(p_2,p_4)$; and $N_\mu = 3$ across the whole chain, $(p_1,p_4)$.
+            In the offspring generation, by contrast, every pair is $N_\mu = \infty$: none of $o_1$, $o_2$, $o_3$ has mated, so no chain of matings connects any two of them.%
+        }
+        \label{fig:step-sib}
+    \end{floatcard}
+\end{figure}
+
+Tracking four distances for every pair of probands is more bookkeeping than we need, so we summarise them by their average.
+For the two parent couples $\{m(A), p(A)\}$ and $\{m(B), p(B)\}$ there are four cross pairs, one ancestor drawn from each couple, and we call their average the \emph{mean mating distance} between the couples:
+\begin{equation}\label{eq:nmu-bar}
+    \boxed{\ \bar{N}_\mu \;=\; \frac14 \sum_{A' \in \{m(A),\, p(A)\}} \ \ \sum_{B' \in \{m(B),\, p(B)\}} N_\mu\big(A',\, B'\big) \ }
+\end{equation}
+
+This average carries more information than an average usually would, because the four distances are not free to vary independently.
+Suppose the two couples share no individual and a single chain of matings joins them, and write $k$ for the shortest of the four distances --- the chain between the two nearest parents.
+The other three are then forced, since the only way to start or end elsewhere is to step across a couple's own mating: from the other parent of $A$ one such step is needed, from the other parent of $B$ likewise, and from both, two.
+The four distances are therefore $k$, $k+1$, $k+1$ and $k+2$, so that
+\begin{equation}\label{eq:nmu-bar-tree}
+    \boxed{\ \bar{N}_\mu \;=\; k + 1 \ }
+\end{equation}
+Each additional mating separating the two couples raises $\bar{N}_\mu$ by exactly one.
+The only values below $2$ belong to the two cases where the couples are not disjoint: two probands with the same parent couple have distances $0,0,1,1$ and so $\bar{N}_\mu = \tfrac12$, and two probands sharing exactly one parent have $0,1,1,2$ and so $\bar{N}_\mu = 1$.
+A single number therefore names the configuration --- $\tfrac12$, $1$, $2$, $3$, and so on --- and we will use it as the index of the covariance below.
+
+It is worth being clear about what $\bar{N}_\mu$ is and is not.
+It indexes the four distances rather than replacing them: the covariance derived below depends on $\sum \rho_y^{N_\mu}$ across the four cross pairs, and an average pins that sum down only because the four distances are locked together as above.
+Where they are not --- where more than one chain of matings joins the same two individuals --- the average and the covariance come apart, which is what \assumptionid{One-connection} below rules out.
+
+For now, assume $t_A = t_B$ and that $t_{AB} = t_A - 1 = t_B - 1$; i.e., probands $A$ and $B$ are of the same generation and they each have at least one parent that has a chain of matings (including possibly $N_\mu=0$) that connects them to at least one of the parents of the other proband.
+We can decompose the covariance between the phenotypes of $A$ and $B$ as being a product of each proband's covariance to their own mean-parent as well as the covariance of the two mean-parents to each other.
+
+Because we have assumed independent environments (\assumptionid{Env-indep} and \assumptionid{No-IGE}), a proband's phenotypic covariance with anything upstream of it will be the same as the respective covariance to the proband's genetic value.
+Furthermore, we decomposed the proband's genetic value as the sum of their mean-parent genetic value plus an uncorrelated residual, meaning that this residual is also independent of factors upstream of it.
+Therefore, for proband $A$:
+\begin{equation}\label{eq:mp-reduce}
+\begin{gathered}
+    \boxed{\ \Cov[\,y_A,\, Z\,] \;=\; \Cov[\,g_A,\, Z\,] \;=\; \Cov[\,g_{mp(A)},\, Z\,] \ } \\[6pt]
+    \text{whenever } \Cov[\,e_A,\, Z\,] \;=\; \Cov[\,\varepsilon_A,\, Z\,] \;=\; 0
+\end{gathered}
+\end{equation}
+
+Applying \eqref{eq:mp-reduce} at each proband in turn gives the decomposition:
+\begin{equation}\label{eq:mp-split}
+    \boxed{\ \Cov[\,y_A,\, y_B\,] \;=\; \Cov[\,g_{mp(A)},\, g_{mp(B)}\,] \ }
+\end{equation}
+Each proband's own factor has become one --- by Table~\ref{tab:mean-parent-cov}, a proband's covariance with its mean-parent, measured against that mean-parent's variance, is exactly unity at the genetic level --- so the whole of the covariance now sits in the middle term.
+
+It matters that the two ends land on $g_{mp}$ rather than on $y_{mp}$.
+Written with mean-parent phenotypes, the two outer factors become the mid-parent regressions of Table~\ref{tab:mean-parent-cov}, each equal to $h^2$:
+\begin{equation}\label{eq:mp-split-pheno}
+    \Cov[\,y_A,\, y_B\,] \;=\; h^2 \cdot \Cov[\,y_{mp(A)},\, y_{mp(B)}\,] \cdot h^2
+\end{equation}
+but this form holds only when the two mean-parents share no individual, which by \eqref{eq:nmu-bar-tree} is exactly the condition $\bar{N}_\mu \ge 2$.
+Every route between two disjoint couples then leaves through a mating, \eqref{eq:leg-rule} splits it at the two matched phenotypes, and the factors of $h^2$ are exactly what converts those phenotypes back to genetic values.
+When $\bar{N}_\mu < 2$ the probands share a parent, that parent connects them through their genetic value directly with no mating to split at, and \eqref{eq:mp-split-pheno} understates the covariance.
+
+Expanding \eqref{eq:mp-split} bilinearly leaves four terms, one for each pair of parents drawn one from each couple.
+Under the assumption above, every such pair sits in the same generation and is connected only by matings, so its covariance is obtained by crossing $N_\mu$ co-paths in a row: each crossing contributes a $\mu$, each of the $N_\mu - 1$ individuals passed through contributes $\Var[y] = V_P$, and each end contributes $\Var[g] = V_A$.
+\begin{equation}\label{eq:mating-chain}
+\begin{gathered}
+    \Cov[\,g_{A'},\, g_{B'}\,] \;=\; V_A \cdot \mu \cdot
+    \underbrace{V_P \cdot \mu \;\cdots\; V_P \cdot \mu}_{N_\mu - 1 \text{ times}} \cdot V_A
+    \;=\; \mu^{N_\mu}\, V_A^2\, V_P^{\,N_\mu - 1} \\[8pt]
+    \boxed{\ \Cov[\,g_{A'},\, g_{B'}\,] \;=\; \rho_g\, \rho_y^{\,N_\mu - 1}\, V_A \ }
+\end{gathered}
+\end{equation}
+The first crossing costs $\rho_g$ and every further one costs $\rho_y$, because the connection is read at the genetic level only at its two ends; everyone passed through in between was matched on their whole phenotype.
+
+Collecting the four terms, with $A'$ ranging over $m(A)$ and $p(A)$ and $B'$ over $m(B)$ and $p(B)$:
+\begin{equation}\label{eq:mp-expand}
+\begin{gathered}
+    \boxed{\ \Cov[\,y_A,\, y_B\,] \;=\; \frac{V_A}{4}\sum_{A'}\sum_{B'} f\big(N_\mu(A',B')\big) \ } \\[6pt]
+    f(N_\mu) \;=\;
+    \begin{cases}
+        1 & N_\mu = 0 \\
+        \rho_g\,\rho_y^{\,N_\mu - 1} & 1 \le N_\mu < \infty \\
+        0 & N_\mu = \infty
+    \end{cases}
+\end{gathered}
+\end{equation}
+The three cases are the three things a cross pair of parents can be: the same person, for whom $\Cov[\,g_{A'},\, g_{A'}\,] = V_A$; two people joined by a chain of matings, giving \eqref{eq:mating-chain}; or two people with no such chain, who contribute nothing.
+
+Because the four distances are locked together, \eqref{eq:mp-expand} collapses to a single geometric law in $\bar{N}_\mu$.
+For two disjoint couples the distances are $k,\,k+1,\,k+1,\,k+2$, and substituting $k = \bar{N}_\mu - 1$:
+\begin{equation}\label{eq:nmu-law}
+\begin{gathered}
+    \Cov[\,y_A,\, y_B\,] \;=\; \frac{V_A}{4}\Big(\rho_g\rho_y^{\,k-1} \,+\, 2\rho_g\rho_y^{\,k} \,+\, \rho_g\rho_y^{\,k+1}\Big)
+    \;=\; \frac{V_A}{4}\,\rho_g\,\rho_y^{\,k-1}\big(1 + \rho_y\big)^2 \\[8pt]
+    \boxed{\ \Cov[\,y_A,\, y_B\,] \;=\; \frac{V_A}{4}\,\rho_g\,\rho_y^{\,\bar{N}_\mu - 2}\big(1+\rho_y\big)^2
+    \qquad \big(\bar{N}_\mu \ge 2\big) \ }
+\end{gathered}
+\end{equation}
+The two factors of $1+\rho_y$ are one per couple: at each end the chain either stops at the near parent or steps across that couple's own mating, and the choice is made independently at the two ends.
+Every further mating separating the couples then costs one power of $\rho_y$.
+
+The two cases below $\bar{N}_\mu = 2$ do not follow this law, and the reason is worth naming.
+A cross pair at $N_\mu = 0$ contributes $V_A$, whereas \eqref{eq:mating-chain} continued down to $N_\mu = 0$ would have contributed $h^2 V_A$; each shared parent therefore adds $\big(1-h^2\big)V_A/4$ beyond what the mating law alone gives.
+That is the same discrepancy that made \eqref{eq:mp-split-pheno} conditional, and it has the same cause: a shared parent is a genetic identity, not a mating.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.9}
+    \setlength{\tabcolsep}{8pt}
+    \footnotesize
+    \begin{tabular}{l|ccc}
+        parents of $A$ and $B$
+            & four $N_\mu$
+            & $\bar{N}_\mu$
+            & $\Cov[\,y_A,\, y_B\,]$ \\
+        \hline
+        the same couple
+            & $0,\,0,\,1,\,1$
+            & $\tfrac12$
+            & $\tfrac12 V_A\big(1+\rho_g\big)$ \\
+        share one parent
+            & $0,\,1,\,1,\,2$
+            & $1$
+            & $\tfrac14 V_A\big(1 + 2\rho_g + \rho_g\rho_y\big)$ \\
+        disjoint couples
+            & $k,\,k{+}1,\,k{+}1,\,k{+}2$
+            & $k+1$
+            & $\tfrac14 V_A\,\rho_g\,\rho_y^{\,\bar{N}_\mu-2}\big(1+\rho_y\big)^2$ \\
+    \end{tabular}
+    \caption{%
+        The covariance between two probands of the same generation, indexed by the mean mating distance $\bar{N}_\mu$ of \eqref{eq:nmu-bar}.
+        The three rows are the classical sibling families: full siblings are $\bar{N}_\mu = \tfrac12$, half siblings $1$, and step-siblings the first member of the third row at $\bar{N}_\mu = 2$ --- the pairs $(o_1,o_3)$ and $(o_1,o_2)$ of Figure~\ref{fig:step-sib} instantiate the last two rows.
+        Beyond that, each further mating separating the two couples adds one to $\bar{N}_\mu$ and one power of $\rho_y$.
+        Under random mating $\rho_g = \rho_y = 0$ and the rows reduce to $\tfrac12 V_A$, $\tfrac14 V_A$ and $0$: the third row exists only because of assortment, which is why no classical degree is defined for it.%
+    }
+    \label{tab:nmu-classes}
+    \end{floatcard}
+\end{table}
+
+Two conditions have been implicit in all of the above, and are worth stating now that we can say what each one buys.
+The first is what makes $N_\mu$ a function of the pedigree at all; the second says what to do when it is not.
+
+\begin{assumption}{One-connection}{Any pair of individuals is joined by a single route}
+Two individuals in a pedigree are connected by exactly one route through it.
+Ascending through a parent and ascending through that parent's mate count as one route and not two, so full siblings satisfy this; two couples cross-remarried to each other, or two siblings marrying two siblings, do not.
+In particular $N_\mu(A',B')$ is the length of the one chain of matings joining $A'$ and $B'$, and the four distances entering \eqref{eq:nmu-bar} are then locked together as \eqref{eq:nmu-bar-tree} describes.
+\bundles{an outbred, loop-free pedigree; the \assumptionid{No-inbreeding} assumption; exclusion of doubled relationships.}
+\end{assumption}
+\begin{approximation}{Shortest-chain}{Only the shortest chain of matings is counted}
+Where more than one chain of matings joins two individuals, $N_\mu(A',B')$ is taken to be the length of the shortest of them and the rest are dropped.
+\justification{Chains contribute additively, so two chains of lengths $k_1 \le k_2$ give $\rho_g\big(\rho_y^{\,k_1-1} + \rho_y^{\,k_2-1}\big)V_A$ in place of \eqref{eq:mating-chain}.
+Keeping only the shortest therefore understates the pair by the fraction $\rho_y^{\,k_2-k_1}\big/\big(1+\rho_y^{\,k_2-k_1}\big)$, which falls by a factor of about $\rho_y$ for each unit by which the second chain is longer, and vanishes as assortment weakens.
+It reaches its worst case of $\tfrac12$ only when two chains have exactly the same length, where the true covariance is double the one kept.}
 \end{approximation}
 
+One case lies outside the reach of $\bar{N}_\mu$ altogether, and it is a matter of scope rather than of approximation.
+Assuming $t_{AB} = t_A - 1$ requires the two parent couples to be joined by matings.
+When they are joined by descent instead --- first cousins, whose parents are siblings --- no chain of matings connects any cross pair, every $N_\mu$ is infinite, and \eqref{eq:mp-expand} returns zero, correctly reporting that nothing connects the two couples \emph{within their own generation}.
+The remedy is not a different $N_\mu$ but a second application of \eqref{eq:mp-reduce}, replacing each parent in turn by their own mean-parent.
+
 \subsubsection{Covariance implied by matings}
-Per our model of assortatvie mating \todo{include ref to earlier assumption box}, matching of individuals acts on the phenotype level such that \todo{Write Corr of m and p equals to rhoy}.
-As a consequence, suppose individuals A and D are only connected to each other through the mating of individuals B and C.
-Then, by following Wright's path tracing rules, we can decompose the covariance in phenotypes of A and D as follows:
-\todo{Write formula that writes Cov of A and D as a function of Cov(A,B), Cov(C,D), mu, etc...}
+Per our model of assortative mating (\assumptionid{Primary-AM}), matching acts at the level of the phenotype, so that a mated pair $B$ and $C$ satisfy
+\begin{equation}\label{eq:mate-corr}
+    \boxed{\ \Corr[\,y_B,\, y_C\,] \;=\; \rho_y \ }
+\end{equation}
+and nothing else about them is matched directly.
 
-Furthermore, to obtain the covariances consisting of one or both genetic values, we have to modify our formulas because \todo{write out explanation, include formulas where reasonable}.
+As a consequence, suppose individuals $A$ and $D$ are only connected to each other through the mating of $B$ and $C$.
+Then, by following Wright's path tracing rules --- specifically \eqref{eq:leg-rule}, which says that crossing a co-path splits a covariance at the two matched phenotypes --- we can decompose their covariance as
+\begin{equation}\label{eq:mating-split}
+    \boxed{\ \Cov[\,y_A,\, y_D\,] \;=\; \Cov[\,y_A,\, y_B\,]\cdot \mu \cdot \Cov[\,y_C,\, y_D\,] \ }
+\end{equation}
+where $\mu = \rho_y/V_P$ is the co-path coefficient of \eqref{eq:copath-mu}.
+The mating contributes one factor of $\mu$, and everything on either side of it enters only through how it connects to the mated phenotype nearest it.
+This is what licenses splitting a path at its matings and treating the segments separately.
+
+Furthermore, to obtain covariances involving one or both \emph{genetic} values, we have to modify \eqref{eq:mating-split}, because the legs then run to $g$ rather than to $y$.
+The modification is confined to the ends: replacing $y_A$ by $g_A$ replaces the leg $\Cov[\,y_A,\, y_B\,]$ by $\Cov[\,g_A,\, y_B\,]$, and nothing in the interior changes.
+For the mated pair themselves this is immediate, since $\Cov[\,g_B,\, y_B\,] = V_A$ by \assumptionid{GE-indep} while $\Var[\,y_B\,] = V_P$:
+\begin{equation}\label{eq:mated-pair}
+\begin{gathered}
+    \Cov[\,y_B,\, y_C\,] \;=\; \mu\,V_P^2 \;=\; \rho_y V_P ,
+    \qquad
+    \Cov[\,g_B,\, y_C\,] \;=\; \mu\,V_A V_P \;=\; \rho_y V_A , \\[4pt]
+    \boxed{\ \Cov[\,g_B,\, g_C\,] \;=\; \mu\,V_A^2 \;=\; \rho_g V_A \ }
+\end{gathered}
+\end{equation}
+so each end promoted from a genetic value to a phenotype trades a factor of $V_A$ for $V_P$ --- equivalently, promotes one $\rho_g$ to $\rho_y$.
+We will meet this trade again at the ends of a whole path, where it is the only place the distinction between $g$ and $y$ survives.
 
 
-\subsubsection{Covariance implied by chains}
-\todo{Rewrite parts now that we explained the whole mating covariance stuff just above}
+\subsubsection{Covariance implied by segments}
 
-We begin by deriving the covariance between genetic values of two individuals, $A$ and $B$, at the ends of a chain.
+We begin by deriving the covariance between genetic values of two individuals, $A$ and $B$, at the ends of a segment.
 Trivially, if $A$ and $B$ are the same individual, then $\Cov[\,g_A,\, g_B\,] = V_A$ (and $\Cov[\,y_A,\, y_B\,] = V_P$).
 Now consider that $B$ is the parent of $A$.
 Per our path tracing rules, their genetic values covary both through the directed edge $B \rightarrow A$ and through $A$'s other parent $C$, who under assortative mating is themselves genetically similar to $B$.
@@ -1176,10 +1547,10 @@ Writing $A$'s genetic value with \eqref{eq:g-transmit}:
 \end{equation}
 The middle term is the whole effect of assortment here: were $B$'s mate chosen at random, $\Cov[\,g_C,\, g_B\,]$ would vanish and we would recover the familiar halving.
 
-Note that to obtain this formula for a chain, we actually had to call upon a mating path already.
-While this may appear to break our definition of a chain, for clarity, we consolidate the increased covariance that results from assortative mating into a single term to describe the chain connecting one parent to one child.
+Note that to obtain this formula for a segment, we had to call upon a mating already.
+This is not a violation of the definition but an instance of it: ascending to $B$ and ascending to $B$'s mate $C$ are two traversals of the same path, so the mating between them is consolidated into the single factor $\tfrac12(1+\rho_g)$ that describes one step of descent.
 
-We can then extend this logic to any pair of \emph{lineal} relatives --- one descended from the other, so that the chain between them runs only upward or only downward.
+We can then extend this logic to any pair of \emph{lineal} relatives --- one descended from the other, so that the segment between them runs only upward or only downward.
 We multiply \eqref{eq:chain-parent} once for each of the $N_m$ meioses needed to connect them.
 
 \begin{equation}\label{eq:chain-lineal}
@@ -1191,137 +1562,36 @@ We multiply \eqref{eq:chain-parent} once for each of the $N_m$ meioses needed to
 \end{gathered}
 \end{equation}
 
-For \emph{collateral} relatives --- neither descended from the other that still share a common ancestor --- we cannot chain the up and down meioses without first asking whether they are \emph{full} relatives, sharing both of the ancestors that join them, or \emph{half} relatives, sharing only one.
-This is because full relatives also appear to break the definition of a chain, since there are two distinct paths connecting them, each passing through one of the two common ancestors, who mated with each other.
-For clarity, we consolidate those two paths into a single chain carrying their combined covariance.
-Under random mating that combination is exactly twice what the corresponding half-relatives carry, and it is this doubling that ties $N_m$ to the degree of relatedness $d$ defined earlier: one extra shared ancestor is worth one degree.
+For \emph{collateral} relatives --- neither descended from the other, but still sharing a common ancestor --- we cannot chain the up and down meioses without first asking whether the segment is \emph{full}, turning at a couple both of whom are common ancestors, or \emph{half}, turning at a single shared ancestor.
+A full segment appears at first to break the definition, since two routes connect its ends, one through each member of the couple; by the equivalence of Section~\ref{sec:vocab} these are one path, and the segment records the fact by being full.
 
-\begin{equation}\label{eq:degree-Nm}
-    \boxed{\ d \;=\;
+It is tempting to fold this into the degree $d$ by declaring a full segment worth one degree less than a half one, and under random mating that is exactly right: a full segment carries precisely twice what a half segment of the same $N_m$ carries, which is what $2^{-d}$ demands.
+Under assortment it is not.
+Assortment inflates a half segment more than a full one --- the two \emph{unshared} parents of a half pair are themselves mates of the shared parent, and so are correlated --- and at $h^2 = \rho_y = \tfrac12$ the ratio is nearer $1.5$ than $2$.
+A single exponent cannot absorb that, so we do not ask it to.
+
+Instead we keep one exponent, $N_m$, and put the difference between the three kinds of turn into a separate factor $K$:
+\begin{equation}\label{eq:segment}
+    \boxed{\ \Cov[\,g_A,\, g_B\,] \;=\; \left(\frac{1+\rho_g}{2}\right)^{\!N_m} K\, V_A \ }
+\end{equation}
+\begin{equation}\label{eq:turn-K}
+    K \;=\;
     \begin{cases}
-        N_m - 1, & \text{full relatives} \\[2pt]
-        N_m,     & \text{half/lineal relatives}
-    \end{cases} \ }
+        1, & \text{the turn is one of the segment's own ends (lineal)} \\[4pt]
+        \dfrac{2}{1+\rho_g}, & \text{the turn is a couple (full)} \\[8pt]
+        \dfrac{1 + 2\rho_g + \rho_y\rho_g}{\big(1+\rho_g\big)^2}, & \text{the turn is a single ancestor (half)}
+    \end{cases}
 \end{equation}
-where $N_m$ counts every up and down meiosis needed to connect the pair.
-Lineal relatives have no pair of common ancestors to share, so they take $d = N_m$ as well.
+Equations~\eqref{eq:segment}--\eqref{eq:turn-K} are exact for all three kinds of turn, which the degree formulation is not.
 
-We can therefore summarize the genetic covariance between two individuals with a degree of relatedness $d$ to be:
-\begin{equation}\label{eq:chain-degree}
-    \boxed{\ \Cov[\,g_A,\, g_B\,] \;=\; \left(\frac{1+\rho_g}{2}\right)^{\!d} V_A \ }
-\end{equation}
-Under random mating this is the textbook $2^{-d}V_A$, which is what fixes the assignment in \eqref{eq:degree-Nm} in the first place.
+The degree has not been lost; it has been located.
+As $\rho_g \to 0$ the three cases of \eqref{eq:turn-K} become $1$, $2$ and $1$, so under random mating $K$ is a power of two and can be absorbed into the exponent --- a full segment simply counts as one meiosis fewer.
+That is the classical $d$, and \eqref{eq:segment} reduces to $2^{-d}V_A$.
+Assortment is what pulls $K$ off the powers of two, and once it does, the honest thing is to carry it separately rather than to round it back into an integer.
+The half case is Nagylaki's multiplier \citep{Nagylaki1978}, also derived by path tracing in the supplement to \citet{Sunde2024NatComm}; we meet it again in Section~\ref{sec:am-classes}.
 
-Equation~\eqref{eq:chain-degree} is exact for lineal relatives and for full collateral relatives, but only approximate for half relatives.
-The reason is that a half pair's two \emph{unshared} parents are not unrelated: they are both mates of the shared parent, and so are correlated through a mating that \eqref{eq:chain-degree} does not account for.
-This is why the doubling quoted above is exact only under random mating --- assortment inflates half relatives more than full ones, and at $h^2 = \rho_y = \tfrac12$ the ratio is nearer $1.5$ than $2$.
-The missing factor is itself a mating term, so we defer it to the next section and pick it up there.
-
-\comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
-
-When tracing a chain through a pedigree to connect two individuals, there are two types of steps that are performed.
-The first is a vertical step, such as going from parent to offspring or vice-versa.
-Each vertical step costs one degree of relatedness $d$.
-However, note that the actual degree of relatedness $d$ between two individuals depends on all of the distinct chains that connect those two individuals (e.g. full-siblings are connected by both parents).
-
-The second is a horizontal step through a mating.
-Analogous to $d$, we define $n$ to be the number of matings that a path crosses.
-It is equivalent to the number of co-paths that are crossed under our models' path diagrams.
-Recall from Section~\ref{sec:path-analysis} that a chain may cross more than one co-path, provided no two of them belong to the same mating and each costing one mating count $n$.
-We focus our derivations on pairs for which $n > 0$ but $d = \infty$,
-i.e. pairs who are only connected to each other through matings between themselves or their biological relatives.
-Below, we provide examples of such pairs up to $n=3$.
-
-\begin{itemize}
-    \item $n=1$: a mated pair, e.g. the parents of full-siblings.
-    \item $n=2$: two people who share a mate but are otherwise unrelated, e.g. the non-shared parents of a half-sibling pair.
-    \item $n=3$: the two outer parents of a step-sibling pair, one from each child.
-\end{itemize}
-Figure~\ref{fig:step-sib} shows one pedigree containing all three.
-
-\begin{figure}[H]
-    \begin{floatcard}
-        \input{figures/step_sib_pedigree.tikz}
-        \caption{%
-            A pedigree of four parents joined by three matings, with one child per mating, drawn at the level of genetic values as in Figure~\ref{fig:g-only}.
-            Reading left to right, $p_1$ and $p_2$ are the parents of $o_1$, $p_2$ and $p_3$ of $o_3$, and $p_3$ and $p_4$ of $o_2$.
-            Every mating count used in this section appears: $n=1$ for the three mated pairs $(p_1,p_2)$, $(p_2,p_3)$ and $(p_3,p_4)$; $n=2$ for $(p_1,p_3)$ and for $(p_2,p_4)$, each of which shares a mate but is otherwise unrelated; and $n=3$ for $(p_1,p_4)$, joined only by the whole chain of three matings.%
-        }
-        \label{fig:step-sib}
-    \end{floatcard}
-\end{figure}
-
-Now take two individuals $i$ and $j$ whose only connection is a chain of $n$ matings.
-By \eqref{eq:leg-rule}, crossing a co-path $y_a \,\text{---}\, y_b$ breaks the covariance into three factors: how the chain reached $y_a$, the co-path's own coefficient $\mu$, and how it leaves $y_b$.
-
-For $n=1$, a mated pair, there is one co-path and the chain's two ends are the individuals themselves:
-$$
-    \Cov[\,g_i,\, g_j\,] \;=\; \underbrace{\Cov[\,g_i,\, y_i\,]}_{V_A} \cdot\; \mu \;\cdot \underbrace{\Cov[\,y_j,\, g_j\,]}_{V_A}
-    \;=\; \mu\, V_A^2 ,
-$$
-each end contributing $\Cov[\,g_i,\, g_i + e_i\,] = V_A$ by \assumptionid{GE-indep}.
-For $n=2$, where $i$ and $j$ are both mated to some third person $s$, the chain crosses two co-paths and passes \emph{through} $s$.
-The middle factor is then $s$'s whole phenotypic variance, because the chain arrives at $y_s$ and leaves from it rather than stopping there:
-$$
-    \Cov[\,g_i,\, g_j\,] \;=\; V_A \cdot\, \mu \,\cdot \underbrace{\Var[\,y_s\,]}_{V_P} \cdot\, \mu \,\cdot V_A
-    \;=\; \mu^2\, V_A^2\, V_P .
-$$
-Each further mating adds one more crossing and one more person passed through, so in general
-\begin{equation}\label{eq:mating-rule}
-\begin{gathered}
-    \Cov[\,g_i,\, g_j\,] \;=\; \underbrace{\mu^{\,n}}_{\text{crossings}} \cdot \underbrace{V_A^2}_{\text{the two ends}} \cdot \underbrace{V_P^{\,n-1}}_{\text{people passed through}}
-    \;=\; \big(\mu V_A\big)\big(\mu V_P\big)^{n-1} V_A \\[6pt]
-    \boxed{\ \Cov[\,g_i,\, g_j\,] \;=\; \rho_g\,\rho_y^{\,n-1}\,V_A \ }
-\end{gathered}
-\end{equation}
-where the last step pairs one $\mu$ with one $V_A$ to make $\rho_g$, and each remaining $\mu$ with a $V_P$ to make $\rho_y$, using $\mu V_A = \rho_g$ from \eqref{eq:rhog-t} and $\mu V_P = \rho_y$, which is the same identity with a phenotype in place of a genetic value at one end.
-So the \emph{first} mating crossed costs $\rho_g$ and every further one costs $\rho_y$.
-
-Consider next the case where an individual $i$ is connected to some individual $P$ in a pedigree, by vertical and/or horizontal steps, such that the covariance of their genetic values is, $\Cov[\,g_i,\, g_P\,]$.
-Write $P'$ for $P$'s mate, and suppose that no chain from $i$ to $P$ crosses \emph{any} of $P$'s matings --- so the only way $i$ reaches $P'$ is by arriving at $P$ and then crossing the one co-path that joins the two of them.
-This holds when $i$ is a collateral relative of $P$, or an ancestor of $P$.
-It fails when $i$ is one of $P$'s mates, and --- less obviously --- when $i$ is a \emph{descendant} of $P$, because a child of $P$ also carries genes from whichever of $P$'s mates produced it, and those were matched to $P$'s whole phenotype.
-Despite their non-biological relatedness, $i$'s genetic value will be more similar to that of $P'$ due to the increased similarity of $P'$ to $P$ as a consequence of assortative mating.
-
-Every chain from $g_i$ to $g_{P'}$ therefore arrives at $y_P$, crosses the co-path, and descends to $g_{P'}$, so \eqref{eq:leg-rule} applies with $P$ and $P'$ as the two mates:
-\begin{equation}\label{eq:cross-mating}
-\begin{gathered}
-\begin{aligned}
-    \Cov[\,g_i,\, g_{P'}\,] \;&=\; \Cov[\,g_i,\, y_P\,] \cdot\, \mu \,\cdot \underbrace{\Cov[\,y_{P'},\, g_{P'}\,]}_{V_A} \\[4pt]
-    \;&=\; \Big(\Cov[\,g_i,\, g_P\,] + \underbrace{\Cov[\,g_i,\, e_P\,]}_{0}\Big)\cdot \mu\, V_A \\[4pt]
-    \;&=\; \Cov[\,g_i,\, g_P\,] \cdot \underbrace{\mu\, V_A}_{\rho_g}
-\end{aligned} \\[8pt]
-    \boxed{\ \Cov[\,g_i,\, g_{P'}\,] \;=\; \rho_g\,\Cov[\,g_i,\, g_P\,] \ }
-\end{gathered}
-\end{equation}
-The second line splits $y_P$ into its two parts, and the vanishing of $\Cov[\,g_i,\, e_P\,]$ is exactly what the supposition above buys.
-Only $P$'s own matings can make $e_P$ correlated with somebody else's genetic value, since a mate of $P$ was chosen partly on $e_P$; excluding those chains is therefore the same as setting that term to zero.
-It is worth seeing what the term is worth when it does not vanish.
-Take $i$ to be a child of $P$ by a different mate --- a step-child of $P'$, as $o_1$ is of $p_3$ in Figure~\ref{fig:step-sib}.
-Then $i$ carries half of that other mate's genetic value, that mate was matched to $y_P$ rather than to $g_P$, and the result is
-$$
-    \Cov[\,g_{o_1},\, g_{p_3}\,] \;=\; \tfrac12\,\rho_g\big(1 + \rho_y\big) V_A
-    \qquad\text{against}\qquad
-    \rho_g\Cov[\,g_{o_1},\, g_{p_2}\,] \;=\; \tfrac12\,\rho_g\big(1 + \rho_g\big) V_A ,
-$$
-so ignoring the condition would substitute $\rho_g$ for $\rho_y$ in one factor and understate the covariance.
-That substitution is the same one that separates every class in this section from the plain degree law, and \eqref{eq:lineal} below is the case where it can no longer be avoided.
-
-As a consequence, the covariance of $i$ to $P'$ and $P$'s child, $C$, is modified as follows.
-Substituting \eqref{eq:g-transmit} for $g_C$ splits it into the two parents and the segregation residual, and \eqref{eq:cross-mating} supplies the parent that $i$ was \emph{not} traced through:
-\begin{equation}\label{eq:one-step}
-\begin{gathered}
-\begin{aligned}
-    \Cov[\,g_i,\, g_C\,] \;&=\; \Cov\!\big[\,g_i,\; \tfrac12 g_P + \tfrac12 g_{P'} + \varepsilon_C\,\big] \\[4pt]
-    \;&=\; \tfrac12\Cov[\,g_i,\, g_P\,] \;+\; \tfrac12 \underbrace{\Cov[\,g_i,\, g_{P'}\,]}_{\rho_g\Cov[\,g_i,\, g_P\,]} \;+\; \underbrace{\Cov[\,g_i,\, \varepsilon_C\,]}_{0} \\[4pt]
-    \;&=\; \tfrac12\big(1 + \rho_g\big)\Cov[\,g_i,\, g_P\,]
-\end{aligned} \\[8pt]
-    \boxed{\ \Cov[\,g_i,\, g_C\,] \;=\; \frac{1+\rho_g}{2}\;\Cov[\,g_i,\, g_P\,] \ }
-\end{gathered}
-\end{equation}
-The residual drops out because $\varepsilon_C$ is uncorrelated with both of $C$'s parents and with everything upstream of them.
-So one step of descent multiplies a covariance by $\tfrac12(1+\rho_g)$ rather than by $\tfrac12$: half of it is the usual transmission from $P$, and the extra $\rho_g$ is what $C$ inherited from $P'$, who resembles $P$ because they were matched on their phenotypes.
-Under random mating $\rho_g = 0$ and \eqref{eq:one-step} is the familiar halving.
+Since $\rho_y \geq \rho_g$, the half factor is at least one: half relatives are always \emph{more} similar than their degree alone would predict.
+It is also the first quantity in this section that cannot be written in $\rho_g$ alone --- $\rho_y$ appears on its own, and the two are proportional only through $h^2$.
 
 The following assumption has already been implicit in prior sections, but we state it explicitly here.
 
@@ -1330,120 +1600,104 @@ When tracing a path between relatives, the sex of the parent(s) that connect the
 \bundles{no maternal effects, no sex-specific assortment, and no sex difference in effect size.}
 \end{assumption}
 
-To properly express the phenotypic covariance between two relatives, we need additional information about their relationship beyond just their degree of relatedness $d$.
-First, we use the following terminology to refer to pairs in a pedigree:
-Two individuals are \emph{collateral} relatives when neither descends from the other (e.g.\ a sibling pair), and \emph{lineal} when one does (e.g.\ a parent--child pair).
-Furthermore, a collateral pair is \emph{full} when they share both of the ancestors that join them, and \emph{half} when they share only one.
-
-
-\comment{I haven't added to-dos to the following section yet, but feel free to edit it to maintain consistent terminology/symbols}
-
-\subsubsection{Full collateral relatives}
-
-For a full collateral pair, iterating \eqref{eq:one-step} once per step from $\Var[g] = V_A$ gives
-\begin{equation}\label{eq:collateral}
-\begin{gathered}
-    \Cov[\,g_i,\, g_j\,] \;=\; V_A\left(\frac{1+\rho_g}{2}\right)^{\!d} \\[6pt]
-    \boxed{\ \Corr[\,y_i,\, y_j\,] \;=\; h^2\left(\frac{1+\rho_g}{2}\right)^{\!d} \ }
-\end{gathered}
+\subsubsection{Assembling a whole path}\label{sec:am-assemble}
+We now have both halves: \eqref{eq:mating-split} splits a path at its matings, and \eqref{eq:segment} evaluates each of the resulting segments.
+Putting them together, a path with $n$ matings and $n+1$ segments carries
+\begin{equation}\label{eq:assemble}
+    \boxed{\ \Cov[\,g_A,\, g_B\,] \;=\; \mu^{\,n} \prod_{i=0}^{n} S_i \ }
 \end{equation}
-The step to the phenotypic correlation is not automatic, and it is what makes this class the clean one: for a collateral pair there is no environmental cross term.
-Neither individual's environment had any part in choosing the other's mate, so $\Cov[\,e_i,\, g_j\,] = 0$, and dividing the genetic covariance by $V_P$ is the whole of it.
+where $S_i$ is the covariance carried by segment $i$.
+The $\mu^{\,n}$ is one factor per mating and the product is one factor per segment, so a path is read off left to right with nothing left over.
 
-Equation~\eqref{eq:collateral} is Fisher's result, and it is the form \citet{Eftedal2025PNAS} fit: a correlation of $h^2$ at $d=0$, falling by a constant factor $\tfrac12(1+\rho_g)$ per degree.
-Under random mating the factor is $\tfrac12$ and we recover the textbook halving per degree.
+Two adjustments distinguish $S_i$ from the bare \eqref{eq:segment}, and both concern the ends of a segment where it meets a mating.
 
-\subsubsection{Lineal relatives}
-For a lineal pair the chain begins at the ancestor's own phenotype rather than at their genetic value, because the ancestor's environment helped determine who they mated with, and that mate contributed genes to the descendant.
-By \eqref{eq:mating-rule} a leg of $V_P$ in place of $V_A$ turns one $\rho_g$ into a $\rho_y$, so exactly one factor of the product changes:
-\begin{equation}\label{eq:lineal}
-    \boxed{\ \Corr[\,y_i,\, y_j\,] \;=\; h^2\left(\frac{1+\rho_g}{2}\right)^{\!d-1}\left(\frac{1+\rho_y}{2}\right) \ }
+The first is that an interior segment consisting of a \emph{single individual} contributes that individual's whole phenotypic variance:
+\begin{equation}\label{eq:passthrough}
+    S_i \;=\; V_P \qquad \text{($N_m = 0$, the path passes through this person)} .
 \end{equation}
-The \emph{genetic} covariance of a lineal pair still obeys \eqref{eq:collateral} exactly; it is only the phenotypic correlation that departs, and it departs in one factor no matter how many generations separate the pair.
-At $d=1$ this is the $\tfrac12\VAo(1+\rho_y)$ of Table~\ref{tab:relatives-gen1}, now at equilibrium and at every degree.
-Since $\rho_y \geq \rho_g$, a lineal pair is always more similar than a collateral pair of the same degree --- a grandparent resembles a grandchild more than an aunt resembles a niece, though both are second-degree.
+The path arrives at their phenotype and leaves from it, so both legs attach to $y$ rather than to $g$.
+This is the case that makes two people who share a mate resemble each other at all.
 
-\subsubsection{Half relatives}
-A half-sibling pair shares one parent, and the two \emph{unshared} parents are both mates of the shared one.
-They are therefore separated by two matings, and \eqref{eq:mating-rule} at $n=2$ gives $\Cov = \rho_y\rho_g V_A$ between them rather than zero.
-Feeding all four parental covariances into \eqref{eq:g-transmit},
-\begin{equation}\label{eq:half}
-\begin{gathered}
-\begin{aligned}
-    \Cov[\,g_i,\, g_j\,] \;&=\; \tfrac14\Big(\underbrace{V_A}_{\text{shared}}
-    \;+\; \underbrace{2\rho_g V_A}_{\text{shared with each unshared}}
-    \;+\; \underbrace{\rho_y\rho_g V_A}_{\text{the two unshared}}\Big)
-\end{aligned} \\[6pt]
-    \boxed{\ \Corr[\,y_i,\, y_j\,] \;=\; h^2\left(\frac{1+\rho_g}{2}\right)^{\!d}
-    \cdot \underbrace{\frac{1 + 2\rho_g + \rho_y\rho_g}{\big(1+\rho_g\big)^2}}_{\text{half-relative multiplier}} \ }
-\end{gathered}
+The second is that a meiosis \emph{adjacent to a mating} may cost $\tfrac12(1+\rho_y)$ rather than $\tfrac12(1+\rho_g)$.
+It does so when the individual at that end of the segment is a \emph{parent} on the segment --- that is, when the path leaves them through one of their children.
+The reason is the same one that gave \eqref{eq:mated-pair} its $V_P$: a mate of that person was matched to their whole phenotype, environment included, and the child on the path carries that mate's genes.
+When instead the individual at the mating end is a \emph{child} on the segment, their own environment plays no part and the factor stays $\tfrac12(1+\rho_g)$.
+Writing $p_i \in \{0,1,2\}$ for the number of a segment's mating-facing ends at which the individual is a parent,
+\begin{equation}\label{eq:segment-full}
+    \boxed{\ S_i \;=\; V_A\, K_i
+    \left(\frac{1+\rho_y}{2}\right)^{\!p_i}
+    \left(\frac{1+\rho_g}{2}\right)^{\!N_m^{(i)} - p_i} \ }
 \end{equation}
-with $d=2$; half-siblings are collateral, so again the phenotypic correlation is the genetic covariance over $V_P$.
-This is the multiplier of \citet{Nagylaki1978}, also derived by path tracing in the supplement to \citet{Sunde2024NatComm}.
+with $K_i$ from \eqref{eq:turn-K}.
+A path with no matings has $n = 0$, one segment, $p = 0$, and \eqref{eq:segment-full} collapses back to \eqref{eq:segment}.
 
-The whole of it is the last term.
-Replace $\rho_y\rho_g$ by $\rho_g^2$ --- which is what one gets by treating the two unshared parents as separated by two \emph{genetic} legs rather than passing through a phenotype --- and the numerator becomes $(1+\rho_g)^2$ exactly, the multiplier becomes $1$, and \eqref{eq:half} collapses onto \eqref{eq:collateral}.
-Since $\rho_y \geq \rho_g$ the multiplier is at least one, so half-relatives are always \emph{more} similar than their degree alone would predict.
-It is also the first quantity in this section that cannot be written in $\rho_g$ alone: $\rho_y$ appears separately, and the two are only proportional through $h^2$.
+\subsubsection{Genetic values, phenotypes, and the ends of a path}\label{sec:am-gy}
+Everything so far has been a covariance between genetic values.
+The quantity we usually want is the phenotypic correlation, and the step between them is not always a division by $V_P$.
 
-\subsubsection{Relatives-in-law, and the modified degree}
-Two people connected only through a marriage --- step-siblings, or the partners of two siblings --- have no common ancestor at all, so $d$ is undefined for them.
-Following \citet{Eftedal2025PNAS} we index them instead by a \emph{modified degree} $\tilde{d}$: the number of transmission steps from one individual to their end of the connecting mated pair, plus the steps from the other individual to the other end.
-Step-siblings have $\tilde{d} = 2$, one step each.
-For every pair that does have a common ancestor, $\tilde{d} = d$, so $\tilde{d}$ extends the index rather than replacing it, and we use it from here on in any formula meant to cover both.
+The rule is local to the two outer ends of the path, and it asks one question of each: \emph{is that individual's own mating used by the path?}
 
-The chain now crosses the connecting mating once, contributing $\rho_g$, and the step on each side that is \emph{adjacent} to that mating has a phenotype leg, contributing $\tfrac12(1+\rho_y)$ rather than $\tfrac12(1+\rho_g)$.
-Every remaining step is an ordinary transmission:
-\begin{equation}\label{eq:inlaw}
-    \boxed{\ \Corr[\,y_i,\, y_j\,] \;=\; h^2\,\rho_g\left(\frac{1+\rho_y}{2}\right)^{\!2}\left(\frac{1+\rho_g}{2}\right)^{\!\tilde{d}-2} \ }
+If it is not --- if at least one meiosis separates them from their segment's turn and from any mating --- then their environment is uncorrelated with everything the path reaches, so
+$$ \Cov[\,y_A,\, y_B\,] \;=\; \Cov[\,g_A,\, g_B\,], \qquad \Corr[\,y_A,\, y_B\,] \;=\; \frac{\Cov[\,g_A,\, g_B\,]}{V_P} \;=\; h^2 \frac{\Cov[\,g_A,\, g_B\,]}{V_A} . $$
+This covers every collateral pair and every in-law pair: full siblings, cousins, half siblings, step-siblings.
+
+If it is --- if the individual sits directly in a mating the path uses --- then their environment does reach the other end, and promoting $g$ to $y$ at that end promotes one $\rho_g$ to $\rho_y$.
+Two cases arise in practice.
+For a \emph{mated pair} both ends are of this kind, and \eqref{eq:mated-pair} already gave the answer.
+For a \emph{lineal} pair the ancestor is of this kind and the descendant is not, so exactly one factor changes, however many generations separate them:
+\begin{equation}\label{eq:lineal-pheno}
+    \boxed{\ \Corr[\,y_A,\, y_B\,] \;=\; h^2 \left(\frac{1+\rho_g}{2}\right)^{\!N_m - 1}\left(\frac{1+\rho_y}{2}\right)
+    \qquad (A, B \text{ lineal}) \ }
 \end{equation}
-The two squared factors are one per side, so \eqref{eq:inlaw} needs $\tilde{d} \geq 2$; an in-law is at least one step from the couple that connects them.
-The leading $\rho_g$ is why in-laws resemble each other at all: they are connected by a single mating, and nothing else.
+The \emph{genetic} covariance of a lineal pair is still \eqref{eq:segment} with $K=1$; it is only the phenotypic correlation that departs.
+Since $\rho_y \geq \rho_g$, a lineal pair is always more similar than a collateral pair with the same $N_m$ --- a grandparent resembles a grandchild more than an aunt resembles a niece.
 
-Two things are worth recording about \eqref{eq:inlaw}.
-The first is that $\tilde{d}$ really is sufficient.
-A pair one step and three steps from the connecting couple has the same expected correlation as a pair two steps and two steps from it, which is what licenses indexing in-laws by a single number rather than by the shape of the connection.
-The second is that \eqref{eq:inlaw} disagrees with the expression fitted by \citet{Eftedal2025PNAS}, who take $h^2\rho_g\big(\tfrac12(1+\rho_g)\big)^{\tilde{d}}$ --- the ordinary rate factor, raised to the whole modified degree.
-The difference is the two adjacent steps, and it makes \eqref{eq:inlaw} the larger of the two: at $h^2 = \tfrac12$ and $\rho_y = \tfrac12$ a step-sibling correlation of $0.070$ against their $0.049$.
-It is at least suggestive that they report their own fitted model \emph{under}-predicting the in-law classes --- step-siblings by about a factor of two --- which is the direction this correction points.
-
-\subsubsection{When degree is enough}
-Collecting the four cases, Table~\ref{tab:degree-classes} states what each class costs relative to the plain degree law.
+\subsubsection{Common relative classes}\label{sec:am-classes}
+Table~\ref{tab:degree-classes} collects what \eqref{eq:assemble}--\eqref{eq:lineal-pheno} give for the pairs one actually meets, and Figure~\ref{fig:step-sib} shows a single pedigree containing most of them.
 
 \begin{table}[H]
     \begin{floatcard}
     \renewcommand{\arraystretch}{2.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{lll}
-        class & $\Corr[\,y_i,\, y_j\,]$ & needs \\
+    \begin{tabular}{llll}
+        class & $n$ & turn(s) & $\Corr[\,y_A,\, y_B\,]$ \\
         \hline
-        collateral, full
-            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{\tilde{d}}$
-            & $\tilde{d}$ and $\rho_g$ \\
+        mated pair
+            & $1$ & --- & $\rho_y$ \\
         lineal
-            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{\tilde{d}-1}\left(\dfrac{1+\rho_y}{2}\right)$
-            & $\tilde{d}$, $\rho_g$ and $\rho_y$ \\
+            & $0$ & an end
+            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{N_m-1}\left(\dfrac{1+\rho_y}{2}\right)$ \\
+        collateral, full
+            & $0$ & a couple
+            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{N_m}\dfrac{2}{1+\rho_g}$ \\
         collateral, half
-            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{\tilde{d}} \dfrac{1+2\rho_g+\rho_y\rho_g}{(1+\rho_g)^2}$
-            & $\tilde{d}$, $\rho_g$, $\rho_y$, and that the pair is half \\
+            & $0$ & one ancestor
+            & $h^2\left(\dfrac{1+\rho_g}{2}\right)^{N_m} \dfrac{1+2\rho_g+\rho_y\rho_g}{(1+\rho_g)^2}$ \\
         in-law
-            & $h^2\,\rho_g\left(\dfrac{1+\rho_y}{2}\right)^{2}\left(\dfrac{1+\rho_g}{2}\right)^{\tilde{d}-2}$
-            & the same, plus which couple connects them \\
+            & $1$ & two ends
+            & $h^2\,\rho_g\left(\dfrac{1+\rho_y}{2}\right)^{2}\left(\dfrac{1+\rho_g}{2}\right)^{N_m-2}$ \\
     \end{tabular}
     \caption{%
         Expected phenotypic correlation by class, at equilibrium, for a pair whose only connection is the one named.
-        Every row is a product of per-step factors, and the classes differ only in how many of those factors carry $\rho_y$ in place of $\rho_g$: none for a full collateral pair, one for a lineal pair, two for an in-law pair, and a fractional correction for a half pair.
-        Under random mating $\rho_g = \rho_y = 0$, every row collapses to $h^2 2^{-\tilde{d}}$ except the in-law row, which collapses to zero.%
+        Every row is \eqref{eq:assemble} evaluated on the relevant path, and the classes differ only in the turn factor $K$ and in how many meioses sit next to a mating and so carry $\rho_y$ in place of $\rho_g$: none for a full collateral pair, one for a lineal pair, two for an in-law pair.
+        Under random mating $\rho_g = \rho_y = 0$ and every row with a common ancestor collapses to $h^2 2^{-d}$, with $d$ as in the classical definition; the in-law row collapses to zero.%
     }
     \label{tab:degree-classes}
     \end{floatcard}
 \end{table}
 
-So the degree is enough, but only within a class.
-Two individuals' expected covariance is fixed by $\tilde{d}$ together with three facts that $\tilde{d}$ does not carry: whether one descends from the other, whether their connection runs through one shared ancestor or two, and whether it runs through a marriage.
-Assortment is what makes those distinctions matter.
-Set $\rho_y = 0$ and every row of Table~\ref{tab:degree-classes} that has a common ancestor becomes $h^2 2^{-\tilde{d}}$: degree alone suffices, and the classes are indistinguishable.
+Two remarks close the section.
+
+The first is that $N_m$ is doing the work a \emph{modified degree} is sometimes introduced to do.
+In-law pairs have no common ancestor, so the classical $d$ is undefined for them; \citet{Eftedal2025PNAS} therefore index them by the combined distance to the connecting couple.
+That quantity is exactly $N_m$, which we already had, so no new index is needed --- and $N_m$ is defined for every pair, with or without a common ancestor.
+
+The second is that the in-law row disagrees with the expression \citet{Eftedal2025PNAS} fit, which is $h^2\rho_g\big(\tfrac12(1+\rho_g)\big)^{N_m}$ --- the ordinary rate factor raised to the whole distance, with no $\rho_y$ anywhere.
+The difference is the two meioses adjacent to the connecting mating, and it makes our expression the larger: at $h^2 = \rho_y = \tfrac12$, a step-sibling correlation of $0.070$ against their $0.049$.
+The disagreement is not an algebraic slip on their part but a modelling one, and it is internal to their own treatment: they import Nagylaki's half-sibling multiplier, which carries the phenotypic mate correlation as a parameter distinct from the genotypic one, and then derive in-laws as though the two were the same.
+Under assortment on the phenotype they are not, and the same correction belongs in both places.
+
 
 \comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
 
