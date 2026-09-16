@@ -1,0 +1,32 @@
+# Heavy simulation artifacts are never tracked here. Saved Population objects, genotype
+# matrices and per-generation dumps live under /n/scratch/users/n/nur479/ (prunable, not
+# backed up) and are written there by the generate stage -- see README.md. These rules are a
+# backstop for anything that lands in the working tree by accident: a local test run, a
+# notebook writing beside itself, or a convenience symlink into scratch.
+#
+# The notebooks, the scripts and theory.py ARE tracked. So is any small summary table a
+# verify notebook writes out, which is why this ignores data formats rather than a data/ dir.
+
+*.pkl
+*.pkl.gz
+*.pickle
+*.joblib
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.zarr/
+*.parquet
+*.feather
+*.bed
+*.bim
+*.fam
+*.pgen
+*.pvar
+*.psam
+
+# a convenience symlink to this writeup's scratch area, if one is made
+scratch
+
+# notebook execution leftovers
+.ipynb_checkpoints/
