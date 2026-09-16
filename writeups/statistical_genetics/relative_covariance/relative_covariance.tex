@@ -1516,27 +1516,31 @@ Along an in-edge the path reaches the mating chain at a single individual.
 Along an out-edge it reaches a mate pair, since we require the mating chain to carry both parents of the second-oldest individual of the lineal chain it points to.
 Taking only the outer parent of that pair would understate the product: an offspring's genetic value comes half from each parent, and the inner parent sits one mating nearer the far end of the chain, so their half is worth the more of the two.
 
-We can remove the clunky sum from the expression for $w$ by counting ``entry points'': an out-edge has two of them (the mate pair) and an in-edge has one (the single descendant).
-Then, define $N_\mathcal{S} \in \{0,1,2\}$ to be the number of shared entry points between the two adjacent lineal chains.
-In the case where the mating chain is a source, so that both of its edges are out-edges, the two second-oldest individuals $X$ and $Y$ are \emph{generalized siblings} such that
-$N_\mathcal{S} = 2$ means they are \emph{full-siblings}, $N_\mathcal{S} = 1$ means they are \emph{half-siblings}, and $N_\mathcal{S} = 0$ means they are \emph{generalized step-siblings}.
-Under this parameterization, we can write:
+In real data, dominant paths' mating chains tend to be sources, i.e. $N_o=2$.
+In such cases, the mating chain is guaranteed to contain both parents of the second-oldest individual of each adjacent lineal chain.
+We categorize the relationship type of these individuals as \emph{generalized siblings}.
+We define $N_\mathcal{S} \in \{0,1,2\}$ to be the number of shared parents between generalized siblings.
+$N_\mathcal{S} = 2$ indicates \emph{full-siblings},
+$N_\mathcal{S} = 1$ indicates \emph{half-siblings}, and 
+$N_\mathcal{S} = 0$ indicates \emph{generalized step-siblings},
+for which the $N_\Mu = 3$ case is dubbed just as \emph{step-siblings}.
+Under this parameterization, where the first two cases require a source mating chain and the third holds at any $N_{o_j}$, we can write:
 
 \begin{equation}\label{eq:chain-weight-cases}
     w_j \;=\;
     \begin{cases}
         \dfrac{1+\rho_g}{2}
-            & N_{\mathcal{S}_j} = 2 \\[14pt]
+            & N_{\mathcal{S}_j} = 2, \quad N_{o_j} = 2 \\[14pt]
         \dfrac{1 + 2\rho_g + \rho_g\rho_y}{4}
-            & N_{\mathcal{S}_j} = 1 \\[14pt]
+            & N_{\mathcal{S}_j} = 1, \quad N_{o_j} = 2 \\[14pt]
         \rho_g\; \rho_y^{\,N_{\Mu_j} - 1 - N_{o_j}}
         \left( \dfrac{1+\rho_y}{2} \right)^{\!N_{o_j}}
-            & N_{\mathcal{S}_j} = 0
+            & N_{\mathcal{S}_j} = 0, \quad \text{any } N_{o_j}
     \end{cases}
 \end{equation}
 
 The weight for the half-sibling case ($N_\mathcal{S} = 1$) is Nagylaki's half-sibling multiplier \citep{Nagylaki1978}.
-The third case is the \eqref{eq:chain-weight} polynomial expanded under the condition that $N_{\Mu_j} \geq N_{o_j} + 1$, so that no term of \eqref{eq:chain-weight} reaches $c(0)$.
+The third case is the \eqref{eq:chain-weight} polynomial expanded under the condition that $N_{\Mu_j} \geq N_{o_j} + 1$, which is exactly what $N_{\mathcal{S}_j} = 0$ encodes, so that no term of \eqref{eq:chain-weight} reaches $c(0)$.
 
 Lastly, we have to include a correction factor for each proband for which we are interested in the covariance with the phenotype, as opposed to the genetic value, based on the position of the proband in the path.
 
@@ -1548,7 +1552,7 @@ Lastly, we have to include a correction factor for each proband for which we are
         \dfrac{1+\rho_y}{1+\rho_g}
             & \text{$X$ is a source} \\[10pt]
         \dfrac{\rho_y}{\rho_g} \;=\; \dfrac{1}{h^2}
-            & \text{$X$ is part of a terminal mating chain}
+            & \text{$X$ is in a terminal mating chain}
     \end{cases} \ }
 \end{equation}
 
