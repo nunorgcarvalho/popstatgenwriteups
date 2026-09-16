@@ -42,6 +42,44 @@
 \definecolor{commentink}{RGB}{110,85,145}
 \newcommand{\comment}[1]{{\color{commentink}\itshape #1}}
 
+% revision markup -- \add marks text being introduced, \remove text being taken out, so that a
+% large rewrite can be read against what it replaces. Both are scaffolding: they are meant to be
+% stripped once the revision is accepted, not to live in the document.
+%
+% \remove is red AND struck through, so the two stay distinguishable in greyscale. It strikes
+% word by word: ulem's \sout would do it in one step, but ulem is not in this TeX installation
+% and this pipeline avoids adding package dependencies (same call as \@makecaption above).
+% Putting each word in its own box leaves the inter-word glue intact, which is what lets a long
+% span still break across lines. The one cost is that a "word" must not contain a space at brace
+% level zero, so BRACE-PROTECT any inline maths that has spaces in it: {$X \rightarrow Y$},
+% not $X \rightarrow Y$. A macro argument needs nothing, since braces already hide its spaces.
+%
+% Display maths, blank lines and list environments cannot be struck at all. Whole paragraphs,
+% equations and lists therefore go in the `removed` environment, which marks the block with a
+% red rule down the left margin instead of striking it; `added` is its green counterpart.
+\definecolor{addink}{RGB}{20,110,75}
+\definecolor{removeink}{RGB}{176,58,46}
+\newcommand{\add}[1]{\textcolor{addink}{#1}}
+\makeatletter
+\newcommand{\pgwstrike}[1]{%
+  \leavevmode\setbox\z@\hbox{#1}%
+  \rlap{\vrule\@height.58ex\@depth-.50ex\@width\wd\z@}\box\z@}
+\def\pgwstrikeloop#1 #2\pgwstrikeend{%
+  \pgwstrike{#1}%
+  \def\pgwstriketmp{#2}%
+  \ifx\pgwstriketmp\@empty\else\ \pgwstrikeloop#2\pgwstrikeend\fi}
+\newcommand{\remove}[1]{\textcolor{removeink}{\pgwstrikeloop#1 \pgwstrikeend}}
+\newenvironment{pgwbar}[1]{%
+  \par\smallskip\color{#1}%
+  \def\FrameCommand{{\color{#1}\vrule width 2pt}\hspace{8pt}}%
+  \MakeFramed{\advance\hsize-\width \FrameRestore}%
+}{%
+  \endMakeFramed\par\smallskip%
+}
+\makeatother
+\newenvironment{added}{\begin{pgwbar}{addink}}{\end{pgwbar}}
+\newenvironment{removed}{\begin{pgwbar}{removeink}}{\end{pgwbar}}
+
 % floats %%%%
 % Captions are set smaller than body text with a bold label, so a caption is visibly not body
 % text -- which matters here, where captions are long enough to be mistaken for a paragraph.

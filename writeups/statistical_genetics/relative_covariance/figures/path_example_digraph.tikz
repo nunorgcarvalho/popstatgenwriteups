@@ -1,0 +1,32 @@
+\definecolor{pmCPathB}{HTML}{1F77B4}
+\definecolor{pmCPath9}{HTML}{999999}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  cdMating/.style={draw=black, fill=pmCPathB!14, rectangle, rounded corners=1pt,
+                   inner sep=0.10cm, minimum height=0.62cm},
+  cdLineal/.style={draw=black, fill=white, ellipse,
+                   inner xsep=0.06cm, inner ysep=0.10cm, minimum height=0.62cm},
+  cdProband/.style={draw=black, fill=pmCPathB!14, circle, inner sep=0.04cm,
+                    minimum size=0.60cm},
+  cdEdge/.style={-{Stealth[length=2mm]}, line width=0.9pt},
+  cdNote/.style={font=\scriptsize, text=pmCPath9, align=center, anchor=north},
+]
+  \node[cdProband] (pA) at (0.000,0.000) {$A$};
+  \node[cdLineal] (L1) at (2.150,0.000) {$\Lin(A,D)$};
+  \node[cdNote] at (2.150,-0.460) {$\Nlin = 2$};
+  \node[cdMating] (M1) at (4.300,0.000) {$\Mu(D,F)$};
+  \node[cdNote] at (4.300,-0.460) {$\Nmu = 2$\\$N_o = 0$};
+  \node[cdLineal] (L2) at (6.450,0.000) {$\Lin(F,I)$};
+  \node[cdNote] at (6.450,-0.460) {$\Nlin = 3$};
+  \node[cdMating] (M2) at (8.600,0.000) {$\Mu(I,L)$};
+  \node[cdNote] at (8.600,-0.460) {$\Nmu = 3$\\$N_o = 2$};
+  \node[cdLineal] (L3) at (10.750,0.000) {$\Lin(L,B)$};
+  \node[cdNote] at (10.750,-0.460) {$\Nlin = 1$};
+  \node[cdProband] (pB) at (12.900,0.000) {$B$};
+  \draw[cdEdge] (pA) -- (L1);
+  \draw[cdEdge] (L1) -- (M1);
+  \draw[cdEdge] (L2) -- (M1);
+  \draw[cdEdge] (M2) -- (L2);
+  \draw[cdEdge] (M2) -- (L3);
+  \draw[cdEdge] (L3) -- (pB);
+\end{tikzpicture}

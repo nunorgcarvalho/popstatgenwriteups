@@ -1018,15 +1018,15 @@ def _pedigree(founders, kids, matings, name):
 #: right, p1--p2 are the parents of o1, p2--p3 of o3, and p3--p4 of o2.
 #:
 #: Giving the MIDDLE mating a child is what makes the figure show the classes it is cited for
-#: rather than only the mating counts. o3 shares p2 with o1 and p3 with o2, so (o1,o3) and (o2,o3)
-#: are half-sibling pairs -- and the n=2 pairs (p1,p3) and (p2,p4) are then exactly the "non-shared
+#: rather than only the mating counts. F shares B with E and C with G, so (E,F) and (F,G) are
+#: half-sibling pairs -- and the n=2 pairs (A,C) and (B,D) are then exactly the "non-shared
 #: parents of a half-sibling pair" the text uses as its n=2 example, visible in the same picture
-#: instead of asserted about an absent one. It also makes o1 and o2 step-siblings in the sense
+#: instead of asserted about an absent one. It also makes E and G step-siblings in the sense
 #: Eftedal et al. operationalise (pairs not related by blood with a half-sibling in common), which
 #: the two-child version did not.
-STEP_SIB_PARENTS = ("p1", "p2", "p3", "p4")
-STEP_SIB_MATINGS = (("p1", "p2"), ("p2", "p3"), ("p3", "p4"))
-STEP_SIB_KIDS = (("o1", "p1", "p2"), ("o3", "p2", "p3"), ("o2", "p3", "p4"))
+STEP_SIB_PARENTS = ("A", "B", "C", "D")
+STEP_SIB_MATINGS = (("A", "B"), ("B", "C"), ("C", "D"))
+STEP_SIB_KIDS = (("E", "A", "B"), ("F", "B", "C"), ("G", "C", "D"))
 
 
 def step_sib_pedigree():
@@ -1042,17 +1042,6 @@ def step_sib_pedigree():
 # symbolic entries, so this is not an approximation -- it is the same arithmetic the text does.
 # ----------------------------------------------------------------------------------------------
 
-def _cov_lc(e, lc1, lc2):
-    """Cov of two linear combinations, each a dict {node name: coefficient}."""
-    return sp.expand(sum(c1 * c2 * e.cov(n1, n2)
-                         for n1, c1 in lc1.items() for n2, c2 in lc2.items()))
-
-
-def _mp(kind, a, b):
-    """eq:mean-parent: the mean-parent of the couple (a, b), at level `kind`."""
-    return {f"{kind}_{a}": sp.Rational(1, 2), f"{kind}_{b}": sp.Rational(1, 2)}
-
-
 def _nmu(matings, a, b):
     """N_mu: fewest matings connecting a and b, or sympy.oo when no chain of matings does."""
     adj = collections.defaultdict(set)
@@ -1067,30 +1056,6 @@ def _nmu(matings, a, b):
             queue.append(v)
     return dist.get(b, sp.oo)
 
-
-def _disjoint_couples(k):
-    """Two disjoint couples (a1,a2) and (b1,b2) joined by a chain of k matings.
-
-    a2 and b1 are the near parents, so N_mu(a2,b1) = k and eq:nmu-bar-tree predicts the other
-    three. A and B are one child of each couple.
-    """
-    between = [f"c{i}" for i in range(1, k)]                 # k-1 people strictly inside
-    run = ["a2"] + between + ["b1"]
-    matings = tuple([("a1", "a2"), ("b1", "b2")]
-                    + [(run[i], run[i + 1]) for i in range(len(run) - 1)])
-    founders = tuple(["a1", "a2", "b1", "b2"] + between)
-    kids = (("A", "a1", "a2"), ("B", "b1", "b2"))
-    return _pedigree(founders, kids, matings, f"disjoint couples k={k}"), matings
-
-
-# ----------------------------------------------------------------------------------------------
-# Section 2.3.2: the set-theoretic pedigree notation, and what
-# [Single-recent-mating-chain] actually excludes.
-#
-# These are claims about the PEDIGREE rather than about the model, so they are checked on the
-# pedigree directly and then tied back to pathMgr: the assumption earns its place only if the
-# closed form is exact exactly when it holds. Function names below mirror the document's symbols.
-# ----------------------------------------------------------------------------------------------
 
 def _generations(founders, kids):
     """t_X for every individual. `founders` may be a tuple (all at generation 0) or a dict.
@@ -1122,48 +1087,140 @@ def _anc(parents, gen, X, t):
     return cur
 
 
-def _mu(matings, X):
-    """mu(X): one step of mating, INCLUDING X itself."""
-    return {X}.union(*[{a, b} for a, b in matings if X in (a, b)]) if any(
-        X in (a, b) for a, b in matings) else {X}
+def _Mu_1(matings, X):
+    """M^(1)(X) = { Y : 1_mu(X,Y) = 1 }: the individuals X has mated with, X itself excluded."""
+    return {b if a == X else a for a, b in matings if X in (a, b)}
 
 
-def _mu_pow(matings, X, k):
-    """mu^k(X): k steps of mating."""
-    cur = {X}
-    for _ in range(k):
-        cur = set().union(*[_mu(matings, y) for y in cur])
-    return cur
+def _Mu_n(matings, X, n):
+    """M^(n)(X): EXACTLY n matings away, by the document's recursion.
+
+    Each shell is the mates of the previous shell minus everyone already reached, which is what
+    makes the shells disjoint -- and therefore what makes N_M(X,Y) a well-defined single number.
+    """
+    seen, shell = {X}, {X}
+    for _ in range(n):
+        shell = set().union(*[_Mu_1(matings, y) for y in shell]) - seen if shell else set()
+        seen |= shell
+    return shell
 
 
 def _Mu(matings, X):
-    """M(X): arbitrarily many steps -- iterate mu to a fixed point."""
-    cur, prev = {X}, None
-    while cur != prev:
-        prev = cur
-        cur = set().union(*[_mu(matings, y) for y in cur])
-    return cur
+    """M(X) = union over n of M^(n)(X)."""
+    seen, shell = {X}, {X}
+    while shell:
+        shell = set().union(*[_Mu_1(matings, y) for y in shell]) - seen
+        seen |= shell
+    return seen
 
 
-def _Mubar(parents, matings, gen, X, Y, t):
-    """Mbar^(t)(X,Y): everyone of generation t on a mating chain holding an ancestor of each."""
-    aX, aY = _anc(parents, gen, X, t), _anc(parents, gen, Y, t)
-    return {Z for Z in gen if gen[Z] == t
-            and _Mu(matings, Z) & aX and _Mu(matings, Z) & aY}
+def _Mu_pair(matings, X, Y):
+    """M(X,Y): every individual on a shortest mating chain from X to Y, endpoints included.
+
+    The union runs to n = N, not n = N - 1. Stopping one short drops Y (whose only term is
+    n = N) while keeping X, which is the off-by-one this helper exists to pin.
+    """
+    N = _nmu(matings, X, Y)
+    if N is sp.oo:
+        return set()
+    return set().union(*[_Mu_n(matings, X, n) & _Mu_n(matings, Y, N - n)
+                         for n in range(0, N + 1)])
+
+
+def _no_mating_loops(matings, X):
+    """[No-mating-loops] at X: half the summed mating counts equals |M(X)| - 1."""
+    comp = _Mu(matings, X)
+    return sum(len(_Mu_1(matings, Z)) for Z in comp) / 2 == len(comp) - 1
+
+
+def _n_shortest_chains(matings, X, Y):
+    """How many distinct shortest mating chains join X and Y (1 = unique)."""
+    N = _nmu(matings, X, Y)
+    if N is sp.oo:
+        return 0
+    counts = {X: 1}
+    frontier, seen = {X}, {X}
+    for _ in range(N):
+        nxt = collections.defaultdict(int)
+        for u in frontier:
+            for v in _Mu_1(matings, u) - seen:
+                nxt[v] += counts[u]
+        counts.update(nxt)
+        frontier = set(nxt)
+        seen |= frontier
+    return counts.get(Y, 0)
+
+
+def _reaches(matings, S, T):
+    """The members of S that reach some member of T by matings, i.e. at finite N_M."""
+    return {X for X in S if any(_nmu(matings, X, Y) is not sp.oo for Y in T)}
 
 
 def _single_recent_mating_chain(parents, matings, gen, A, B):
-    """Return (t_AB, holds) for [Single-recent-mating-chain], or (None, False) if unconnected."""
+    """Return (t_AB, holds) for [Single-recent-mating-chain] + [No-mating-loops].
+
+    t_AB is fixed by the first bullet -- N_M is infinite between the two ancestor sets at every
+    more recent generation -- so it is the largest t at which anything reaches anything. The
+    second bullet is then the pair of counts, and [No-mating-loops] is checked globally rather
+    than on the chain alone, which is how the document now splits them.
+    """
     for t in range(min(gen[A], gen[B]), -1, -1):
-        M = _Mubar(parents, matings, gen, A, B, t)
-        if not M:
+        aA, aB = _anc(parents, gen, A, t), _anc(parents, gen, B, t)
+        hitA, hitB = _reaches(matings, aA, aB), _reaches(matings, aB, aA)
+        if not hitA:
             continue
-        two = (len(_anc(parents, gen, A, t) & M) == 2
-               and len(_anc(parents, gen, B, t) & M) == 2)
-        # the document's tree test: half the summed mating degrees equals |Mhat| - 1
-        edges = sum(len(_mu(matings, Z)) - 1 for Z in M) / 2
-        return t, (two and edges == len(M) - 1)
+        two = len(hitA) == 2 and len(hitB) == 2
+        loopfree = all(_no_mating_loops(matings, Z) for Z in gen)
+        return t, (two and loopfree)
     return None, False
+
+
+def check_chain_formulas() -> int:
+    """Assert eq:chain-y and eq:chain-g, and the boundary that separates them.
+
+    The pair is worth checking together because they behave differently at N_M = 0: the
+    phenotypic form runs all the way down to it and returns Var[y] = V_P, while the genetic form
+    would return h^2 V_A against a true V_A. That is the same N_M = 0 discontinuity that makes a
+    shared ancestor a genetic identity rather than a mating, and the text states it, so it is
+    asserted here rather than left to the reader.
+    """
+    # sp.cancel is the canonical exact test for equality of rational functions, which
+    # is all these covariances are. The obvious sp.simplify(sp.together(sp.expand(...)))
+    # is equivalent but far slower: the expand step inflated one comparison here to
+    # 27k operations and 55 seconds by itself.
+    eq = lambda a, b: sp.cancel(a - b) == 0
+    checked = 0
+
+    for L in range(1, 7):
+        people = tuple(f"z{i}" for i in range(L + 1))
+        matings = tuple((people[i], people[i + 1]) for i in range(L))
+        model, e = _pedigree(people, (), matings, f"mating chain of {L}")
+        V_A, V_E, rho_y = (model.sym(v) for v in ("V_A", "V_E", "rho_y"))
+        V_P = V_A + V_E
+        rho_g = rho_y * V_A / V_P
+        X, Y = people[0], people[-1]
+        N = _nmu(matings, X, Y)
+        assert N == L, f"chain of {L}: N_M came out {N}"
+        assert eq(e.cov(f"y_{X}", f"y_{Y}"), rho_y ** N * V_P), f"chain of {L}: eq:chain-y"
+        assert eq(e.cov(f"g_{X}", f"g_{Y}"), rho_g * rho_y ** (N - 1) * V_A), \
+            f"chain of {L}: eq:chain-g"
+        # the raw product form each boxed line is derived from
+        mu = rho_y / V_P
+        assert eq(e.cov(f"y_{X}", f"y_{Y}"), mu ** N * V_P ** (N + 1)), f"chain of {L}: y product"
+        assert eq(e.cov(f"g_{X}", f"g_{Y}"), mu ** N * V_A ** 2 * V_P ** (N - 1)), \
+            f"chain of {L}: g product"
+        checked += 5
+
+    # the N_M = 0 boundary, where the two forms part company
+    model, e = _pedigree(("z0", "z1"), (), (("z0", "z1"),), "one mating")
+    V_A, V_E, rho_y = (model.sym(v) for v in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    assert eq(e.var("y_z0"), rho_y ** 0 * V_P), "eq:chain-y must survive N_M = 0"
+    assert eq(e.var("g_z0"), V_A), "an individual's own genetic variance is V_A"
+    assert not eq(e.var("g_z0"), rho_y * V_A / V_P * rho_y ** (-1) * V_A), \
+        "eq:chain-g must FAIL at N_M = 0"
+    checked += 3
+    return checked
 
 
 def check_pedigree_sets() -> int:
@@ -1176,11 +1233,16 @@ def check_pedigree_sets() -> int:
       - Mbar^(t)(X,Y) is closed under mating. The tree test counts each member's matings as
         |mu(Z)| - 1, which is only the degree WITHIN the chain if the chain contains every mate
         of every member; without closure that count would silently include outside matings.
-      - the payoff: across the battery, eq:mp-expand is exact **exactly** when the assumption
+      - the payoff: across the battery, the four-term parental sum -- which is eq:chain-weight
+        at N_U = 2 -- is exact **exactly** when the assumption
         holds and t_AB is the parental generation. That is what makes it necessary and
         sufficient rather than merely sufficient.
     """
-    eq = lambda a, b: sp.simplify(sp.together(sp.expand(a - b))) == 0
+    # sp.cancel is the canonical exact test for equality of rational functions, which
+    # is all these covariances are. The obvious sp.simplify(sp.together(sp.expand(...)))
+    # is equivalent but far slower: the expand step inflated one comparison here to
+    # 27k operations and 55 seconds by itself.
+    eq = lambda a, b: sp.cancel(a - b) == 0
     checked = 0
 
     hs_m = (("Q1", "P"), ("P", "Q2"))
@@ -1220,25 +1282,48 @@ def check_pedigree_sets() -> int:
         assert gen["A"] - t_ab == want_up, f"{name}: t_AB is {gen['A']-t_ab} generations up"
         checked += 3
 
-        Mhat = _Mubar(parents, matings, gen, "A", "B", t_ab)
-        # closure under mating, which the tree test depends on
-        assert all(_mu(matings, Z) <= Mhat for Z in Mhat), f"{name}: Mhat not closed under mu"
-        # X in mu(X) in mu^k(X) in M(X), and mu^0 is the singleton
-        for Z in Mhat:
-            assert _mu_pow(matings, Z, 0) == {Z}, f"{name}: mu^0"
-            assert _mu(matings, Z) <= _Mu(matings, Z), f"{name}: mu subset M"
-            assert _mu_pow(matings, Z, len(gen)) == _Mu(matings, Z), f"{name}: mu^k reaches M"
-        checked += 4
-        # N_mu is the fewest steps of mu, for every same-generation pair
-        for x in gen:
-            for y in gen:
-                if gen[x] != gen[y]:
-                    continue
-                steps = next((j for j in range(len(gen) + 1) if y in _mu_pow(matings, x, j)), sp.oo)
-                assert _nmu(matings, x, y) == steps, f"{name}: N_mu({x},{y})"
+        # [No-mating-loops] holds exactly on the pedigrees without a mating cycle. Note double
+        # first cousins PASS it -- their loop runs through descent, not matings -- and are
+        # excluded by the count bullet instead.
+        loopfree = all(_no_mating_loops(matings, Z) for Z in gen)
+        assert loopfree == (name not in ("mating 4-cycle", "cross-remarriage")), \
+            f"{name}: [No-mating-loops] came out {loopfree}"
         checked += 1
 
-        # ---- the payoff: eq:mp-expand exact <=> assumption holds AND t_AB = t_A - 1
+        # ---- the shells: M^(0) is the singleton, they are pairwise disjoint, and M^(n) really
+        # is the set at distance exactly n. Disjointness is the property that makes N_M unique.
+        for Z in list(gen):
+            reach = _Mu(matings, Z)
+            shells = [_Mu_n(matings, Z, n) for n in range(len(gen) + 1)]
+            assert shells[0] == {Z}, f"{name}: M^(0)({Z})"
+            seen = set()
+            for n, sh in enumerate(shells):
+                assert not (sh & seen), f"{name}: shells of {Z} overlap at n={n}"
+                seen |= sh
+                assert all(_nmu(matings, Z, W) == n for W in sh), f"{name}: M^({n})({Z})"
+            assert seen == reach, f"{name}: shells do not exhaust M({Z})"
+            checked += 4
+            # N_M is symmetric, and M(X,Y) is the set strictly inside a shortest chain
+            for W in gen:
+                if gen[W] != gen[Z]:
+                    continue
+                assert _nmu(matings, Z, W) == _nmu(matings, W, Z), f"{name}: N_M asymmetric"
+                N = _nmu(matings, Z, W)
+                pair = _Mu_pair(matings, Z, W)
+                if N is not sp.oo:
+                    assert Z in pair and W in pair, f"{name}: M({Z},{W}) lost an endpoint"
+                    # stopping the union at N-1 would keep X and drop Y -- the off-by-one
+                    short = set().union(*[_Mu_n(matings, Z, n) & _Mu_n(matings, W, N - n)
+                                          for n in range(0, N)]) if N else set()
+                    assert W not in short or Z == W, f"{name}: n<=N-1 unexpectedly kept Y"
+                    # |M(X,Y)| = N_M + 1 exactly when the shortest chain is unique
+                    unique = _n_shortest_chains(matings, Z, W) == 1
+                    assert (len(pair) == N + 1) == unique, \
+                        f"{name}: size identity vs uniqueness for ({Z},{W})"
+            checked += 1
+
+        # ---- the payoff: eq:chain-weight at N_U = 2 is exact <=> assumption holds AND
+        # t_AB = t_A - 1
         model, e = _pedigree(tuple(founders), kids, matings, name)
         V_A, V_E, rho_y = (model.sym(v) for v in ("V_A", "V_E", "rho_y"))
         rho_g = rho_y * V_A / (V_A + V_E)
@@ -1251,240 +1336,7 @@ def check_pedigree_sets() -> int:
                 total += V_A if k == 0 else (0 if k is sp.oo else rho_g * rho_y ** (k - 1) * V_A)
         exact = eq(e.cov("y_A", "y_B"), total / 4)
         assert exact == (holds and gen["A"] - t_ab == 1), \
-            f"{name}: eq:mp-expand exact={exact}, assumption={holds}, up={gen['A']-t_ab}"
-        checked += 1
-    return checked
-
-
-def check_nmu_bar() -> int:
-    """Assert eq:nmu-bar through tab:nmu-classes, and the two boxes that bound them.
-
-    Three claims here are combinatorial rather than model claims, and are asserted on the mating
-    graph directly: that two disjoint couples joined by one chain always give the four distances
-    (k, k+1, k+1, k+2); that the mean is therefore exactly k+1 (it steps up by ONE per additional
-    mating -- not, as one might guess from 1/2, 1, 2, by doubling); and that N_mu-bar >= 2 is the
-    same condition as the two couples being disjoint, which is what lets eq:mp-split-pheno state
-    its side condition in N_mu-bar.
-
-    The rest are model claims checked against pathMgr, including the two that bound the framework:
-
-      - [Shortest-chain]: chains contribute ADDITIVELY, so its error term is exact arithmetic
-        rather than an estimate. Asserted on three multi-chain pedigrees, including the worst
-        case of two equal-length chains where the truth is exactly double what is kept.
-      - the scope limit: when the two couples are joined by DESCENT rather than by matings
-        (first cousins), every N_mu is infinite and eq:mp-expand returns zero against a nonzero
-        truth. A second application of eq:mp-reduce recovers it exactly, which is the claim the
-        closing paragraph makes.
-    """
-    eq = lambda a, b: sp.simplify(sp.together(sp.expand(a - b))) == 0
-    checked = 0
-
-    cases = [("the same couple", ("m", "p"), ("m", "p"),
-              _pedigree(("m", "p"), (("A", "m", "p"), ("B", "m", "p")), (("m", "p"),), "same"),
-              (("m", "p"),)),
-             ("share one parent", ("P", "Q1"), ("P", "Q2"),
-              _pedigree(("P", "Q1", "Q2"), (("A", "P", "Q1"), ("B", "P", "Q2")),
-                        (("Q1", "P"), ("P", "Q2")), "shared"),
-              (("Q1", "P"), ("P", "Q2")))]
-    for k in range(1, 6):
-        ped, matings = _disjoint_couples(k)
-        cases.append((f"disjoint k={k}", ("a1", "a2"), ("b1", "b2"), ped, matings))
-
-    for name, cA, cB, (model, e), matings in cases:
-        V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
-        V_P = V_A + V_E
-        h2, rho_g = V_A / V_P, rho_y * V_A / V_P
-        ds = sorted(_nmu(matings, x, y) for x in cA for y in cB)
-        nbar = sp.Rational(sum(ds), 4)
-        got = e.cov("y_A", "y_B")
-        shared = len(set(cA) & set(cB))
-
-        # eq:nmu-bar-tree, and that N_mu-bar >= 2 iff the couples are disjoint
-        if shared == 0:
-            k = ds[0]
-            assert ds == [k, k + 1, k + 1, k + 2], f"{name}: distances {ds}"
-            assert nbar == k + 1, f"{name}: eq:nmu-bar-tree"
-            assert nbar >= 2, f"{name}: disjoint must give nbar >= 2"
-            checked += 3
-        else:
-            assert nbar < 2, f"{name}: sharing a parent must give nbar < 2"
-            assert nbar == (sp.Rational(1, 2) if shared == 2 else 1), f"{name}: nbar"
-            checked += 2
-
-        # tab:nmu-classes, one row per case
-        row = {2: V_A * (1 + rho_g) / 2,
-               1: V_A * (1 + 2 * rho_g + rho_g * rho_y) / 4,
-               0: V_A * rho_g * rho_y ** (nbar - 2) * (1 + rho_y) ** 2 / 4}[shared]
-        assert eq(got, row), f"{name}: tab:nmu-classes row"
-        checked += 1
-        # eq:nmu-law is that row for every disjoint case, stated in nbar rather than in k
-        if shared == 0:
-            assert eq(got, V_A * rho_g * rho_y ** (nbar - 2) * (1 + rho_y) ** 2 / 4), \
-                f"{name}: eq:nmu-law"
-            checked += 1
-        # the (1-h^2) per shared parent claim: continuing eq:mating-chain down to N_mu = 0 would
-        # pay h^2*V_A where the truth pays V_A, and that gap is the whole difference between the
-        # three rows.
-        assert eq(got, V_A * (h2 * sum(rho_y ** d for d in ds) + shared * (1 - h2)) / 4), \
-            f"{name}: shared-parent correction"
-        checked += 1
-        # eq:mp-split-pheno's side condition, now stated as nbar >= 2
-        mpA = {f"y_{x}": sp.Rational(1, 2) for x in cA}
-        mpB = {f"y_{x}": sp.Rational(1, 2) for x in cB}
-        pheno = h2 * _cov_lc(e, mpA, mpB) * h2
-        assert eq(got, pheno) == (nbar >= 2), f"{name}: eq:mp-split-pheno iff nbar >= 2"
-        checked += 1
-
-    # ---- [Shortest-chain]: chains add, so the approximation's error term is exact.
-    two_chain = (
-        # (name, founders, matings, the chain lengths joining u and v)
-        ("two length-2 chains", ("u", "v", "x", "z"),
-         (("u", "x"), ("x", "v"), ("u", "z"), ("z", "v")), (2, 2)),
-        ("lengths 2 and 3", ("u", "v", "x", "z1", "z2"),
-         (("u", "x"), ("x", "v"), ("u", "z1"), ("z1", "z2"), ("z2", "v")), (2, 3)),
-        ("lengths 1 and 3", ("u", "v", "w1", "w2"),
-         (("u", "v"), ("u", "w1"), ("w1", "w2"), ("w2", "v")), (1, 3)),
-    )
-    for name, founders, matings, ks in two_chain:
-        model, e = _pedigree(founders, (), matings, name)
-        V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
-        rho_g = rho_y * V_A / (V_A + V_E)
-        got = e.cov("g_u", "g_v")
-        assert eq(got, V_A * sum(rho_g * rho_y ** (j - 1) for j in ks)), f"{name}: chains add"
-        # the fraction [Shortest-chain] drops
-        k1, k2 = min(ks), max(ks)
-        kept = V_A * rho_g * rho_y ** (k1 - 1)
-        assert eq((got - kept) / got, rho_y ** (k2 - k1) / (1 + rho_y ** (k2 - k1))), \
-            f"{name}: dropped fraction"
-        checked += 2
-    # ---- the scope limit: couples joined by DESCENT, not by matings (first cousins).
-    # b1,b2 are siblings; b1 marries w1 and b2 marries w2; A and B are their children.
-    matings = (("G1", "G2"), ("b1", "w1"), ("b2", "w2"))
-    model, e = _pedigree(("G1", "G2", "w1", "w2"),
-                         (("b1", "G1", "G2"), ("b2", "G1", "G2"),
-                          ("A", "b1", "w1"), ("B", "b2", "w2")), matings, "first cousins")
-    got = e.cov("y_A", "y_B")
-    assert all(_nmu(matings, x, y) is sp.oo for x in ("b1", "w1") for y in ("b2", "w2")), \
-        "cousins: every cross pair must be unreachable by matings"
-    assert got != 0, "cousins: the truth is not zero"
-    checked += 2
-    # eq:mp-reduce applied once, then again at each parent, recovers it exactly
-    assert eq(got, _cov_lc(e, _mp("g", "b1", "w1"), _mp("g", "b2", "w2"))), "cousins: level 1"
-    recursed = (_cov_lc(e, _mp("g", "G1", "G2"), _mp("g", "b2", "w2"))
-                + _cov_lc(e, {"g_w1": 1}, _mp("g", "b2", "w2"))) / 2
-    assert eq(got, recursed), "cousins: level 2"
-    checked += 2
-    return checked
-
-
-def check_mean_parent() -> int:
-    """Assert eq:mean-parent through eq:mp-expand, plus the two claims that bound them.
-
-    The two bounding claims are the ones worth stating as assertions rather than as prose, because
-    each is a place where a plausible-looking statement is false:
-
-      - eq:mp-reduce holds only where BOTH e_A and eps_A drop out. Against a proband's own MATE it
-        fails, since assortment matched them on the whole phenotype; that failure is asserted, not
-        just described.
-      - eq:mp-split-pheno, the form with mean-parent PHENOTYPES and two factors of h^2, is exact
-        when the two couples are disjoint and false when they share a parent. Both directions are
-        asserted on real pedigrees, so the side condition in the text is pinned rather than hoped.
-    """
-    eq = lambda a, b: sp.simplify(sp.together(sp.expand(a - b))) == 0
-    checked = 0
-
-    # ---- eq:mean-parent-var, eq:g-partition and tab:mean-parent-cov, on the figure they are
-    # read off (fig:g-only) rather than on a rebuilt copy of it.
-    model = g_only_pair_offspring()
-    e = pm.RAMEngine(model)
-    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
-    V_P = V_A + V_E
-    h2, rho_g = V_A / V_P, rho_y * V_A / V_P
-    G, Y = _mp("g", "m", "p"), _mp("y", "m", "p")
-    # e_mp = y_mp - g_mp, which is what eq:mean-parent asserts by writing y_mp = g_mp + e_mp
-    E = {**{k: sp.Rational(1, 2) for k in ("y_m", "y_p")},
-         **{k: sp.Rational(-1, 2) for k in ("g_m", "g_p")}}
-
-    assert eq(_cov_lc(e, G, G), V_A * (1 + rho_g) / 2), "Var[g_mp]"
-    assert eq(_cov_lc(e, Y, Y), V_P * (1 + rho_y) / 2), "Var[y_mp]"
-    assert eq(_cov_lc(e, G, Y), V_A * (1 + rho_y) / 2), "Cov[g_mp,y_mp]"
-    assert eq(_cov_lc(e, E, G), V_A * (rho_y - rho_g) / 2), "Cov[e_mp,g_mp]"
-    checked += 4
-    # tab:mean-parent-cov, all four covariance cells. The two right-hand columns are equal
-    # because e_o is exogenous; promoting the mean-parent is what changes rho_g into rho_y.
-    for z in ("g_o1", "y_o1"):
-        assert eq(_cov_lc(e, G, {z: 1}), V_A * (1 + rho_g) / 2), f"Cov[g_mp,{z}]"
-        assert eq(_cov_lc(e, Y, {z: 1}), V_A * (1 + rho_y) / 2), f"Cov[y_mp,{z}]"
-        checked += 2
-    # eq:g-transmit-mp, in the only two forms that can be checked without naming eps_o:
-    # the mean-parent's genetic variance IS its covariance with the child, and adding the
-    # residual returns V_A (eq:g-partition).
-    assert eq(_cov_lc(e, G, {"g_o1": 1}), _cov_lc(e, G, G)), "eq:g-transmit-mp"
-    assert eq(_cov_lc(e, G, G) + V_A * (1 - rho_g) / 2, V_A), "eq:g-partition"
-    # the mid-parent regression is h^2 exactly, with no residual rho_y
-    assert eq(_cov_lc(e, Y, {"y_o1": 1}) / _cov_lc(e, Y, Y), h2), "midparent regression"
-    checked += 3
-    # eq:mp-reduce FAILS against a proband's own mate, which is half of its side condition.
-    # o1 has no mate in fig:g-only, so this is asserted where a mate exists: m against p.
-    assert not eq(e.cov("y_m", "y_p"), _cov_lc(e, _mp("g", "m", "p"), {"y_p": 1})), \
-        "eq:mp-reduce must fail against a mate"
-    checked += 1
-
-    # ---- eq:mp-reduce, eq:mp-split, eq:mating-chain, eq:mp-expand and eq:mp-split-pheno,
-    # across the sibling classes of tab:nmu-classes and two longer mating chains.
-    half_matings = (("Q1", "P"), ("P", "Q2"))
-    chain_matings = tuple((f"p{i}", f"p{i+1}") for i in range(1, 6))
-    cases = (
-        ("full sibs (tab:nmu-classes r1)", V_A * (2 + 2 * rho_g) / 4,
-         _pedigree(("m", "p"), (("o1", "m", "p"), ("o2", "m", "p")), (("m", "p"),), "full sibs"),
-         (("m", "p"),), ("o1", "m", "p"), ("o2", "m", "p")),
-        ("half sibs (tab:nmu-classes r2)", V_A * (1 + 2 * rho_g + rho_g * rho_y) / 4,
-         _pedigree(("P", "Q1", "Q2"), (("A", "P", "Q1"), ("B", "P", "Q2")), half_matings,
-                   "half sibs"),
-         half_matings, ("A", "P", "Q1"), ("B", "P", "Q2")),
-        ("half sibs on fig:step-sib", V_A * (1 + 2 * rho_g + rho_g * rho_y) / 4,
-         step_sib_pedigree(), STEP_SIB_MATINGS, ("o1", "p1", "p2"), ("o3", "p2", "p3")),
-        ("step sibs (tab:nmu-classes r3)", V_A * rho_g * (1 + rho_y) ** 2 / 4,
-         step_sib_pedigree(), STEP_SIB_MATINGS, ("o1", "p1", "p2"), ("o2", "p3", "p4")),
-        # a five-mating chain, so eq:mating-chain is exercised past the counts in the figures
-        ("N_mu = 3 chain", V_A * rho_g * rho_y ** 2 * (1 + rho_y) ** 2 / 4,
-         _pedigree(tuple(f"p{i}" for i in range(1, 7)),
-                   (("A", "p1", "p2"), ("B", "p5", "p6")), chain_matings, "long chain"),
-         chain_matings, ("A", "p1", "p2"), ("B", "p5", "p6")),
-    )
-
-    for name, want, (model, e), matings, (A, mA, pA), (B, mB, pB) in cases:
-        GA, GB = _mp("g", mA, pA), _mp("g", mB, pB)
-        YA, YB = _mp("y", mA, pA), _mp("y", mB, pB)
-        got = e.cov(f"y_{A}", f"y_{B}")
-        # eq:mp-reduce, at every admissible Z the pedigree offers on B's side
-        for z in (f"y_{B}", f"g_{B}", f"y_{mB}", f"g_{mB}", f"y_{pB}", f"g_{pB}"):
-            assert eq(e.cov(f"y_{A}", z), _cov_lc(e, GA, {z: 1})), f"{name}: reduce y_A vs {z}"
-            assert eq(e.cov(f"g_{A}", z), _cov_lc(e, GA, {z: 1})), f"{name}: reduce g_A vs {z}"
-            checked += 2
-        # eq:mp-split
-        assert eq(got, _cov_lc(e, GA, GB)), f"{name}: eq:mp-split"
-        assert eq(got, e.cov(f"g_{A}", f"g_{B}")), f"{name}: g and y ends agree"
-        checked += 2
-        # eq:mating-chain, one cross pair at a time, and then eq:mp-expand over the four
-        total = 0
-        for x in (mA, pA):
-            for y in (mB, pB):
-                k = _nmu(matings, x, y)
-                f = 1 if k == 0 else (0 if k is sp.oo else rho_g * rho_y ** (k - 1))
-                assert eq(e.cov(f"g_{x}", f"g_{y}"), f * V_A), \
-                    f"{name}: eq:mating-chain ({x},{y}) at N_mu = {k}"
-                total += f
-                checked += 1
-        assert eq(got, V_A * total / 4), f"{name}: eq:mp-expand"
-        assert eq(got, want), f"{name}: closed form"
-        checked += 2
-        # eq:mp-split-pheno: exact for disjoint couples, and FALSE when they share a parent.
-        pheno = h2 * _cov_lc(e, YA, YB) * h2
-        if {mA, pA} & {mB, pB}:
-            assert not eq(got, pheno), f"{name}: eq:mp-split-pheno must fail (shared parent)"
-        else:
-            assert eq(got, pheno), f"{name}: eq:mp-split-pheno"
+            f"{name}: four-term sum exact={exact}, assumption={holds}, up={gen['A']-t_ab}"
         checked += 1
     return checked
 
@@ -1505,10 +1357,10 @@ _DX = 3.8
 STEP_SIB_LAYOUT = Layout({
     **{f"y_{w}": (_DX * i, 5.2) for i, w in enumerate(STEP_SIB_PARENTS)},
     **{f"g_{w}": (_DX * i, 3.4) for i, w in enumerate(STEP_SIB_PARENTS)},
-    "g_o3": (1.5 * _DX, 1.8),
-    "y_o3": (1.5 * _DX, 0.0),
-    "g_o1": (_DX / 2, 1.8), "g_o2": (2.5 * _DX, 1.8),
-    "y_o1": (_DX / 2, 0.0), "y_o2": (2.5 * _DX, 0.0),
+    "g_F": (1.5 * _DX, 1.8),
+    "y_F": (1.5 * _DX, 0.0),
+    "g_E": (_DX / 2, 1.8), "g_G": (2.5 * _DX, 1.8),
+    "y_E": (_DX / 2, 0.0), "y_G": (2.5 * _DX, 0.0),
 })
 
 
@@ -1528,7 +1380,7 @@ def check_step_sib_figure() -> int:
     # the pedigree is at equilibrium: every genetic value has variance V_A, every phenotype V_P.
     # The children are the real test -- their variance is 1/2+1/2 plus eq:g-seg-var, and it only
     # comes out at V_A because the parents were mates rather than independent.
-    for w in STEP_SIB_PARENTS + ("o1", "o2", "o3"):
+    for w in STEP_SIB_PARENTS + ("E", "G", "F"):
         assert sp.simplify(e.var(f"g_{w}") - V_A) == 0, f"Var[g_{w}]"
         assert sp.simplify(e.var(f"y_{w}") - V_P) == 0, f"Var[y_{w}]"
         checked += 2
@@ -1537,35 +1389,35 @@ def check_step_sib_figure() -> int:
     for a, b in STEP_SIB_MATINGS:
         assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - rho_g * V_A) == 0, f"n=1 {a},{b}"
         checked += 1
-    # n = 2: two people who share a mate. p1 and p3 share p2; p2 and p4 share p3.
-    for a, b in (("p1", "p3"), ("p2", "p4")):
+    # n = 2: two people who share a mate. A and C share B; B and D share C.
+    for a, b in (("A", "C"), ("B", "D")):
         assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - rho_g * rho_y * V_A) == 0, f"n=2 {a},{b}"
         checked += 1
     # n = 3: the two outermost parents, connected by the whole chain of three matings
-    assert sp.simplify(e.cov("g_p1", "g_p4") - rho_g * rho_y**2 * V_A) == 0, "n=3 p1,p4"
+    assert sp.simplify(e.cov("g_A", "g_D") - rho_g * rho_y**2 * V_A) == 0, "n=3 A,D"
     checked += 1
 
-    # the step-siblings themselves: an in-law pair at N_m = 2, per the in-law row of
-    # tab:degree-classes
+    # the step-siblings themselves: the step-sibling row of tab:relationship-classes
     inlaw = h2 * rho_g * ((1 + rho_y) / 2) ** 2
-    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - inlaw) == 0, "step-sibs"
+    assert sp.simplify(e.cov("y_E", "y_G") / V_P - inlaw) == 0, "step-sibs"
     checked += 1
     # and they are NOT what the plain degree law would give at d = 2, which is the point of the
     # class existing at all
-    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - h2 * ((1 + rho_g) / 2) ** 2) != 0
+    assert sp.simplify(e.cov("y_E", "y_G") / V_P - h2 * ((1 + rho_g) / 2) ** 2) != 0
     checked += 1
 
-    # The middle child makes two HALF-SIBLING pairs: o3 shares p2 with o1 and p3 with o2. These
-    # are what the n=2 pairs above are for -- (p1,p3) are the non-shared parents of (o1,o3), and
-    # (p2,p4) of (o2,o3) -- so asserting both here ties the mating count to the class it prices.
+    # The middle child makes two HALF-SIBLING pairs: F shares B with E and C with G. These
+    # are what the n=2 pairs above are for -- (A,C) are the non-shared parents of (E,F), and
+    # (B,D) of (G,F) -- so asserting both here ties the mating count to the class it prices.
     half = h2 * ((1 + rho_g) / 2) ** 2 * (1 + 2 * rho_g + rho_y * rho_g) / (1 + rho_g) ** 2
-    for a, b, unshared in (("o1", "o3", ("p1", "p3")), ("o3", "o2", ("p2", "p4"))):
+    for a, b, unshared in (("E", "F", ("A", "C")), ("F", "G", ("B", "D"))):
         assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - half) == 0, f"half-sibs {a},{b}"
         # What the half-relative multiplier is worth, exactly. The plain degree law does not treat
         # the unshared parents as unrelated -- it implicitly gives them rho_g^2 V_A, the value they
         # would have if separated by two GENETIC legs. The excess is therefore the difference
         # between their true n=2 covariance and that, carried down one meiosis each (the 1/4).
-        # This is the half turn factor of eq:turn-K stated as an equation: replace rho_g*rho_y by
+        # This is the half turn factor of the retired K framework, stated as an equation:
+        # replace rho_g*rho_y by
         # rho_g^2 and the excess is zero, i.e. the half factor collapses onto the full one.
         plain = h2 * ((1 + rho_g) / 2) ** 2
         excess = sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - plain)
@@ -1573,19 +1425,19 @@ def check_step_sib_figure() -> int:
         assert sp.simplify(excess - (true_n2 - rho_g**2 * V_A) / (4 * V_P)) == 0, \
             f"half-sib excess is the n=2 chain's departure from rho_g^2, {a},{b}"
         checked += 2
-    # o1 and o2 are still step-siblings, not half-siblings: no shared parent, so their value is
+    # E and G are still step-siblings, not half-siblings: no shared parent, so their value is
     # the in-law form above and not `half`. Pinned so a re-wiring cannot make them siblings.
-    assert sp.simplify(e.cov("y_o1", "y_o2") / V_P - half) != 0, "o1,o2 must not be half-sibs"
+    assert sp.simplify(e.cov("y_E", "y_G") / V_P - half) != 0, "E,G must not be half-sibs"
     checked += 1
 
-    # A step-PARENT pair: p3 is mated to o1's parent p2 but is not o1's parent. This is the
+    # A step-PARENT pair: C is mated to E's parent B but is not E's parent. This is the
     # N_m = 1 case that the in-law row excludes, and it is worth pinning because it confirms
     # WHY the exclusion is there. One side of the connecting mating has a step and the other has
     # none, so exactly ONE factor of (1+rho_y)/2 appears -- not the two of the in-law row. That is
-    # the p_i of eq:segment-full, and the count of
+    # the p_i of the retired segment law, and the count of
     # those factors is the number of sides carrying at least one step, which is what makes
     # dtilde = 2 the smallest case with the symmetric squared form.
-    for kid, step_parent in (("o1", "p3"), ("o2", "p2")):
+    for kid, step_parent in (("E", "C"), ("G", "B")):
         expected = rho_g * V_A * (1 + rho_y) / 2
         assert sp.simplify(e.cov(f"g_{kid}", f"g_{step_parent}") - expected) == 0, \
             f"step-parent {kid},{step_parent}"
@@ -1596,8 +1448,464 @@ def check_step_sib_figure() -> int:
     return checked
 
 
+# ----------------------------------------------------------------------------------------------
+# Section 2.3.4: the worked example path. Four mating chains joined by three lineal chains -- the
+# smallest pedigree that shows BOTH ways a path can meet a mating chain, which is the whole point
+# of the figure:
+#
+#   * M(D,F) = (D, E, F) is met at a SINGLE individual on each side, because on both sides the
+#     chain member is the *descendant* of its lineal chain (A is above D, I is above F).
+#   * M(I,L) = (I, J, K, L) carries a COUPLE at each of its ends, because there the chain member
+#     is the *ancestor* of its lineal chain -- I and J are both parents of H, K and L both of B.
+#     This is the mean-parent device of eq:mean-parent, and it is forced by the text's rule that
+#     a path ascending into a mating chain must use the chain containing BOTH parents, hence
+#     begin at the outer one.
+#
+# This figure is drawn rather than rendered from a pathMgr model: a path diagram carries one node
+# per *variable*, and what the text needs here is one node per *individual*. The pedigree is
+# nonetheless built as a pathMgr model in check_path_example, so the wiring the picture shows and
+# the algebra the text states are checked against each other.
+# ----------------------------------------------------------------------------------------------
+
+#: (name, x, y, on-the-path) per individual. Generations run DOWN the page, oldest at the top, and
+#: every child sits at the exact midpoint of its two parents -- which is what keeps all twelve
+#: transmission edges short, uncrossed, and readable without labels.
+PATH_EX_NODES = (
+    ("I", 5.50, 4.50, True),   ("J", 6.50, 4.50, True),
+    ("K", 8.00, 4.50, True),   ("L", 9.50, 4.50, True),
+    ("A", 0.00, 3.00, True),   ("M", 2.00, 3.00, False),
+    ("N", 5.00, 3.00, False),  ("H", 6.00, 3.00, True),
+    ("B", 8.75, 3.00, True),
+    ("C", 1.00, 1.50, True),   ("O", 3.00, 1.50, False),
+    ("P", 4.50, 1.50, False),  ("G", 5.50, 1.50, True),
+    ("D", 2.00, 0.00, True),   ("E", 3.50, 0.00, True),
+    ("F", 5.00, 0.00, True),
+)
+PATH_EX_FOUNDERS = ("A", "M", "O", "P", "N", "I", "J", "K", "L", "E")
+PATH_EX_KIDS = (("C", "A", "M"), ("D", "C", "O"), ("H", "I", "J"),
+                ("G", "H", "N"), ("F", "G", "P"), ("B", "K", "L"))
+PATH_EX_MATINGS = (("A", "M"), ("C", "O"), ("G", "P"), ("H", "N"),
+                   ("I", "J"), ("J", "K"), ("K", "L"), ("D", "E"), ("E", "F"))
+#: the generation row labels, top to bottom, keyed on the y of the row
+PATH_EX_GENERATIONS = ((4.50, "t"), (3.00, "t+1"), (1.50, "t+2"), (0.00, "t+3"))
+
+#: An individual is ON the path exactly when the path's own list of chains names them: the three
+#: lineal chains L(A,D), L(F,I) and L(L,B), and the two mating chains M(D,F) and M(I,L). The four
+#: unhighlighted people are the mates no chain names. They are drawn because the text asks for
+#: both parents of everyone on a lineal chain, and they are NOT highlighted because their
+#: contribution is not a separate term -- it is the rho inside the transmission coefficient.
+PATH_EX_ON_PATH = frozenset(n for n, _, _, on in PATH_EX_NODES if on)
+
+#: The edges the path's chains actually TRAVERSE, which is not the same as the edges joining two
+#: highlighted people. A lineal chain ascends into a mating chain through the OUTER parent alone,
+#: so J -> H and K -> B are left cold even though J, K, H and B are all on the path: J and K are
+#: reached along the mating chain, not by a meiosis. Their contribution is the inner-parent term
+#: inside w, not a step of the path -- which is exactly what the figure should show.
+PATH_EX_EDGES = frozenset({
+    ("A", "C"), ("C", "D"),                     # L(A,D), descending
+    ("I", "H"), ("H", "G"), ("G", "F"),         # L(F,I), ascending through the outer parent I
+    ("L", "B"),                                 # L(L,B), descending from the outer parent L
+    ("D", "E"), ("E", "F"),                     # M(D,F)
+    ("I", "J"), ("J", "K"), ("K", "L"),         # M(I,L)
+})
+
+
+def path_example_pedigree() -> str:
+    """The bare tikzpicture for the worked example path.
+
+    Highlighted edges are exactly the ones the path's chains traverse, PATH_EX_EDGES.
+    """
+    on = PATH_EX_ON_PATH
+    out = [
+        r"\definecolor{pmCPath9}{HTML}{999999}",
+        r"\definecolor{pmCPathR}{HTML}{B03A2E}",
+        r"\definecolor{pmCPathB}{HTML}{1F77B4}",
+        r"\begin{tikzpicture}[",
+        r"  every node/.style={font=\small},",
+        r"  pmPerson/.style={draw=black, fill=pmCPathB!12, circle, inner sep=0.04cm,",
+        r"                   minimum size=0.60cm},",
+        r"  pmPersonOff/.style={draw=pmCPath9, text=pmCPath9, fill=white, circle,",
+        r"                      inner sep=0.04cm, minimum size=0.60cm},",
+        r"  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.9pt},",
+        r"  pmDirectedOff/.style={-{Stealth[length=1.7mm]}, line width=0.7pt, draw=pmCPath9},",
+        r"  pmCopath/.style={line width=1.6pt, draw=pmCPathR},",
+        r"  pmCopathOff/.style={line width=1.6pt, draw=pmCPath9},",
+        r"  pmGen/.style={font=\footnotesize, text=pmCPath9, anchor=east},",
+        r"]",
+    ]
+    for y, lab in PATH_EX_GENERATIONS:
+        out.append(rf"  \node[pmGen] at (-0.700,{y:.3f}) {{${lab}$}};")
+    for name, x, y, is_on in PATH_EX_NODES:
+        style = "pmPerson" if is_on else "pmPersonOff"
+        out.append(rf"  \node[{style}] ({name}) at ({x:.3f},{y:.3f}) {{${name}$}};")
+    for child, a, b in PATH_EX_KIDS:
+        for parent in (a, b):
+            live = (parent, child) in PATH_EX_EDGES
+            out.append(rf"  \draw[{'pmDirected' if live else 'pmDirectedOff'}] "
+                       rf"({parent}) -- ({child});")
+    for a, b in PATH_EX_MATINGS:
+        live = (a, b) in PATH_EX_EDGES or (b, a) in PATH_EX_EDGES
+        out.append(rf"  \draw[{'pmCopath' if live else 'pmCopathOff'}] ({a}) -- ({b});")
+    out.append(r"\end{tikzpicture}")
+    return "\n".join(out)
+
+
+def check_path_example() -> int:
+    """Assert what the example figure and its surrounding text claim about this pedigree.
+
+    The payoff is the last block: the whole covariance between the two probands is the PRODUCT of
+    one factor per chain, with the two mating chains contributing in the two different ways the
+    figure is drawn to show. That product is the thing the next subsection states, so it is
+    checked here against pathMgr rather than trusted.
+    """
+    model, e = _pedigree(PATH_EX_FOUNDERS, PATH_EX_KIDS, PATH_EX_MATINGS, "path example")
+    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    rho_g = rho_y * V_A / V_P
+    lam_g, lam_y = (1 + rho_g) / 2, (1 + rho_y) / 2
+    # sp.cancel is the canonical exact test for equality of rational functions, which is all
+    # these covariances are.
+    eq = lambda a, b: sp.cancel(a - b) == 0
+    checked = 0
+
+    everyone = [n for n, _, _, _ in PATH_EX_NODES]
+    assert sorted(everyone) == sorted(PATH_EX_FOUNDERS + tuple(k for k, _, _ in PATH_EX_KIDS)), \
+        "the drawn nodes and the modelled pedigree are not the same people"
+
+    # equilibrium, so the picture may be read anywhere: every genetic value carries V_A and every
+    # phenotype V_P, children included.
+    for w in everyone:
+        assert eq(e.var(f"g_{w}"), V_A), f"Var[g_{w}]"
+        assert eq(e.var(f"y_{w}"), V_P), f"Var[y_{w}]"
+        checked += 2
+
+    # -- the pedigree is the one the text describes --------------------------------------------
+    assert _no_mating_loops(PATH_EX_MATINGS, "I"), "[No-mating-loops] fails at I"
+    for w in everyone:
+        assert _no_mating_loops(PATH_EX_MATINGS, w), f"[No-mating-loops] fails at {w}"
+        checked += 1
+    # M_2 is crossed in two matings, and A and B are in the same generation
+    assert _nmu(PATH_EX_MATINGS, "D", "F") == 2, "N_mu(D,F)"
+    # The drawn rows ARE the generations: read t_X off each node's y, hand the founders' rows to
+    # _generations, and let it derive the children's. Its own [Discrete-generations] assertion --
+    # that a child's two parents sit in one generation -- then tests the layout, and comparing
+    # what it derives against the drawn rows tests the rest. Six founders here are married-in and
+    # so do NOT sit at the root, which is exactly the case the dict form exists for.
+    row = {name: i for i, (y, _) in enumerate(PATH_EX_GENERATIONS)
+           for name, _, ny, _ in PATH_EX_NODES if ny == y}
+    assert len(row) == len(PATH_EX_NODES), "two individuals drawn at one coordinate"
+    gen = _generations({f: row[f] for f in PATH_EX_FOUNDERS}, PATH_EX_KIDS)
+    for name in everyone:
+        assert gen[name] == row[name], f"{name} is drawn in the wrong row"
+        checked += 1
+    assert gen["A"] == gen["B"], "A and B should sit in the same generation"
+    checked += 1
+    # every individual on a lineal chain has both parents drawn, except that chain's oldest
+    parents = {c: (a, b) for c, a, b in PATH_EX_KIDS}
+    for chain in (("A", "C", "D"), ("I", "H", "G", "F"), ("L", "B")):
+        for younger in chain[1:]:
+            assert younger in parents, f"{younger} is on a lineal chain with no parents drawn"
+            checked += 1
+        assert chain[0] not in parents, f"{chain[0]} is the oldest on its chain and needs no parents"
+        checked += 1
+
+    # -- highlighting: the drawn edges are exactly the ones the chain list traverses -----------
+    # Every highlighted edge must be a real edge of the pedigree, must join two highlighted
+    # people, and must be walked by one of the five chains; and the two edges that join
+    # highlighted people WITHOUT being walked -- J -> H and K -> B, the inner parents -- must be
+    # absent. That last clause is the one the figure was redrawn for.
+    real = {(par, kid) for kid, a, b in PATH_EX_KIDS for par in (a, b)}
+    real |= set(PATH_EX_MATINGS) | {(b, a) for a, b in PATH_EX_MATINGS}
+    assert PATH_EX_EDGES <= real, PATH_EX_EDGES - real
+    for a, b in PATH_EX_EDGES:
+        assert a in PATH_EX_ON_PATH and b in PATH_EX_ON_PATH, (a, b)
+        checked += 1
+    walked = {("A", "C"), ("C", "D")} | {("I", "H"), ("H", "G"), ("G", "F")} | {("L", "B")}
+    walked |= {("D", "E"), ("E", "F"), ("I", "J"), ("J", "K"), ("K", "L")}
+    assert PATH_EX_EDGES == walked, PATH_EX_EDGES ^ walked
+    assert ("J", "H") not in PATH_EX_EDGES and ("K", "B") not in PATH_EX_EDGES, \
+        "the inner parents must not be drawn as steps of the path"
+    checked += 2
+
+    # -- the covariance is a product of one factor per chain -----------------------------------
+    # Chain-by-chain, left to right:
+    #   lambda^2         A down two meioses to D, a SINGLE entry (A is the ancestor, D is not)
+    #   rho_g rho_y      M_2 at N_mu = 2, single entry at each end            [eq:chain-g]
+    #   lambda_g^2       F up to H, two of the three meioses; the third is inside the entry sum
+    #   entry            the couple {I,J} against the couple {K,L}     [eq:chain-weight]
+    # and the entry sum is the four-term sum over the couples' cross mating distances, which is
+    # eq:chain-weight-cases at N_S = 0, N_U = 2, N_mu = 3.
+    c = lambda n: V_A if n == 0 else rho_g * rho_y ** (n - 1) * V_A
+    cross = {("J", "K"): 1, ("I", "K"): 2, ("J", "L"): 2, ("I", "L"): 3}
+    for (x, y), n in cross.items():
+        assert _nmu(PATH_EX_MATINGS, x, y) == n, f"N_mu({x},{y})"
+        checked += 1
+    entry = sum(sp.Rational(1, 4) * c(n) for n in cross.values())
+    assert eq(entry, rho_g * lam_y ** 2 * V_A), "the four-term entry sum is not rho_g (1+rho_y)^2/4"
+    checked += 1
+
+    core = (rho_g * rho_y) * lam_g ** 2 * entry
+    for a, b, want in (("g_A", "g_B", lam_g ** 2 * core), ("g_A", "y_B", lam_g ** 2 * core),
+                       ("y_A", "g_B", lam_y * lam_g * core), ("y_A", "y_B", lam_y * lam_g * core)):
+        assert eq(e.cov(a, b), want), f"path product for Cov[{a},{b}]"
+        checked += 1
+    # B's level does not move the covariance and A's does: A is the ancestor of its own lineal
+    # chain and B is the descendant of its, which is the whole up-versus-down asymmetry.
+    assert eq(e.cov("g_A", "g_B"), e.cov("g_A", "y_B")), "B's level should not matter"
+    assert not eq(e.cov("g_A", "g_B"), e.cov("y_A", "g_B")), "A's level should matter"
+    checked += 2
+
+    # and the naive reading -- one route through the J-K mating, three separate meioses up and
+    # one down -- is NOT the answer. It misses by exactly the couple bookkeeping, (lambda_g/lambda_y)^2,
+    # so a figure drawn with single entries on M_3 would state something false.
+    naive = lam_g ** 2 * (rho_g * rho_y) * lam_g ** 3 * rho_g * lam_g * V_A
+    assert eq(sp.cancel(naive / e.cov("g_A", "g_B")), lam_g ** 2 / lam_y ** 2), "naive-route gap"
+    checked += 1
+
+    return checked
+
+# ----------------------------------------------------------------------------------------------
+# Section 2.3.5: the path-coefficient product. This is the check of the section's payload --
+# eq:path-product, eq:chain-weight, eq:chain-weight-cases, eq:proband-correction and
+# eq:path-product-pheno -- written here exactly as the document states them and evaluated against
+# pathMgr on a pedigree carrying every standard relationship class.
+#
+# The point of doing it class by class rather than on one big pedigree: the formula has to land on
+# the classical results (full sibs and parent-offspring both at (1+rho_g)/2, uncle-nephew and
+# grandparent both at its square) from different rows of the case split, and those coincidences
+# are the evidence that the general machinery is right rather than tuned.
+# ----------------------------------------------------------------------------------------------
+
+#: m--p mated with kids a, b (full sibs); p also mated q, giving h (half sib of a and b); q also
+#: mated r, giving s (step sib); a, b, h, s each mate out to give A, B, H2, S; and cx--cy give cw,
+#: who mates a -- so m and cx are the two grandparents of a couple's child, i.e. co-parents-in-law.
+PATH_CLS_FOUNDERS = ("m", "p", "q", "r", "ax", "bx", "hx", "sx", "cx", "cy")
+PATH_CLS_KIDS = (("a", "m", "p"), ("b", "m", "p"), ("h", "p", "q"), ("s", "q", "r"),
+                 ("A", "a", "ax"), ("B", "b", "bx"), ("H2", "h", "hx"), ("S", "s", "sx"),
+                 ("cw", "cx", "cy"))
+PATH_CLS_MATINGS = (("m", "p"), ("p", "q"), ("q", "r"), ("a", "ax"), ("b", "bx"),
+                    ("h", "hx"), ("s", "sx"), ("cx", "cy"), ("a", "cw"))
+
+#: (name, probands, [N_L per lineal chain], [(N_mu, N_U) per mating chain], C-kind per proband).
+#: A C-kind is where the proband sits: the young or old end of a lineal chain, or on a mating
+#: chain -- the three cases of eq:proband-correction.
+PATH_CLS_CASES = (
+    ("mates",             ("m", "p"),   (),      ((1, 0),),                 ("mating", "mating")),
+    ("parent-offspring",  ("m", "a"),   (1,),    (),                        ("old", "young")),
+    ("grandparent",       ("m", "A"),   (2,),    (),                        ("old", "young")),
+    ("full sibs",         ("a", "b"),   (1, 1),  ((1, 2),),                 ("young", "young")),
+    ("half sibs",         ("a", "h"),   (1, 1),  ((2, 2),),                 ("young", "young")),
+    ("step sibs",         ("a", "s"),   (1, 1),  ((3, 2),),                 ("young", "young")),
+    ("uncle-nephew",      ("a", "B"),   (1, 2),  ((1, 2),),                 ("young", "young")),
+    ("first cousins",     ("A", "B"),   (2, 2),  ((1, 2),),                 ("young", "young")),
+    ("half cousins",      ("A", "H2"),  (2, 2),  ((2, 2),),                 ("young", "young")),
+    ("step cousins",      ("A", "S"),   (2, 2),  ((3, 2),),                 ("young", "young")),
+    ("step-child",        ("m", "h"),   (1,),    ((2, 1),),                 ("mating", "young")),
+    ("mother-in-law",     ("ax", "m"),  (1,),    ((1, 0),),                 ("mating", "old")),
+    ("co-parents-in-law", ("m", "cx"),  (1, 1),  ((1, 0),),                 ("old", "old")),
+    ("spouses of sibs",   ("ax", "bx"), (1, 1),  ((1, 0), (1, 2), (1, 0)),  ("mating", "mating")),
+)
+
+
+def check_path_formula() -> int:
+    """Assert eq:path-product and everything it is assembled from."""
+    model, e = _pedigree(PATH_CLS_FOUNDERS, PATH_CLS_KIDS, PATH_CLS_MATINGS, "path classes")
+    V_A, V_E, rho_y = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
+    V_P = V_A + V_E
+    h2 = V_A / V_P
+    rho_g = rho_y * h2
+    # the document writes these out rather than naming them; the two transmission coefficients
+    lam_g, lam_y = (1 + rho_g) / 2, (1 + rho_y) / 2
+    eq = lambda x, y: sp.cancel(x - y) == 0
+    checked = 0
+
+    # -- eq:chain-weight -----------------------------------------------------------------------
+    c = lambda n: sp.Integer(1) if n == 0 else rho_g * rho_y ** (n - 1)
+    def w(N, U):
+        return sum(sp.binomial(U, s) * c(abs(N - s)) for s in range(U + 1)) / 2 ** U
+
+    # -- eq:chain-weight-cases, and N_S = max(0, N_U + 1 - N_mu) as the text's three cases ------
+    def w_cases(N, U):
+        N_S = max(0, U + 1 - N)
+        if N_S == 2:
+            return lam_g
+        if N_S == 1:
+            return (1 + 2 * rho_g + rho_g * rho_y) / 4
+        return rho_g * rho_y ** (N - 1 - U) * lam_y ** U
+    # the two forms agree everywhere the case form is defined, and the third case is exactly the
+    # binomial theorem -- which is why it needs N_mu >= N_U + 1 and the first two exist at all
+    for U in (0, 1, 2):
+        for N in range(1, 7):
+            if max(0, U + 1 - N) == 1 and U == 1:
+                continue  # N_mu = N_U = 1 is a meiosis, absorbed into a lineal chain
+            assert eq(w(N, U), w_cases(N, U)), f"w({N},{U}) case form"
+            checked += 1
+        for N in range(U + 1, 7):
+            assert eq(w(N, U), rho_g * rho_y ** (N - 1 - U) * lam_y ** U), f"w({N},{U}) closed"
+            checked += 1
+
+    # -- eq:proband-correction -----------------------------------------------------------------
+    C = {"young": sp.Integer(1), "old": (1 + rho_y) / (1 + rho_g), "mating": rho_y / rho_g}
+    assert eq(C["mating"], 1 / h2), "C for a proband on a mating chain should be 1/h^2"
+    checked += 1
+
+    # -- eq:path-product, class by class -------------------------------------------------------
+    for name, (X, Y), lineals, matings, kinds in PATH_CLS_CASES:
+        # the declared N_mu of each mating chain has to be the pedigree's own
+        want = V_A * lam_g ** (sum(lineals) - sum(U for _, U in matings))
+        for N, U in matings:
+            want *= w(N, U)
+        assert eq(e.cov(f"g_{X}", f"g_{Y}"), want), f"eq:path-product for {name}"
+        # eq:path-product-pheno, and the two mixed readings that take only one correction
+        CX, CY = C[kinds[0]], C[kinds[1]]
+        assert eq(e.cov(f"y_{X}", f"y_{Y}"), CX * CY * want), f"eq:path-product-pheno for {name}"
+        assert eq(e.cov(f"y_{X}", f"g_{Y}"), CX * want), f"C_A alone for {name}"
+        assert eq(e.cov(f"g_{X}", f"y_{Y}"), CY * want), f"C_B alone for {name}"
+        checked += 4
+
+    # the two coincidences the text points at, arrived at from different rows of the case split
+    assert eq(w(1, 2), lam_g), "full sibs should land on the transmission coefficient"
+    assert eq(e.cov("g_a", "g_b"), e.cov("g_m", "g_a")), "full sibs == parent-offspring"
+    assert eq(e.cov("g_a", "g_B"), e.cov("g_m", "g_A")), "uncle-nephew == grandparent"
+    checked += 3
+
+    # -- the worked example: Figure 6's own numbers, as the text prints them --------------------
+    _, ex = _pedigree(PATH_EX_FOUNDERS, PATH_EX_KIDS, PATH_EX_MATINGS, "path example")
+    lineals, matings = (2, 3, 1), ((2, 0), (3, 2))
+    assert sum(lineals) == 6 and sum(U for _, U in matings) == 2, "the text's counts"
+    assert sum(lineals) - sum(U for _, U in matings) == 4, "the text's exponent"
+    assert _nmu(PATH_EX_MATINGS, "D", "F") == 2 and _nmu(PATH_EX_MATINGS, "I", "L") == 3
+    assert eq(w(2, 0), rho_g * rho_y), "w for M(D,F)"
+    assert eq(w(3, 2), rho_g * lam_y ** 2), "w for M(I,L)"
+    want = V_A * rho_g ** 2 * rho_y * lam_g ** 4 * lam_y ** 2
+    assert eq(ex.cov("g_A", "g_B"), want), "the worked example's final line"
+    checked += 6
+    # A is the OLDEST individual on L(A,D), so it takes the old-end correction; B is the youngest
+    # on L(L,B) and takes none. The two ends of one path, answered differently.
+    assert eq(ex.cov("y_A", "y_B"), C["old"] * C["young"] * want), "the example's phenotypes"
+    assert not eq(ex.cov("y_A", "y_B"), ex.cov("g_A", "g_B")), "A's level DOES move this one"
+    checked += 2
+
+    return checked
+
+# ----------------------------------------------------------------------------------------------
+# Section 2.3.5: the chain digraph of the example path. One node per chain, edges oriented from
+# the older chain to the younger. The point of the picture is that N_U is just an out-degree:
+# M(D,F) is a sink and has N_U = 0, M(I,L) is a source and has N_U = 2.
+#
+# Hand-laid for the same reason as the path figure: the nodes are CHAINS, which no pathMgr model
+# has variables for. check_chain_digraph ties it back to the pedigree.
+# ----------------------------------------------------------------------------------------------
+
+#: (key, label, lower annotation, kind) in sequence order along the path. `kind` picks the shape:
+#: a proband is a small circle, a lineal chain an ellipse, a mating chain a rectangle.
+PATH_EX_DIGRAPH = (
+    ("pA", r"$A$",          "",                                     "proband"),
+    ("L1", r"$\Lin(A,D)$",  r"$\Nlin = 2$",                         "lineal"),
+    ("M1", r"$\Mu(D,F)$",   r"$\Nmu = 2$\\$N_o = 0$",   "mating"),
+    ("L2", r"$\Lin(F,I)$",  r"$\Nlin = 3$",                         "lineal"),
+    ("M2", r"$\Mu(I,L)$",   r"$\Nmu = 3$\\$N_o = 2$",   "mating"),
+    ("L3", r"$\Lin(L,B)$",  r"$\Nlin = 1$",                         "lineal"),
+    ("pB", r"$B$",          "",                                     "proband"),
+)
+
+#: Edges as (tail, head), i.e. already oriented older -> younger. Derived by hand from the
+#: generations in PATH_EX_NODES and asserted against them in check_chain_digraph.
+PATH_EX_DIGRAPH_EDGES = (
+    ("pA", "L1"), ("L1", "M1"), ("L2", "M1"), ("M2", "L2"), ("M2", "L3"), ("L3", "pB"),
+)
+
+
+def path_example_digraph() -> str:
+    """The bare tikzpicture for the chain digraph of the example path."""
+    x = {k: 2.15 * i for i, (k, _, _, _) in enumerate(PATH_EX_DIGRAPH)}
+    out = [
+        r"\definecolor{pmCPathB}{HTML}{1F77B4}",
+        r"\definecolor{pmCPath9}{HTML}{999999}",
+        r"\begin{tikzpicture}[",
+        r"  every node/.style={font=\small},",
+        r"  cdMating/.style={draw=black, fill=pmCPathB!14, rectangle, rounded corners=1pt,",
+        r"                   inner sep=0.10cm, minimum height=0.62cm},",
+        r"  cdLineal/.style={draw=black, fill=white, ellipse,",
+        r"                   inner xsep=0.06cm, inner ysep=0.10cm, minimum height=0.62cm},",
+        r"  cdProband/.style={draw=black, fill=pmCPathB!14, circle, inner sep=0.04cm,",
+        r"                    minimum size=0.60cm},",
+        r"  cdEdge/.style={-{Stealth[length=2mm]}, line width=0.9pt},",
+        r"  cdNote/.style={font=\scriptsize, text=pmCPath9, align=center, anchor=north},",
+        r"]",
+    ]
+    style = {"proband": "cdProband", "lineal": "cdLineal", "mating": "cdMating"}
+    for key, label, note, kind in PATH_EX_DIGRAPH:
+        out.append(rf"  \node[{style[kind]}] ({key}) at ({x[key]:.3f},0.000) {{{label}}};")
+        if note:
+            out.append(rf"  \node[cdNote] at ({x[key]:.3f},-0.460) {{{note}}};")
+    for a, b in PATH_EX_DIGRAPH_EDGES:
+        out.append(rf"  \draw[cdEdge] ({a}) -- ({b});")
+    out.append(r"\end{tikzpicture}")
+    return "\n".join(out)
+
+
+def check_chain_digraph() -> int:
+    """Assert the digraph is the example path's, and that N_U really is an out-degree.
+
+    The identity N_U = out-degree is definitional, not empirical, so what is worth asserting is
+    that the ORIENTATION drawn in the figure is the one the pedigree's generations force, and
+    that reading out-degrees off it reproduces the N_U values Section 2.3.7 uses.
+    """
+    keys = [k for k, _, _, _ in PATH_EX_DIGRAPH]
+    checked = 0
+
+    # -- the digraph's undirected shape is the path's own chain sequence -----------------------
+    undirected = {frozenset(e) for e in PATH_EX_DIGRAPH_EDGES}
+    want = {frozenset(p) for p in zip(keys, keys[1:])}
+    assert undirected == want, undirected ^ want
+    checked += 1
+
+    # -- every edge is oriented older -> younger, by the generations of the drawn pedigree -----
+    # The pedigree figure puts the oldest generation at the top, which in tikz coordinates is
+    # the LARGEST y, so a larger y is an older individual. Each
+    # lineal chain is declared by the individual at each of its two ends, and each end names the
+    # digraph node attached there; the edge then has to run from the node at the OLD end into
+    # the lineal chain, and out of the lineal chain into the node at its YOUNG end.
+    row = {name: y for name, _, y, _ in PATH_EX_NODES}
+    ends = {"L1": ("A", "D"), "L2": ("I", "F"), "L3": ("L", "B")}   # (older end, younger end)
+    at = {("L1", "A"): "pA", ("L1", "D"): "M1",
+          ("L2", "I"): "M2", ("L2", "F"): "M1",
+          ("L3", "L"): "M2", ("L3", "B"): "pB"}
+    derived = set()
+    for lin, (older, younger) in ends.items():
+        assert row[older] > row[younger], f"{lin}: {older} is not older than {younger}"
+        derived.add((at[(lin, older)], lin))
+        derived.add((lin, at[(lin, younger)]))
+        checked += 1
+    assert derived == set(PATH_EX_DIGRAPH_EDGES), derived ^ set(PATH_EX_DIGRAPH_EDGES)
+    checked += 1
+    # a mating chain really does sit inside one generation, which is what makes the orientation
+    # of every edge well defined rather than a tie
+    for k, members in (("M1", ("D", "E", "F")), ("M2", ("I", "J", "K", "L"))):
+        assert len({row[v] for v in members}) == 1, f"{k} spans more than one generation"
+        checked += 1
+
+    # -- N_U = out-degree, for the values Section 2.3.7 quotes ---------------------------------
+    outdeg = collections.Counter(a for a, _ in PATH_EX_DIGRAPH_EDGES)
+    indeg = collections.Counter(b for _, b in PATH_EX_DIGRAPH_EDGES)
+    assert outdeg["M1"] == 0 and outdeg["M2"] == 2, (outdeg["M1"], outdeg["M2"])
+    checked += 2
+    # a lineal chain always has exactly one older end and one younger end
+    for k in ("L1", "L2", "L3"):
+        assert indeg[k] == 1 and outdeg[k] == 1, (k, indeg[k], outdeg[k])
+        checked += 2
+    # the probands: A is a source (it is the oldest individual on L(A,D)) and B a sink, which is
+    # what gives them different proband corrections in eq:proband-correction
+    assert outdeg["pA"] == 1 and indeg["pA"] == 0, "A should be a source"
+    assert outdeg["pB"] == 0 and indeg["pB"] == 1, "B should be a sink"
+    checked += 2
+
+    return checked
+
 def check_one_step_rules() -> int:
-    """Assert the two relations behind eq:chain-parent, and that their condition is necessary.
+    """Assert the two one-step relations behind the descent factor, and that their condition
+    is necessary. (These predate the current text; the surviving statement is eq:lineal-g.)
 
     Both are boxed with a precondition -- no chain from i to P may cross any of P's matings -- and
     a precondition nobody tests is a precondition nobody believes. So this checks a case where it
@@ -1624,285 +1932,30 @@ def check_one_step_rules() -> int:
     # crossing B's mating scales A's covariance by rho_g
     assert sp.simplify(e.cov("g_A", "g_Bm") - rho_g * base) == 0, "crossing a mating costs rho_g"
     checked += 1
-    # descending to B's child scales it by (1+rho_g)/2 -- this is eq:chain-parent
-    assert sp.simplify(e.cov("g_A", "g_j") - (1 + rho_g) / 2 * base) == 0, "eq:chain-parent"
+    # descending to B's child scales it by (1+rho_g)/2 -- the one-step form of eq:lineal-g
+    assert sp.simplify(e.cov("g_A", "g_j") - (1 + rho_g) / 2 * base) == 0, "one-step descent"
     checked += 1
 
-    # NOW THE CONDITION VIOLATED, which is the case the text works through. o1 is a child of p2
-    # by p1, so o1 reaches p3 both through p2's phenotype AND through p1, who was matched to that
-    # phenotype. Cov[g_o1, e_p2] is therefore nonzero and the rho_g scaling does not apply.
+    # NOW THE CONDITION VIOLATED, which is the case the text works through. E is a child of B
+    # by A, so E reaches C both through B's phenotype AND through A, who was matched to that
+    # phenotype. Cov[g_E, e_p2] is therefore nonzero and the rho_g scaling does not apply.
     m2, e2 = step_sib_pedigree()
     V_A2, V_E2, rho_y2 = (m2.sym(s) for s in ("V_A", "V_E", "rho_y"))
     V_P2 = V_A2 + V_E2
     rho_g2 = rho_y2 * V_A2 / V_P2
-    assert sp.simplify(e2.cov("g_o1", "y_p2") - e2.cov("g_o1", "g_p2")) != 0, \
+    assert sp.simplify(e2.cov("g_E", "y_B") - e2.cov("g_E", "g_B")) != 0, \
         "the condition should FAIL for a child of P"
     checked += 1
     # the true value, and the value the rule would have given -- the two the document prints
     truth = rho_g2 * (1 + rho_y2) * V_A2 / 2
     naive = rho_g2 * (1 + rho_g2) * V_A2 / 2
-    assert sp.simplify(e2.cov("g_o1", "g_p3") - truth) == 0, "step-child true value"
-    assert sp.simplify(e2.cov("g_o1", "g_p2") * rho_g2 - naive) == 0, "step-child naive value"
+    assert sp.simplify(e2.cov("g_E", "g_C") - truth) == 0, "step-child true value"
+    assert sp.simplify(e2.cov("g_E", "g_B") * rho_g2 - naive) == 0, "step-child naive value"
     assert sp.simplify(truth - naive) != 0, "the two must differ"
     checked += 3
 
     return checked
 
-
-def check_path_framework() -> int:
-    """Assert the boxed results of the rewritten Section 2.3: segments, matings, assembly.
-
-    The section is built on three claims -- a segment's value factorises as
-    ((1+rho_g)/2)^N_m * K, a path factorises as mu^n times its segments, and the g-versus-y
-    distinction lives only at the outer ends -- and each is asserted here against pathMgr on
-    pedigrees built to exhibit it.
-    """
-    checked = 0
-
-    def parts(model):
-        V_A, V_E, ry = (model.sym(s) for s in ("V_A", "V_E", "rho_y"))
-        V_P = V_A + V_E
-        return V_A, V_E, ry, V_P, ry / V_P, ry * V_A / V_P, V_A / V_P   # .., mu, rho_g, h2
-
-    def lineage(n):
-        f, k, mt = ["c0"], [], []
-        cur = "c0"
-        for s in range(1, n + 1):
-            m2 = f"m{s}"
-            f.append(m2); mt.append((cur, m2)); k.append((f"a{s}", cur, m2)); cur = f"a{s}"
-        return _pedigree(tuple(f), tuple(k), tuple(mt), f"lineage{n}"), "c0", f"a{n}"
-
-    def coll(u, w, full):
-        if full:
-            f, mt = ["S", "Sm"], [("S", "Sm")]
-            k = [("a1", "S", "Sm"), ("b1", "S", "Sm")]
-        else:
-            f, mt = ["S", "Ma", "Mb"], [("S", "Ma"), ("S", "Mb")]
-            k = [("a1", "S", "Ma"), ("b1", "S", "Mb")]
-        for side, steps in (("a", u), ("b", w)):
-            cur = f"{side}1"
-            for s in range(2, steps + 1):
-                m2 = f"{side}m{s}"
-                f.append(m2); mt.append((cur, m2)); k.append((f"{side}{s}", cur, m2)); cur = f"{side}{s}"
-        return _pedigree(tuple(f), tuple(k), tuple(mt), "coll"), f"a{u}", f"b{w}"
-
-    # -- eq:mated-pair: the three ways to take a mated pair's covariance -------------------
-    model, e = _pedigree(("m", "p"), (), (("m", "p"),), "mated pair")
-    V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-    assert sp.simplify(e.cov("g_m", "g_p") - rg * V_A) == 0
-    assert sp.simplify(e.cov("g_m", "y_p") - ry * V_A) == 0
-    assert sp.simplify(e.cov("y_m", "y_p") - ry * V_P) == 0
-    assert sp.simplify(e.cov("y_m", "y_p") / V_P - ry) == 0          # eq:mate-corr
-    checked += 4
-
-    # -- eq:segment and eq:turn-K, for all three kinds of turn ----------------------------
-    for n in (1, 2, 3, 4):
-        (model, e), i, j = lineage(n)
-        V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-        assert sp.simplify(e.cov(f"g_{i}", f"g_{j}") - V_A * ((1 + rg) / 2) ** n) == 0, f"lineal {n}"
-        checked += 1
-    for full in (True, False):
-        K_name = "full" if full else "half"
-        for u, w in ((1, 1), (1, 2), (2, 2), (2, 3)):
-            (model, e), i, j = coll(u, w, full)
-            V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-            K = 2 / (1 + rg) if full else (1 + 2 * rg + ry * rg) / (1 + rg) ** 2
-            want = V_A * ((1 + rg) / 2) ** (u + w) * K
-            assert sp.simplify(e.cov(f"g_{i}", f"g_{j}") - want) == 0, f"{K_name} {u},{w}"
-            checked += 1
-
-    # -- eq:assemble + eq:segment-full ----------------------------------------------------
-    # p_i counts a segment's mating-facing ends at which the individual is a PARENT on it.
-    SHAPES = (
-        ("step sibs: lineal-M-lineal, both ends parents",
-         (("p1", "p2", "p3", "p4"), (("o1", "p1", "p2"), ("o2", "p3", "p4")),
-          (("p1", "p2"), ("p2", "p3"), ("p3", "p4"))), "o1", "o2",
-         1, ((1, "lineal", 1), (1, "lineal", 1))),
-        ("full-M-lineal: one end a child, one a parent",
-         (("C1", "C2", "Y", "Z"), (("A", "C1", "C2"), ("X", "C1", "C2"), ("B", "Y", "Z")),
-          (("C1", "C2"), ("X", "Y"), ("Y", "Z"))), "A", "B",
-         1, ((2, "full", 0), (1, "lineal", 1))),
-        ("full-M-full: both ends children",
-         (("C1", "C2", "D1", "D2"),
-          (("A", "C1", "C2"), ("X", "C1", "C2"), ("Y", "D1", "D2"), ("B", "D1", "D2")),
-          (("C1", "C2"), ("D1", "D2"), ("X", "Y"))), "A", "B",
-         1, ((2, "full", 0), (2, "full", 0))),
-        ("half-M-lineal",
-         (("S", "Ma", "Mb", "Z", "W"),
-          (("A", "S", "Ma"), ("X", "S", "Mb"), ("B", "Z", "W")),
-          (("S", "Ma"), ("S", "Mb"), ("X", "Z"), ("Z", "W"))), "A", "B",
-         1, ((2, "half", 0), (1, "lineal", 1))),
-        ("two matings, middle segment with one promoted end",
-         (("q1", "q2", "q4", "q4m", "q5", "q5m"),
-          (("a", "q1", "q2"), ("q3", "q4", "q4m"), ("b", "q5", "q5m")),
-          (("q1", "q2"), ("q2", "q3"), ("q4", "q4m"), ("q4", "q5"), ("q5", "q5m"))), "a", "b",
-         2, ((1, "lineal", 1), (1, "lineal", 1), (1, "lineal", 1))),
-    )
-    for label, spec, x, y, n_mat, segs in SHAPES:
-        model, e = _pedigree(*spec, label)
-        V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-        Ks = {"lineal": 1, "full": 2 / (1 + rg), "half": (1 + 2 * rg + ry * rg) / (1 + rg) ** 2}
-        pred = mu**n_mat
-        for Nm, kind, pi in segs:
-            pred *= V_A * Ks[kind] * ((1 + ry) / 2) ** pi * ((1 + rg) / 2) ** (Nm - pi)
-        assert sp.simplify(e.cov(f"g_{x}", f"g_{y}") - pred) == 0, label
-        checked += 1
-
-    # -- eq:passthrough: an interior one-person segment contributes V_P, not V_A ----------
-    # i and j both mated to s, and to nobody else on the path
-    model, e = _pedigree(("i", "s", "j"), (), (("i", "s"), ("s", "j")), "share a mate")
-    V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-    assert sp.simplify(e.cov("g_i", "g_j") - mu**2 * V_A * V_P * V_A) == 0
-    assert sp.simplify(e.cov("g_i", "g_j") - rg * ry * V_A) == 0        # the n=2 mating rule
-    assert sp.simplify(e.cov("g_i", "g_j") - mu**2 * V_A * V_A * V_A) != 0, "V_P, not V_A"
-    checked += 3
-
-    # -- Section 2.3.7: g vs y differs only where the end's own mating is on the path -----
-    same = (("full sibs", (("S", "Sm"), (("a", "S", "Sm"), ("b", "S", "Sm")), (("S", "Sm"),)), "a", "b"),
-            ("step sibs", (("p1", "p2", "p3", "p4"),
-                           (("o1", "p1", "p2"), ("o2", "p3", "p4")),
-                           (("p1", "p2"), ("p2", "p3"), ("p3", "p4"))), "o1", "o2"))
-    for label, spec, x, y in same:
-        model, e = _pedigree(*spec, label)
-        assert sp.simplify(e.cov(f"g_{x}", f"g_{y}") - e.cov(f"y_{x}", f"y_{y}")) == 0, label
-        checked += 1
-    # lineal: the ancestor's own mating IS on the path, so exactly one factor is promoted
-    for n in (1, 2, 3):
-        (model, e), i, j = lineage(n)
-        V_A, V_E, ry, V_P, mu, rg, h2 = parts(model)
-        assert sp.simplify(e.cov(f"g_{i}", f"g_{j}") - e.cov(f"y_{i}", f"y_{j}")) != 0
-        want = h2 * ((1 + rg) / 2) ** (n - 1) * ((1 + ry) / 2)          # eq:lineal-pheno
-        assert sp.simplify(e.cov(f"y_{i}", f"y_{j}") / V_P - want) == 0, f"lineal pheno {n}"
-        checked += 2
-
-    return checked
-
-
-def check_degree_classes() -> int:
-    """Assert every closed form Section 2.3 states, class by class, against traced pedigrees.
-
-    Each class is built as its own pedigree rather than carved out of one big one, so a mistake in
-    one cannot mask a mistake in another, and so the mating structure of each class is explicit.
-    """
-    checked = 0
-
-    def syms(m):
-        V_A, V_E, ry = (m.sym(s) for s in ("V_A", "V_E", "rho_y"))
-        V_P = V_A + V_E
-        return V_A, V_E, ry, V_P, V_A / V_P, ry * V_A / V_P, ry / V_P   # .., h2, rho_g, mu
-
-    # -- the mating rule: crossing k matings costs rho_g rho_y^(k-1) V_A ---------------------
-    chain = [(f"X{i}", f"X{i+1}") for i in range(1, 5)]
-    m, e = _pedigree([f"X{i}" for i in range(1, 6)], [], chain, "mating chain")
-    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
-    for k in (1, 2, 3, 4):
-        got = e.cov("g_X1", f"g_X{1+k}")
-        assert sp.simplify(got - rg * ry**(k-1) * V_A) == 0, f"mating rule at k={k}"
-        checked += 1
-    # the two leg values, which are what generate rho_g vs rho_y
-    assert sp.simplify(e.cov("g_X1", "g_X2") - mu * V_A * V_A) == 0      # g leg, g leg
-    assert sp.simplify(e.cov("y_X1", "g_X2") - mu * V_P * V_A) == 0      # y leg, g leg
-    assert sp.simplify(ry / rg - V_P / V_A) == 0                          # rho_y = rho_g / h^2
-    checked += 3
-
-    # -- collateral full relatives: h2 * rate^d, and phenotypic == genetic -------------------
-    # A-B mated; sibs S1,S2; S1 marries C -> K1; S2 marries E -> K2; K1 marries H -> GC
-    m, e = _pedigree(
-        ["A", "B", "C", "E", "H"],
-        [("S1", "A", "B"), ("S2", "A", "B"), ("K1", "S1", "C"), ("K2", "S2", "E"),
-         ("GC", "K1", "H")],
-        [("A", "B"), ("S1", "C"), ("S2", "E"), ("K1", "H")],
-        "collateral and direct",
-    )
-    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
-    rate = (1 + rg) / 2
-    for a, b, d in (("S1", "S2", 1), ("S2", "K1", 2), ("K1", "K2", 3)):
-        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - V_A * rate**d) == 0, f"collateral g {a},{b}"
-        # no environmental cross term for a collateral pair, so the phenotypic correlation is
-        # the genetic covariance over V_P -- this is the claim that makes the degree law clean
-        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") - e.cov(f"g_{a}", f"g_{b}")) == 0
-        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - h2 * rate**d) == 0
-        checked += 3
-
-    # -- direct relatives: exactly ONE factor becomes (1+rho_y)/2 ----------------------------
-    for a, b, d in (("S1", "K1", 1), ("S1", "GC", 2)):
-        # the GENETIC covariance still follows the plain degree law ...
-        assert sp.simplify(e.cov(f"g_{a}", f"g_{b}") - V_A * rate**d) == 0, f"direct g {a},{b}"
-        # ... but the phenotypic one does not, and the excess is exactly one swapped factor
-        want = h2 * rate**(d - 1) * (1 + ry) / 2
-        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - want) == 0, f"direct y {a},{b}"
-        assert sp.simplify(e.cov(f"y_{a}", f"y_{b}") / V_P - h2 * rate**d) != 0
-        checked += 3
-
-    # -- half siblings: Nagylaki, and NOT the plain degree-2 law -----------------------------
-    # P2 has children with P1 and with P3; the two children are half-sibs through P2
-    m, e = _pedigree(["P1", "P2", "P3"], [("H1", "P1", "P2"), ("H2", "P3", "P2")],
-                     [("P1", "P2"), ("P2", "P3")], "half sibs")
-    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
-    rate = (1 + rg) / 2
-    # the two unshared parents are co-mates of P2, and THAT is the whole of the multiplier
-    assert sp.simplify(e.cov("g_P1", "g_P3") - ry * rg * V_A) == 0, "co-mates = rho_y rho_g V_A"
-    assert sp.simplify(e.cov("g_H1", "g_H2") - V_A * (1 + 2*rg + ry*rg) / 4) == 0, "Nagylaki"
-    # Nagylaki's form as a multiplier on the plain degree-2 law
-    assert sp.simplify(e.cov("g_H1", "g_H2") / V_P
-                       - h2 * rate**2 * (1 + 2*rg + ry*rg) / (1 + rg)**2) == 0
-    # half-sibs are collateral, so phenotypic == genetic
-    assert sp.simplify(e.cov("y_H1", "y_H2") - e.cov("g_H1", "g_H2")) == 0
-    # and it is strictly ABOVE the unmultiplied law, since rho_y > rho_g
-    assert sp.simplify(sp.factor(e.cov("g_H1", "g_H2") - V_A * rate**2)) != 0
-    checked += 5
-
-    # -- step siblings (in-law, modified degree 2) -------------------------------------------
-    # M-F currently mated; M had C1 with A, F had C2 with B
-    m, e = _pedigree(["M", "F", "A", "B"], [("C1", "M", "A"), ("C2", "F", "B")],
-                     [("A", "M"), ("M", "F"), ("F", "B")], "step sibs")
-    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
-    # ours: h2 * rho_g * ((1+rho_y)/2)^2 -- the rate factor carries rho_y, not rho_g
-    ours = h2 * rg * ((1 + ry) / 2)**2
-    assert sp.simplify(e.cov("y_C1", "y_C2") / V_P - ours) == 0, "step sibs"
-    # Eftedal et al. give h2 * rho_g * ((1+rho_g)/2)^2; the two differ, and ours is larger
-    theirs = h2 * rg * ((1 + rg) / 2)**2
-    assert sp.simplify(ours - theirs) != 0, "the two in-law forms must differ"
-    num = {V_A: sp.Rational(1), V_E: sp.Rational(1), ry: sp.Rational(1, 2)}
-    assert float(ours.subs(num)) > float(theirs.subs(num))
-    checked += 3
-
-    # -- in-laws at general modified degree --------------------------------------------------
-    # An "in-law ladder": C1 is one step from M, and C2/D2/E2 are one/two/three steps from F.
-    # The law must hold at every dtilde, not only at the step-sibling value of 2 -- checked
-    # because the all-rho_y form DOES hold at dtilde = 2 and fails at 3, so a single point
-    # would have licensed the wrong general formula.
-    m, e = _pedigree(["M", "F", "A", "B", "G", "J"],
-                     [("C1", "M", "A"), ("C2", "F", "B"), ("D2", "C2", "G"), ("E2", "D2", "J")],
-                     [("A", "M"), ("M", "F"), ("F", "B"), ("C2", "G"), ("D2", "J")],
-                     "in-law ladder")
-    V_A, V_E, ry, V_P, h2, rg, mu = syms(m)
-    law = lambda dt: h2 * rg * ((1 + ry) / 2)**2 * ((1 + rg) / 2)**(dt - 2)
-    for b, dt in (("C2", 2), ("D2", 3), ("E2", 4)):
-        assert sp.simplify(e.cov("y_C1", f"y_{b}") / V_P - law(dt)) == 0, f"in-law dtilde={dt}"
-        checked += 1
-    # the all-rho_y form is right at dtilde = 2 and WRONG beyond it -- the trap this guards
-    assert sp.simplify(e.cov("y_C1", "y_C2") / V_P - h2 * rg * ((1 + ry) / 2)**2) == 0
-    assert sp.simplify(e.cov("y_C1", "y_D2") / V_P - h2 * rg * ((1 + ry) / 2)**3) != 0
-    checked += 2
-
-    # dtilde is SUFFICIENT: two pedigrees of the same modified degree but different shape
-    # (1 step + 3 steps versus 2 steps + 2 steps) must agree, which is what licenses indexing
-    # in-laws by a single number at all.
-    m2, e2 = _pedigree(["M", "F", "A", "B", "K", "G"],
-                       [("C1", "M", "A"), ("D1", "C1", "K"), ("C2", "F", "B"), ("D2", "C2", "G")],
-                       [("A", "M"), ("M", "F"), ("F", "B"), ("C1", "K"), ("C2", "G")],
-                       "in-law, symmetric 2+2")
-    V_A2, V_E2, ry2, V_P2, h22, rg2, mu2 = syms(m2)
-    law2 = h22 * rg2 * ((1 + ry2) / 2)**2 * ((1 + rg2) / 2)**2
-    assert sp.simplify(e2.cov("y_D1", "y_D2") / V_P2 - law2) == 0, "in-law 2+2 shape"
-    checked += 1
-    return checked
-
-
-# ----------------------------------------------------------------------------------------------
-# checking the hand-typed tables
-# ----------------------------------------------------------------------------------------------
 
 def _tidy(expr, b1, b2, V_E, V_A, V_P):
     """Rewrite in terms of V_A and V_P, which is how the writeup states these."""
@@ -2684,13 +2737,13 @@ def main() -> int:
     print(f"equilibrium:   {check_equilibrium()} results agree with pathMgr")
     print(f"g transmit:    {check_g_transmit(2)} results agree with pathMgr")
     print(f"g-only figure: {check_g_only_figure()} results agree with pathMgr")
-    print(f"mean-parent:   {check_mean_parent()} results agree with pathMgr")
-    print(f"N_mu-bar:      {check_nmu_bar()} results agree with pathMgr")
+    print(f"chain formulas: {check_chain_formulas()} results agree with pathMgr")
     print(f"pedigree sets: {check_pedigree_sets()} results agree with pathMgr")
-    print(f"path framework: {check_path_framework()} results agree with pathMgr")
     print(f"one-step rules: {check_one_step_rules()} results agree with pathMgr")
-    print(f"degree classes: {check_degree_classes()} results agree with pathMgr")
     print(f"step-sib fig:  {check_step_sib_figure()} results agree with pathMgr")
+    print(f"path example:  {check_path_example()} results agree with pathMgr")
+    print(f"path formula:  {check_path_formula()} results agree with pathMgr")
+    print(f"chain digraph: {check_chain_digraph()} results agree with pathMgr")
     print(f"reduced fig:   {check_reduced_figure()} results agree with pathMgr")
     # M = 3 only: the reduced model carries M^2 bidirected edges per parent, so the symbolic
     # cost climbs steeply and M = 4 does not exercise anything M = 3 misses here.
@@ -2704,10 +2757,10 @@ def main() -> int:
     model = mated_pair_2v()
     b1, b2, V_E = (model.sym(s) for s in ("beta_1", "beta_2", "V_E"))
     # pathMgr renders the phenotypic variance as the sum it is derived from; two pages of prose
-    # around this figure call it \VPo. `latex_names` is how a figure is told the document's own
+    # around this figure call it \VYo. `latex_names` is how a figure is told the document's own
     # name for a quantity -- it reaches edge labels and captions alike, so the figure stays
     # internally consistent as well as consistent with the text.
-    names = {b1**2 + b2**2 + V_E: r"\VPo"}
+    names = {b1**2 + b2**2 + V_E: r"\VYo"}
 
     # ONE figure, doing both jobs: the full model *and* a traced chain on it.
     #  - show_variances=True keeps the exogenous variances that are not on the chain. They are
@@ -2853,14 +2906,6 @@ def main() -> int:
                     # that correlation is rho_y, so this restores the label Figure 4 carries.
                     rho_y_s / (V_A_s + V_E_s): r"[\rho_y]",
                 },
-                # pathMgr subscripts a trailing digit on its own (g_o1 -> g_{o_1}) for a variable
-                # it infers, but not for one named in an explicit `latent:` line, which is how
-                # _pedigree declares these. Set them by hand so this figure matches Figure 4 and
-                # the caption's own $p_1$, $o_1$ notation.
-                node_label_overrides={
-                    f"{v}_{w}": rf"{v}_{{{w[0]}_{w[1]}}}"
-                    for v in ("g", "y") for w in STEP_SIB_PARENTS + ("o1", "o2", "o3")
-                },
                 # all four transmission edges read 1/2 and pile up between the two generations;
                 # same call as Figures 3 and 4, and the value is in eq:g-transmit
                 suppressed_labels=frozenset((f"g_{parent}", f"g_{child}")
@@ -2869,6 +2914,18 @@ def main() -> int:
             ),
         )
     )
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # Figure 6: the worked example path. Hand-laid rather than rendered from a model, because
+    # the text needs one node per INDIVIDUAL where a path diagram carries one per variable; the
+    # pedigree behind it is checked as a pathMgr model in check_path_example.
+    target = HERE / "path_example_pedigree.tikz"
+    target.write_text(path_example_pedigree() + "\n")
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # Figure 7: the chain digraph of that same path. Hand-laid; see check_chain_digraph.
+    target = HERE / "path_example_digraph.tikz"
+    target.write_text(path_example_digraph() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     stale = HERE / "mated_pair_2v_traced.tikz"

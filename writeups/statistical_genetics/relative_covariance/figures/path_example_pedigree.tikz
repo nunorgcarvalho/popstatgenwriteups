@@ -1,0 +1,57 @@
+\definecolor{pmCPath9}{HTML}{999999}
+\definecolor{pmCPathR}{HTML}{B03A2E}
+\definecolor{pmCPathB}{HTML}{1F77B4}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  pmPerson/.style={draw=black, fill=pmCPathB!12, circle, inner sep=0.04cm,
+                   minimum size=0.60cm},
+  pmPersonOff/.style={draw=pmCPath9, text=pmCPath9, fill=white, circle,
+                      inner sep=0.04cm, minimum size=0.60cm},
+  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.9pt},
+  pmDirectedOff/.style={-{Stealth[length=1.7mm]}, line width=0.7pt, draw=pmCPath9},
+  pmCopath/.style={line width=1.6pt, draw=pmCPathR},
+  pmCopathOff/.style={line width=1.6pt, draw=pmCPath9},
+  pmGen/.style={font=\footnotesize, text=pmCPath9, anchor=east},
+]
+  \node[pmGen] at (-0.700,4.500) {$t$};
+  \node[pmGen] at (-0.700,3.000) {$t+1$};
+  \node[pmGen] at (-0.700,1.500) {$t+2$};
+  \node[pmGen] at (-0.700,0.000) {$t+3$};
+  \node[pmPerson] (I) at (5.500,4.500) {$I$};
+  \node[pmPerson] (J) at (6.500,4.500) {$J$};
+  \node[pmPerson] (K) at (8.000,4.500) {$K$};
+  \node[pmPerson] (L) at (9.500,4.500) {$L$};
+  \node[pmPerson] (A) at (0.000,3.000) {$A$};
+  \node[pmPersonOff] (M) at (2.000,3.000) {$M$};
+  \node[pmPersonOff] (N) at (5.000,3.000) {$N$};
+  \node[pmPerson] (H) at (6.000,3.000) {$H$};
+  \node[pmPerson] (B) at (8.750,3.000) {$B$};
+  \node[pmPerson] (C) at (1.000,1.500) {$C$};
+  \node[pmPersonOff] (O) at (3.000,1.500) {$O$};
+  \node[pmPersonOff] (P) at (4.500,1.500) {$P$};
+  \node[pmPerson] (G) at (5.500,1.500) {$G$};
+  \node[pmPerson] (D) at (2.000,0.000) {$D$};
+  \node[pmPerson] (E) at (3.500,0.000) {$E$};
+  \node[pmPerson] (F) at (5.000,0.000) {$F$};
+  \draw[pmDirected] (A) -- (C);
+  \draw[pmDirectedOff] (M) -- (C);
+  \draw[pmDirected] (C) -- (D);
+  \draw[pmDirectedOff] (O) -- (D);
+  \draw[pmDirected] (I) -- (H);
+  \draw[pmDirectedOff] (J) -- (H);
+  \draw[pmDirected] (H) -- (G);
+  \draw[pmDirectedOff] (N) -- (G);
+  \draw[pmDirected] (G) -- (F);
+  \draw[pmDirectedOff] (P) -- (F);
+  \draw[pmDirectedOff] (K) -- (B);
+  \draw[pmDirected] (L) -- (B);
+  \draw[pmCopathOff] (A) -- (M);
+  \draw[pmCopathOff] (C) -- (O);
+  \draw[pmCopathOff] (G) -- (P);
+  \draw[pmCopathOff] (H) -- (N);
+  \draw[pmCopath] (I) -- (J);
+  \draw[pmCopath] (J) -- (K);
+  \draw[pmCopath] (K) -- (L);
+  \draw[pmCopath] (D) -- (E);
+  \draw[pmCopath] (E) -- (F);
+\end{tikzpicture}

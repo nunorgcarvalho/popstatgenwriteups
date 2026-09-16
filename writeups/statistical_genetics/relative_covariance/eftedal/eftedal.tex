@@ -1,0 +1,162 @@
+\documentclass[12pt]{article}
+
+% loads config.sty
+\makeatletter
+\def\input@path{{../../../../tex/}}
+\makeatother
+\usepackage{config}
+\usepackage{macros}
+
+\title{Comparison with Eftedal et al.\ (2025)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\textit{\textbf{Note:} Parts of this document may be AI-written.}
+
+This note checks the predicted relative correlations of \citet{Eftedal2025PNAS} against the path framework derived in \texttt{relative\_covariance.tex}.
+Nothing is rederived here; every expression in the ``ours'' column below is that framework's path-coefficient product evaluated on the pedigree the class names, and each was confirmed against an independent \texttt{pathMgr} model of the same pedigree at assortative-mating equilibrium.
+
+\section{Their notation}
+
+Two parameters appear in their expressions.
+$m$ is the \emph{genotypic} partner correlation, which is our $\rho_g$.
+A \emph{phenotypic} partner correlation --- our $\rho_y$, written $r$ below --- also appears, but only inside the multiplier that half siblings and half first cousins carry, where it enters as the product $rm$.
+Their Table~S8 lists predicted genotypic correlations and their Table~S9 the phenotypic ones, the latter being $h^2$ times the former; we work in genotypic correlations $r_g$ throughout and restore the $h^2$ only for the numerical comparison.
+
+They fit $h^2 = 0.503$ and $m = 0.430$, and fit the half-sibling multiplier freely at $c = 0.972$ with a $95\%$ interval of $[0.864,\, 1.127]$.
+It is worth noting at the outset that under primary phenotypic assortment at equilibrium the two partner correlations are not free of each other:
+\begin{equation}\label{eq:mr}
+    m \;=\; h^2 r ,
+\end{equation}
+so that $m \leq r$ always, and their fitted values imply $r = m/h^2 = 0.855$.
+
+\section{Result}
+
+Table~\ref{tab:eftedal} sets the two sets of expressions side by side.
+Six of the seven classes agree exactly.
+The one that does not is step siblings.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{2.2}
+    \setlength{\tabcolsep}{5pt}
+    \small
+    \begin{tabular}{l|c|c|c}
+        relation
+            & largest $\Nmu$
+            & their predicted $r_g$
+            & ours \\
+        \hline
+        full sibling
+            & $1$ & $\tfrac{1+m}{2}$ & same \\
+        1st cousin
+            & $1$ & $\big(\tfrac{1+m}{2}\big)^{3}$ & same \\
+        2nd cousin
+            & $1$ & $\big(\tfrac{1+m}{2}\big)^{5}$ & same \\
+        co-cousin
+            & $1$ & $m\big(\tfrac{1+m}{2}\big)^{4}$ & same \\
+        half sibling
+            & $2$ & $\tfrac{1+2m+rm}{4}$ & same \\
+        half 1st cousin
+            & $2$ & $\big(\tfrac{1+m}{2}\big)^{2}\tfrac{1+2m+rm}{4}$ & same \\
+        \hline
+        \textbf{step sibling}
+            & $\mathbf{3}$ & $m\big(\tfrac{1+m}{2}\big)^{2}$
+            & $m\big(\tfrac{1+r}{2}\big)^{2}$ \\
+    \end{tabular}
+    \caption{%
+        Predicted genotypic correlations for the classes of \citet{Eftedal2025PNAS} Table~S9, with their two half-row multipliers already simplified.
+        ``Largest $\Nmu$'' is the number of matings the longest mating chain on the path is crossed in.
+        Step siblings are the only class in their table for which that number exceeds two, and the only class on which the two frameworks disagree.%
+    }
+    \label{tab:eftedal}
+    \end{floatcard}
+\end{table}
+
+Co-cousins are worth singling out, since they are the class one might expect to be most exposed.
+Their definition --- a marriage between the uncle of one proband and the aunt of the other --- places the connecting mating between two individuals whose \emph{own} parental couples lie on different chains.
+Every mating chain on that path is therefore a single mating, $r$ never enters, and the two expressions coincide.
+The child that the connecting step-couple actually has in their Figure~1 is a common descendant of the two probands' lines and so contributes nothing, which we confirmed directly.
+
+\section{Where the step-sibling expressions part}
+
+Step siblings are the one class in which \emph{both} probands' parental couples sit on a single mating chain.
+Writing $A$'s parents as $\{f_A, m_A\}$ and $B$'s as $\{f_B, m_B\}$ with $m_A$ mated to $f_B$, that chain is
+\begin{equation*}
+    f_A \;\text{---}\; m_A \;\text{---}\; f_B \;\text{---}\; m_B ,
+    \qquad \Nmu(f_A, m_B) = 3 ,
+\end{equation*}
+and the class weight is the average of the standardized chain covariance $c$ over the four cross pairs of parents, at mating distances $1, 2, 2$ and $3$.
+The disagreement is entirely in how $c$ is evaluated at distances beyond one.
+Their expression expands to
+\begin{equation*}
+    4\,m\left(\frac{1+m}{2}\right)^{2}
+    \;=\; m \;+\; 2m^{2} \;+\; m^{3}
+    \qquad\Longrightarrow\qquad
+    c(1) = m,\quad c(2) = m^{2},\quad c(3) = m^{3},
+\end{equation*}
+that is, every mating step priced at the genotypic partner correlation.
+The chain law is instead $c(n) = m\,r^{\,n-1}$: the first step crosses from a breeding value to a phenotype and costs $m$, and every step after that propagates at the phenotypic level and costs $r$.
+
+This is also where their table stops being self-consistent.
+Their half-sibling row uses $4w = 1 + 2m + rm$, which prices a two-step chain crossing at $c(2) = rm$ --- the correct value, imported with Nagylaki's multiplier \citep{Nagylaki1978}.
+Their step-sibling row prices the same two-step crossing at $c(2) = m^{2}$.
+The two rows cannot both hold unless $r = m$, which by \eqref{eq:mr} would require $h^2 = 1$.
+
+\section{How large the difference is}
+
+The two step-sibling expressions differ by
+\begin{equation}\label{eq:gap}
+    \frac{\text{ours}}{\text{theirs}} \;=\; \left(\frac{1+r}{1+m}\right)^{\!2} ,
+\end{equation}
+which is $1$ when $r = m$ and grows as the two partner correlations separate.
+At their fitted $h^2 = 0.503$ and $m = 0.430$, equation~\eqref{eq:mr} gives $r = 0.855$ and a ratio of $1.68$.
+In phenotypic correlations, against an observed step-sibling correlation of $0.127$ with interval $[0.108,\, 0.147]$:
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.5}
+    \small
+    \begin{tabular}{l|ccc}
+        $r$ & implied $c$ & our predicted correlation & ratio to theirs \\
+        \hline
+        $0.430\ (=m)$    & $1.000$ & $0.111$ & $1.00$ \\
+        $0.600$          & $1.036$ & $0.138$ & $1.25$ \\
+        $0.855\ (=m/h^2)$& $1.089$ & $0.186$ & $1.68$ \\
+    \end{tabular}
+    \caption{%
+        Predicted step-sibling phenotypic correlations at $h^2 = 0.503$, $m = 0.430$, as the phenotypic partner correlation is varied.
+        The first row is their published prediction of $0.111$.
+        The implied $c$ column is the value their freely fitted half-sibling multiplier would take at that $r$; all three lie inside their interval $[0.864,\,1.127]$.%
+    }
+    \label{tab:eftedal-numbers}
+    \end{floatcard}
+\end{table}
+
+\section{What this does and does not change}
+
+Three things bound the practical importance of the correction.
+
+First, it reaches one class only.
+Co-cousins are unaffected, and they are both the larger in-law sample --- on the order of $800{,}000$ pairs against roughly $10{,}000$ step-sibling pairs --- and the class carrying their conclusion about relatives-in-law.
+Their co-cousin prediction of $0.057$ against an observed $0.075$ stands exactly as they report it.
+
+Second, its size turns on $r/m$, which their data barely constrain.
+Their interval on $c$ spans the range in Table~\ref{tab:eftedal-numbers} entirely, and they say as much themselves.
+
+Third, and least comfortably, the correction does not improve the fit.
+At the equilibrium value $r = m/h^2$ the corrected prediction of $0.186$ overshoots the observed $0.127$ and falls outside its interval, where their expression undershoots it only slightly.
+The right reading of that is probably not that the corrected expression is wrong but that the equilibrium constraint \eqref{eq:mr} is: a phenotypic partner correlation of $0.855$ for school performance is far above any plausible spousal correlation, and their own point estimate $c = 0.972$ implies $r = 0.297 < m$, which \eqref{eq:mr} forbids outright.
+Both readings say the same thing --- that their fitted $m$ is larger than primary phenotypic assortment at equilibrium can generate --- which is the direction their paper argues for on other grounds.
+
+It is worth noting what the corrected expression does to the shape of the residuals.
+Under their version, the Fisherian model undershoots both in-law classes, which admits a single shared-environment reading.
+Under the corrected one it overshoots step siblings while still undershooting co-cousins, and that sign flip within the same category is harder to attribute to one mechanism.
+
+\bibliographystyle{unsrtnat}
+\bibliography{../../../../bib/references}
+
+\end{document}

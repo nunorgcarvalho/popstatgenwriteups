@@ -24,31 +24,36 @@
 \newcommand{\diag}{\mathrm{diag}} % diagonal (of a matrix)
 \newcommand{\IBD}{\mathrm{IBD}} % identical-by-descent
 
-% Pedigree notation, all set-valued operators, so calligraphic rather than upright.
-% \mu(X) is ONE step of mating and \Mu(X) arbitrarily many; capital mu has no glyph of its own in
-% TeX, so calligraphic M stands in for it and the pair reads as lower/upper case of one letter.
-% \Mubar and \Muhat use \overline/\widehat rather than \bar/\hat, which sit visibly off-centre
-% over a calligraphic letter.
-% NB: write an indicator over these as \mathbf{1}_\mu and NOT \mathbb{1}: amssymb's msbm font has
-% no digit glyphs, so \mathbb{1} silently renders as an unrelated symbol with no warning from TeX.
-\newcommand{\Anc}{\mathcal{A}}                  % ancestors of an individual
-\newcommand{\Mu}{\mathcal{M}}                   % mating closure: arbitrarily many steps
-\newcommand{\Mubar}{\overline{\mathcal{M}}}     % the mating chain joining two probands' ancestors
-\newcommand{\Muhat}{\widehat{\mathcal{M}}}      % that chain at the most recent generation
+% Pedigree notation: set-valued operators, so calligraphic rather than upright. Capital mu has no
+% glyph of its own in TeX, so calligraphic M stands in for it -- which also keeps the mating
+% operator \Mu visibly distinct from the scalar co-path coefficient \mu.
+% Two traps, both of which have already cost a round:
+%   - the indicator MUST be \mathbf{1}, never \mathbb{1}. amssymb's msbm font has no digit
+%     glyphs, so \mathbb{1} renders as an unrelated symbol with no warning from TeX at all.
+%   - if one of these ever needs an accent, use \overline/\widehat; \bar/\hat sit visibly
+%     off-centre over a calligraphic letter.
+\newcommand{\Anc}{\mathcal{A}}                % ancestors of an individual
+\newcommand{\Mu}{\mathcal{M}}                 % matings: \Mu^{(n)} at n steps, \Mu the closure
+\newcommand{\Muhat}{\widehat{\mathcal{M}}}      % the single most recent mating chain of a pair
+\newcommand{\Nmu}{N_{\mathcal{M}}}              % mating distance; \widehat{\Nmu} averages a couple's four
+\newcommand{\Lin}{\mathcal{L}}                % lineal chains: \Lin(X,Y) between two lineal relatives
+\newcommand{\Nlin}{N_{\mathcal{L}}}             % lineal distance, in meioses
+\newcommand{\Nd}{N_{\mathcal{D}}}               % descent distance, in meioses
+\newcommand{\IMu}{\mathbf{1}_{\mathcal{M}}}   % indicator that two individuals have mated
 
 % Generation-indexed variance components. Under assortative mating the additive variance is
 % no longer constant across generations, so the scale has to be pinned to a named generation:
 % (0) = the randomly mating base population, (eq) = the assortative-mating equilibrium.
 \newcommand{\VAo}{V_A^{(0)}}            % additive variance in the base population
 \newcommand{\VAeq}{V_A^{(\mathrm{eq})}} % additive variance at equilibrium
-\newcommand{\VPo}{V_P^{(0)}}            % phenotypic variance in the base population
-\newcommand{\VPeq}{V_P^{(\mathrm{eq})}} % phenotypic variance at equilibrium
+\newcommand{\VYo}{V_Y^{(0)}}            % phenotypic variance in the base population
+\newcommand{\VYeq}{V_Y^{(\mathrm{eq})}} % phenotypic variance at equilibrium
 \newcommand{\hsqo}{h^2_{(0)}}           % heritability in the base population
 \newcommand{\hsqeq}{h^2_{(\mathrm{eq})}}% heritability at equilibrium
 % The same quantities in an unspecified generation t, for stating the convention and the
 % recursions. rho_y and V_E are the only generation-invariant quantities and get no superscript.
 \newcommand{\VAt}{V_A^{(t)}}            % additive variance in generation t
-\newcommand{\VPt}{V_P^{(t)}}            % phenotypic variance in generation t
+\newcommand{\VYt}{V_Y^{(t)}}            % phenotypic variance in generation t
 \newcommand{\hsqt}{h^2_{(t)}}           % heritability in generation t
 \newcommand{\mut}{\mu^{(t)}}            % co-path coefficient in generation t
 \newcommand{\muo}{\mu^{(0)}}            % co-path coefficient in the base population
