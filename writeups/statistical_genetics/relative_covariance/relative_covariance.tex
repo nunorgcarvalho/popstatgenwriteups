@@ -172,11 +172,12 @@ Under our model and assumptions so far, this returns the true expected cross-pro
 The genetic cross-product between two individuals is, fundamentally, an effect-size-weighted function of the genotypes they actually carry at causal sites.
 Notably, this formula does not require any knowledge of the relatedness of the two individuals.
 
-\subsection{Level 1 --- genome-wide allelic sharing}
+\subsection{Level 1 --- genome-wide allelic sharing}\label{sec:level1}
 If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}.
 However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
 
 \begin{assumption}{Random-effects}{Random effects, exchangeable across variants}
+    \unsure{I think in the future I should actually split these up into separate assumptions because later deritvations only rely on a subset of these}
 Treating the effects as random, they are mean-zero and uncorrelated across variants, the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$, and every variant carries the same second moment:
 $$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}], \quad \E[\beta_k^2] = \E[\beta_{k'}^2] . $$
 The last condition is a statement about the \emph{prior} we place on effects, not about their realized values: it says we have no information distinguishing one variant from another, so we weight them symmetrically.
@@ -201,7 +202,9 @@ Therefore
     C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
 \end{equation}
 The quantity multiplying $V_A$ is the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by:
-$$A_{ij} =  \frac{1}{M}\sum_{k} x_{ik} x_{jk}$$
+\begin{equation}\label{eq:A-def}
+    A_{ij} \;:=\; \frac{1}{M}\sum_{k} x_{ik} x_{jk}
+\end{equation}
 This can be thought of as an identity-by-state (IBS)-based measure of ``relatedness'', and is exactly the $(i,j)$ entry of what is typically computed as a Genetic Relatedness Matrix (GRM), $\bA$.
 Therefore, we can further simplify:
 \begin{equation}\label{eq:level1}
@@ -1004,7 +1007,7 @@ Under equilibrium, we fill in the same value, $c_k^{(eq)}$ for all states of $c_
     \boxed{\, c^{(\mathrm{eq})}_k \,=\, \frac{\beta_k}{\big(1-\rhogeq\big) + \sqrt{\big(1-\rhogeq\big)^2 + 2\mueq\beta_k^2}} \,}
 \end{gathered}
 \end{equation}
-Only the $+$ root is admissible: the $-$ root gives a $c^{(\mathrm{eq})}_k$ of the opposite sign to $\beta_k$, and does not reduce to the base-population value when assortment is switched off.
+Only the positive root is admissible: the negative root gives a $c^{(\mathrm{eq})}_k$ of the opposite sign to $\beta_k$, and does not reduce to the base-population value when assortment is switched off.
 
 However, we still have the problem that $\mueq$ and $\rhogeq$ depend on $\VAeq$, which itself depends on the sum of $c^{(eq)}_k$ for all $k$, which are quantities we are solving for.
 Summing \eqref{eq:c-eq} over variants does not resolve this, because each variant carries its own square root containing its own $2\mueq\beta_k^2$, so the $M$ terms cannot be cleanly gathered into one.
@@ -1128,10 +1131,39 @@ We can define $\rhogeq$ purely in terms of the starting parameters to resolve th
 \begin{equation}\label{eq:rhog-eq}
     \boxed{\ \rhogeq \;=\; \frac{1 - \sqrt{1 - 4\,\rho_y\,\hsqo\big(1-\hsqo\big)}}{2\big(1-\hsqo\big)} \ }
 \end{equation}
-The $-$ root is the admissible one and the discriminant is never negative.
+The negative root is the admissible one and the discriminant is never negative.
+Finally, we'll return to obtaining expressions for $a_{kl}^{(\mathrm{eq})}$ and $s_{kl}^{(\mathrm{eq})}$.
+We can quickly determine that the two equilibrium values are actually equivalent by making use of the general formula for $s_{kl}^{(t)}$ we wrote in Table~\ref{tab:as-recursion}:
+\begin{equation}\label{eq:s-eq}
+\begin{gathered}
+\begin{aligned}
+    s^{(\mathrm{eq})}_{kl} \;&=\; \tfrac12\big(s^{(\mathrm{eq})}_{kl} + a^{(\mathrm{eq})}_{kl}\big) \\[4pt]
+    \tfrac12\,s^{(\mathrm{eq})}_{kl} \;&=\; \tfrac12\,a^{(\mathrm{eq})}_{kl}
+\end{aligned} \\[8pt]
+    \boxed{\ s^{(\mathrm{eq})}_{kl} \;=\; a^{(\mathrm{eq})}_{kl} \qquad (k \neq l) \ }
+\end{gathered}
+\end{equation}
+This states that at equilibrium, the covariance between alleles on the same gamete vs opposite gametes is the same, with the exception of the trivial case $k=l$.
+Then, we can use the general formula for $a_{kl}^{(t)}$ and the approximate equilibrium formula for $c_k^{(eq)}$ we obtained in \eqref{eq:c-eq-approx} to obtain $a_{kl}^{(eq)}$:
+\begin{equation}\label{eq:a-eq}
+\begin{gathered}
+\begin{aligned}
+    a^{(\mathrm{eq})}_{kl} \;&=\; \mueq\, c^{(\mathrm{eq})}_k\, c^{(\mathrm{eq})}_l
+    \;\approx\; \mueq\,\frac{\beta_k\,\beta_l}{4\big(1-\rhogeq\big)^2} \\[4pt]
+    \;&=\; \frac{\rhogeq}{\VAeq} \cdot \frac{\beta_k\,\beta_l}{4\big(1-\rhogeq\big)^2}
+\end{aligned} \\[8pt]
+    \boxed{\ a^{(\mathrm{eq})}_{kl} \;=\; s^{(\mathrm{eq})}_{kl} \;=\; \frac{\beta_k\,\beta_l}{4\,\VAo} \cdot \frac{\rhogeq}{1-\rhogeq} \ }
+\end{gathered}
+\end{equation}
+using $\mueq = \rhogeq/\VAeq$ from \eqref{eq:rhog-t} and then $\VAeq = \VAo/\big(1-\rhogeq\big)$ from \eqref{eq:VA-eq}, which cancels one of the two factors of $1-\rhogeq$.
+Since $s^{(\mathrm{eq})}_{kl} = a^{(\mathrm{eq})}_{kl}$, \eqref{eq:x-from-as} collapses to a single term, and the covariance between the genotypes at two distinct variants is
+\begin{equation}\label{eq:covx-eq}
+    \boxed{\ \Cov\big[\,x_{ik},\, x_{il}\,\big] \;=\; 4\,a^{(\mathrm{eq})}_{kl} \;=\; \frac{\beta_k\,\beta_l}{\VAo} \cdot \frac{\rhogeq}{1-\rhogeq} \qquad (k \neq l) \ }
+\end{equation}
 
 \subsection{Covariance between relatives}
 Now that we have derived the statistical properties of the population at equilibrium under assortative mating, we will determine the expected covariance between pairs of individuals given some set of information, similar to Section~\ref{sec:random-mating} of this write-up.
+In this section, we only consider information obtained from a pedigree.
 
 \subsubsection{Inheritance of genetic values}
 Rather than modelling the inheritance of allele states from parent to offspring, we will instead model the transmission of genetic values themselves.
@@ -1673,6 +1705,16 @@ $A$ is the oldest individual on $\Lin(A,D)$, so $C_A = (1+\rho_y)/(1+\rho_g)$, w
 \end{table}
 
 \comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
+
+\subsection{Additional information from relatedness information}
+So far, we have derived the covariance between individuals solely given their relationship in a pedigree.
+If we have additional information about the two individuals $i$ and $j$, such as their IBS-based relatedness, $A_{ij}$, defined in \eqref{eq:A-def}, or their IBD-based relatedness, $\pi_{ij}$, defined in \eqref{eq:pi-def}, then we can obtain a more precise quantity.
+
+\subsubsection{Impact of assortative mating on IBS-relatedness}
+Earlier in Section~\ref{sec:level1}, we used the \assumptionid{Random-effects} assumption to rewrite the expected genetic cross-product, \eqref{eq:level0}, as instead being the product of the IBS-based relatedness, $A_{ij}$, and the sum of squared effect sizes, $\VAo$.
+However, specifically the $\E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}]$ condition of that assumption no longer holds, since large-effect variants will also tend to have larger genotype cross-products, as modeled by $a_{kk'}$ and $s_{kk'}$, therefore creating a dependence between the products $x_{ik} x_{jk'}$ and $\beta_k \beta_{k'}$.
+We can make use of the equilibrium expression for $a_{kl}^{(eq)} = s_{kl}^{(eq)}$ we derived earlier:
+\todo{Write the multi-step equations that express eq4 }
 
 \subsection{Level 0 --- unchanged}
 Conditioning on both individuals' causal genotypes and the true effect sizes leaves nothing to average over, so \eqref{eq:level0} holds exactly as written.

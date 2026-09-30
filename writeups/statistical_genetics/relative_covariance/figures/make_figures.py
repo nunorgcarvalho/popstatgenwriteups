@@ -705,6 +705,85 @@ def check_equilibrium() -> int:
     assert V_A0 / (1 - rho_g) > V_A, "dropping the term must OVERSTATE V_A, as the box claims"
     checked += 2
 
+    # -- eq:s-eq, eq:a-eq and eq:covx-eq ------------------------------------------------------
+    # s == a off-diagonal is EXACT -- it is the fixed point of the linear eq:s-recursion -- and
+    # is already asserted above straight off the iterated state. What is added here is the
+    # closed form for a, which is only as good as [Uniform-inflation] + [VA-inflation], and the
+    # genotype covariance it implies.
+    #
+    # The boxed collapse is exact GIVEN V_A = V_A0/(1-rho_g), so that algebra is separated out
+    # and checked at machine precision; only the numeric comparison against the true fixed
+    # point is allowed to carry approximation error.
+    mu_ap = rho_g_ap / V_A_ap
+    for k in kk:
+        for l in kk:
+            step = mu_ap * b[k] * b[l] / (4 * (1 - rho_g_ap) ** 2)      # eq:a-eq, line 2
+            box = b[k] * b[l] / (4 * V_A0) * rho_g_ap / (1 - rho_g_ap)  # eq:a-eq, boxed
+            assert abs(step - box) < 1e-15, f"eq:a-eq algebra at ({k},{l})"
+            assert abs(4 * box - b[k] * b[l] / V_A0 * rho_g_ap / (1 - rho_g_ap)) < 1e-15
+    checked += 2
+    # The t=1 column of tab:as-recursion is the same expression with rho_g^(0) in place of
+    # rho_g/(1-rho_g), which is the "geometric series" reading the prose gives it.
+    for k in kk:
+        for l in kk:
+            gen1 = b[k] * b[l] / (4 * V_A0) * (rho_y * h0)
+            ratio = rho_g_ap / ((1 - rho_g_ap) * rho_y * h0)
+            box = b[k] * b[l] / (4 * V_A0) * rho_g_ap / (1 - rho_g_ap)
+            assert abs(gen1 * ratio - box) < 1e-15, f"eq:a-eq vs t=1 at ({k},{l})"
+    checked += 1
+    # Numeric, against the exact fixed point. These effects are deliberately far from
+    # polygenic (M_e is under 3), so the tolerance is the predicted error with slack; the
+    # polygenic battery below is where the prediction has to be tight.
+    predicted_a = rho_g_ap / (2 * (1 - rho_g_ap) * M_e)
+    for k in kk:
+        for l in kk:
+            if k == l:
+                continue
+            box = b[k] * b[l] / (4 * V_A0) * rho_g_ap / (1 - rho_g_ap)
+            rel = abs(box - aa[(k, l)]) / abs(aa[(k, l)])
+            assert rel < 2 * predicted_a, f"eq:a-eq at ({k},{l}): rel {rel:.3e}"
+            assert abs(cov(k, l) - 4 * aa[(k, l)]) < 1e-15, "eq:covx-eq is eq:x-from-as with s=a"
+    checked += 2
+
+    # The same claims where [Large-Me] actually holds: many variants, so the leading-order
+    # error printed under eq:a-eq must not merely bound the truth but MATCH it. A closed form
+    # that happened to be wrong by a constant factor would pass the loose bound above and
+    # fail here. Signs alternate so that the error's own sign claim is exercised on pairs
+    # whose product beta_k beta_l is negative.
+    for n_poly, spread, ry_poly, VE_poly in ((60, 0.35, 0.40, 1.0), (90, 0.20, 0.65, 0.5),
+                                             (150, 0.80, 0.30, 2.0)):
+        bp = {j: (1.0 + spread * math.cos(2.7 * j)) * math.sqrt(1.0 / n_poly)
+                 * (1 if j % 3 else -1)
+              for j in range(1, n_poly + 1)}
+        kp = list(bp)
+        VA0p = sum(v * v for v in bp.values())
+        Mep = VA0p**2 / sum(v**4 for v in bp.values())
+        assert Mep > 40, "the polygenic battery must actually be polygenic"
+        # only the diagonal of a feeds the c recursion, so the full matrix is never formed
+        cp = {k: bp[k] / 2 for k in kp}
+        adg = {k: 0.0 for k in kp}
+        for _ in range(4000):
+            VAp = 2 * sum(bp[j] * cp[j] for j in kp)
+            mp = ry_poly / (VAp + VE_poly)
+            nxt = {k: 0.5 * (1 + ry_poly * VAp / (VAp + VE_poly)) * cp[k]
+                   + bp[k] * (0.25 - 0.5 * adg[k]) for k in kp}
+            adg = {k: mp * cp[k] ** 2 for k in kp}
+            cp = nxt
+        VAp = 2 * sum(bp[j] * cp[j] for j in kp)
+        mp, rgp = ry_poly / (VAp + VE_poly), ry_poly * VAp / (VAp + VE_poly)
+        for k, l in ((1, 2), (3, n_poly // 2), (7, n_poly), (2, 2)):
+            exact = mp * cp[k] * cp[l]                                   # eq:a-recursion
+            box = bp[k] * bp[l] / (4 * VA0p) * rgp / (1 - rgp)           # eq:a-eq
+            rel = (box - exact) / exact                                  # signed, not |.|
+            pred = (rgp / (2 * (1 - rgp))
+                    * ((bp[k] ** 2 + bp[l] ** 2) / VA0p - 1 / Mep))
+            assert abs(rel / pred - 1) < 0.05, \
+                f"eq:a-eq error {rel:+.3e} vs printed {pred:+.3e} at ({k},{l})"
+            # the sign claim: large-effect pairs overstated, small-effect pairs understated
+            big = (bp[k] ** 2 + bp[l] ** 2) * Mep > VA0p
+            assert (rel > 0) == big, f"eq:a-eq sign at ({k},{l})"
+            checked += 2
+
     # -- the justification's error term -------------------------------------------------------
     # relative error in V_A of order rho_g / (2(1-rho_g) M_e), with M_e the effective count.
     M_e = V_A0**2 / sum(v**4 for v in b.values())
