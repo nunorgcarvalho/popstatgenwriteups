@@ -2797,6 +2797,368 @@ def check_general_formulas(n_variants: int = 3) -> int:
     return checked
 
 
+# ----------------------------------------------------------------------------------------------
+# Section 2.4: genotype- and allele-level covariance between relatives at equilibrium, and the
+# covariance given the meioses. Numeric, at the EXACT fixed point (no Uniform-inflation), with
+# unequal mixed-sign effects, on the allele-level version of the section-2.3 path-class pedigree.
+#
+# The model is built at the allele level: founders carry eq:z-within as exogenous
+# covariances, every descendant is built by eq:transmit-mean plus its segregation self-loop, and
+# the co-paths carry the raw equilibrium mu. Nothing downstream of the founders is imposed, so
+# the first check -- every descendant reproduces eq:z-within -- is what earns "equilibrium".
+# E[pi | P] is computed independently of pathMgr, by the gene-origin recursion.
+# ----------------------------------------------------------------------------------------------
+
+def _exact_equilibrium(b: dict, V_E: float, rho_y: float):
+    """Iterate eq:c-recursion to the exact fixed point; return c, a, V_A, mu, rho_g."""
+    kk = list(b)
+    c = {k: b[k] / 2 for k in kk}
+    a_kk = {k: 0.0 for k in kk}
+    for _ in range(20000):
+        V_A = 2 * sum(b[j] * c[j] for j in kk)
+        V_P = V_A + V_E
+        nxt = {k: 0.5 * (1 + rho_y * V_A / V_P) * c[k] + b[k] * (0.25 - 0.5 * a_kk[k]) for k in kk}
+        a_kk = {k: (rho_y / V_P) * c[k] ** 2 for k in kk}
+        c = nxt
+    V_A = 2 * sum(b[j] * c[j] for j in kk)
+    mu = rho_y / (V_A + V_E)
+    a = {(k, l): mu * c[k] * c[l] for k in kk for l in kk}
+    return c, a, V_A, mu, rho_y * V_A / (V_A + V_E)
+
+
+def _allele_pedigree(founders, kids, matings, b, V_E, a, mu):
+    """Allele-level equilibrium pedigree; returns (model, engine)."""
+    import itertools
+    kk = list(b)
+    people = list(founders) + [ch for ch, _, _ in kids]
+    lines = ["latent: " + ", ".join([_z(w, o, k) for w in people for o in ("mat", "pat") for k in kk]
+                                   + [f"g_{w}" for w in people] + [f"e_{w}" for w in people])]
+    for f in founders:
+        als = [(o, k) for o in ("mat", "pat") for k in kk]
+        lines += [f"{_z(f, o, k)} ~~ 0.5*{_z(f, o, k)}" for o, k in als]
+        lines += [f"{_z(f, o1, k1)} ~~ {a[(k1, k2)]!r}*{_z(f, o2, k2)}"         # eq:z-within
+                  for (o1, k1), (o2, k2) in itertools.combinations(als, 2)]
+    for ch, m, p in kids:
+        for o, par in (("mat", m), ("pat", p)):
+            for k in kk:
+                lines.append(f"{_z(ch, o, k)} ~ 0.5*{_z(par, 'mat', k)} + 0.5*{_z(par, 'pat', k)}")
+                lines.append(f"{_z(ch, o, k)} ~~ {0.25 - 0.5 * a[(k, k)]!r}*{_z(ch, o, k)}")
+    for w in people:
+        lines += [f"x_{w}{k} ~ {_z(w, 'mat', k)} + {_z(w, 'pat', k)}" for k in kk]
+        lines.append(f"g_{w} ~ " + " + ".join(f"{b[k]!r}*x_{w}{k}" for k in kk))
+        lines += [f"y_{w} ~ g_{w} + e_{w}", f"e_{w} ~~ {V_E!r}*e_{w}"]
+    lines += [f"y_{x} -- {mu!r}*y_{y}" for x, y in matings]
+    model = pm.from_text("\n".join(lines), name="allele-level equilibrium pedigree")
+    return model, pm.RAMEngine(model)
+
+
+def check_genomic_relatedness() -> int:
+    """Assert Section 2.4: eq:z-within through eq:y-given-pi."""
+    import random
+    import numpy as np
+    b = {1: 0.62, 2: -0.44, 3: 0.31}          # far from polygenic on purpose: these are exact
+    kk = list(b)
+    V_E, rho_y = 0.71, 0.38
+    c, a, V_A, mu, rho_g = _exact_equilibrium(b, V_E, rho_y)
+    tol = 1e-10
+    checked = 0
+
+    # -- eq:c-decomp, exact, and the sum it gives -----------------------------------------------
+    for k in kk:
+        assert abs(b[k] * (0.5 - a[(k, k)]) - (1 - rho_g) * c[k]) < 1e-12, f"eq:c-decomp k={k}"
+        checked += 1
+    assert abs(sum(b[k] ** 2 * (1 - 2 * a[(k, k)]) for k in kk) - (1 - rho_g) * V_A) < 1e-12
+    checked += 1
+    # eq:c-decomp's displayed steps: c_k expanded through eq:z-within, split into the share
+    # through other alleles (rho_g c_k) and the allele itself; and its equivalence to the quadratic
+    for k in kk:
+        expanded = sum(b[l] * (2 * a[(k, l)] + (0.5 - a[(k, k)]) * (k == l)) for l in kk)
+        through_others = 2 * mu * c[k] * sum(b[l] * c[l] for l in kk)
+        itself = b[k] * (0.5 - a[(k, k)])
+        assert abs(expanded - c[k]) < 1e-12, "eq:c-decomp line 1"
+        assert abs(through_others - rho_g * c[k]) < 1e-12, "eq:c-decomp line 2, first brace"
+        assert abs(through_others + itself - c[k]) < 1e-12
+        assert abs(2 * mu * b[k] * c[k] ** 2 + 2 * (1 - rho_g) * c[k] - b[k]) < 1e-12, "== eq:c-eq-quadratic"
+        checked += 4
+        # eq:x-resid-within's factored line, and the finite c_k / beta_k quoted under it
+        assert abs(c[k] / b[k] - 1 / ((1 - rho_g) + math.sqrt((1 - rho_g) ** 2 + 2 * mu * b[k] ** 2))) < 1e-12
+        for l in kk:
+            boxed = (1 - 2 * a[(k, k)]) * (k == l) - (1 - rho_g) * 4 * c[k] * c[l] / V_A
+            factored = (1 - rho_g) * (2 * c[k] / b[k] * (k == l) - 4 * c[k] * c[l] / V_A)
+            assert abs(boxed - factored) < 1e-12, "eq:x-resid-within factored"
+        checked += 2
+
+    # eq:c-decomp-sum's approximation and eq:x-resid-within's last line, where [Large-Me] holds:
+    # the error must shrink as M_e grows, or the approximation is not the one the text claims.
+    errs = []
+    for n_poly in (30, 120, 480):
+        bp = {j: (1.0 + 0.35 * math.cos(2.7 * j)) * math.sqrt(0.6 / n_poly) * (1 if j % 3 else -1)
+              for j in range(1, n_poly + 1)}
+        cp, ap, VAp, mup, rgp = _exact_equilibrium(bp, 0.7, 0.4)
+        VA0p = sum(v * v for v in bp.values())
+        e_sum = abs((1 - rgp) * VAp - VA0p) / VA0p
+        e_res = max(abs((1 - rgp) * 4 * cp[k] * cp[l] / VAp - bp[k] * bp[l] / VA0p)
+                    / abs(bp[k] * bp[l] / VA0p) for k, l in ((1, 2), (3, n_poly), (5, 7)))
+        # eq:x-resid-within-approx, middle line (Uniform-inflation only), diagonal and off-diagonal
+        for k, l in ((1, 1), (1, 2), (3, n_poly)):
+            exact = (1 - rgp) * (2 * cp[k] / bp[k] * (k == l) - 4 * cp[k] * cp[l] / VAp)
+            mid = (k == l) - bp[k] * bp[l] / ((1 - rgp) * VAp)
+            assert abs(exact - mid) < 5 * rgp / (1 - rgp) * max(bp[k] ** 2, bp[l] ** 2) / VA0p + 1e-12
+        errs.append((e_sum, e_res))
+    for (s0, r0), (s1, r1) in zip(errs, errs[1:]):
+        assert s1 < s0 and r1 < r0, f"approximation errors must shrink with M_e: {errs}"
+    assert errs[-1][0] < 1e-2 and errs[-1][1] < 1e-2, errs
+    checked += 2
+
+    F, K, MT = PATH_CLS_FOUNDERS, PATH_CLS_KIDS, PATH_CLS_MATINGS
+    model, eng = _allele_pedigree(F, K, MT, b, V_E, a, mu)
+    cov = lambda u, v: float(eng.cov(u, v))
+    people = list(F) + [ch for ch, _, _ in K]
+    par = {ch: (m, p) for ch, m, p in K}
+
+    # -- eq:z-within and eq:x-within, reproduced by EVERY descendant -----------------------
+    for w in people:
+        assert abs(cov(f"g_{w}", f"g_{w}") - V_A) < tol, f"Var[g_{w}]"
+        for k in kk:
+            for l in kk:
+                for o1 in ("mat", "pat"):
+                    for o2 in ("mat", "pat"):
+                        want = a[(k, l)] + (0.5 - a[(k, k)]) * (o1 == o2 and k == l)
+                        assert abs(cov(_z(w, o1, k), _z(w, o2, l)) - want) < tol
+                want = 4 * a[(k, l)] + (1 - 2 * a[(k, k)]) * (k == l)
+                assert abs(cov(f"x_{w}{k}", f"x_{w}{l}") - want) < tol
+                # eq:x-resid-within
+                r = cov(f"x_{w}{k}", f"x_{w}{l}") - 2 * c[k] * 2 * c[l] / V_A
+                want = (1 - 2 * a[(k, k)]) * (k == l) - (1 - rho_g) * 4 * c[k] * c[l] / V_A
+                assert abs(r - want) < tol, "eq:x-resid-within"
+        checked += 1
+
+    # -- the segregation-model explanation of eq:x-resid-within (a sanity check; the text no longer prints it) ----------------------------------
+    # Parents m, p of child a in the path-class pedigree. Every quantity below is a linear
+    # combination of model variables, so it is evaluated through the engine by bilinearity.
+    def cov_lc(u, v):
+        return sum(cu * cv * cov(x, y) for x, cu in u.items() for y, cv in v.items())
+    bco = {k: 2 * c[k] / V_A for k in kk}
+    def resid(w, k):                         # x_wk - b_k g_w
+        return {f"x_{w}{k}": 1.0, f"g_{w}": -bco[k]}
+    def seg(k):                              # x_ak - (x_mk + x_pk)/2
+        return {f"x_a{k}": 1.0, f"x_m{k}": -0.5, f"x_p{k}": -0.5}
+    g_seg = {"g_a": 1.0, "g_m": -0.5, "g_p": -0.5}
+    par_x = lambda k: {f"x_m{k}": 0.5, f"x_p{k}": 0.5}
+    par_g = {"g_m": 0.5, "g_p": 0.5}
+    assert abs(cov_lc(g_seg, g_seg) - 0.5 * (1 - rho_g) * V_A) < tol
+    for k in kk:
+        assert abs(cov("x_m%d" % k, "g_p") - 2 * rho_g * c[k]) < tol
+        # both parts regress on their own genetic value with coefficient b_k
+        assert abs(cov_lc(par_x(k), par_g) / cov_lc(par_g, par_g) - bco[k]) < tol
+        assert abs(cov_lc(seg(k), g_seg) - (1 - rho_g) * c[k]) < tol
+        assert abs(cov_lc(seg(k), g_seg) / cov_lc(g_seg, g_seg) - bco[k]) < tol
+        for l in kk:
+            assert abs(cov(f"x_m{k}", f"x_p{l}") - 4 * a[(k, l)]) < tol
+            assert abs(cov_lc(resid("m", k), resid("p", l))) < tol, "mates' residuals uncorrelated"
+            assert abs(cov_lc(seg(k), seg(l)) - 0.5 * (1 - 2 * a[(k, k)]) * (k == l)) < tol
+            Rp = cov_lc({**seg(k), **{x: -bco[k] * v for x, v in g_seg.items()}},
+                        {**seg(l), **{x: -bco[l] * v for x, v in g_seg.items()}})
+            want = 0.5 * (1 - 2 * a[(k, k)]) * (k == l) - (1 - rho_g) * 2 * c[k] * c[l] / V_A
+            assert abs(Rp - want) < tol, "segregation-part residual"
+            R = (1 - 2 * a[(k, k)]) * (k == l) - (1 - rho_g) * 4 * c[k] * c[l] / V_A
+            assert abs(cov_lc(resid("a", k), resid("a", l)) - R) < tol
+            assert abs(R - 2 * Rp) < tol, "residual = 2 x segregation residual"
+    checked += 9
+
+    # -- E[pi | P] by the gene-origin recursion, independent of the engine ---------------------
+    gen = {}
+    def G(w):
+        if w not in par:
+            return 0
+        if w not in gen:
+            gen[w] = 1 + max(G(par[w][0]), G(par[w][1]))
+        return gen[w]
+    memo = {}
+    def P(A, B):                     # probability that alleles A=(who, origin), B are IBD
+        if A == B:
+            return 1.0
+        if (G(A[0]), A[0]) < (G(B[0]), B[0]):
+            A, B = B, A
+        if (A, B) in memo:
+            return memo[(A, B)]
+        if A[0] not in par or A[0] == B[0]:
+            out = 0.0                # founders' alleles are distinct; [No-inbreeding]
+        else:
+            src = par[A[0]][0 if A[1] == "mat" else 1]
+            out = 0.5 * P((src, "mat"), B) + 0.5 * P((src, "pat"), B)
+        memo[(A, B)] = out
+        return out
+    Epi = lambda X, Y: 1.0 if X == Y else sum(
+        P((X, u), (Y, v)) for u in ("mat", "pat") for v in ("mat", "pat")) / 2
+
+    # tab:x-rel-classes, as printed
+    lam_g, lam_y = (1 + rho_g) / 2, (1 + rho_y) / 2
+    table = {
+        "mates": (0, rho_g, 1),
+        "parent-offspring": (0.5, lam_g, 1),
+        "full sibs": (0.5, lam_g, 1),
+        "grandparent": (0.25, lam_g**2, (3 + rho_g) / 4),
+        "uncle-nephew": (0.25, lam_g**2, (3 + rho_g) / 4),
+        "first cousins": (0.125, lam_g**3, (4 + 3 * rho_g + rho_g**2) / 8),
+        "half sibs": (0.25, (1 + 2 * rho_g + rho_g * rho_y) / 4, (3 + rho_y) / 4),
+        "step sibs": (0, rho_g * lam_y**2, lam_y**2),
+    }
+    # the general rows: mating distance N and lineal distance N
+    for N in range(1, 6):
+        assert abs(rho_g * rho_y ** (N - 1) / rho_g - rho_y ** (N - 1)) < 1e-15
+        want = ((1 + rho_g) ** N - (1 - rho_g)) / (2 ** N * rho_g)
+        assert abs((lam_g ** N - (1 - rho_g) * 2.0 ** -N) / rho_g - want) < 1e-13
+        checked += 2
+    assert abs(table["grandparent"][2] - ((1 + rho_g) ** 2 - (1 - rho_g)) / (4 * rho_g)) < 1e-14
+
+    cases = PATH_CLS_CASES + (("self", ("A", "A"), (), (), ("young", "young")),)
+    for name, (X, Y), *_ in cases:
+        cg, ep = cov(f"g_{X}", f"g_{Y}"), Epi(X, Y)
+        ratio = (cg / V_A - (1 - rho_g) * ep) / rho_g                      # eq:x-rel-ratio
+        if name in table:
+            e0, g0, r0 = table[name]
+            assert abs(ep - e0) < 1e-15 and abs(cg / V_A - g0) < tol and abs(ratio - r0) < 1e-9, name
+            checked += 3
+        Delta = cg - (1 - rho_g) * V_A * ep
+        same = cross = 0.0
+        for k in kk:
+            for l in kk:
+                got = cov(f"x_{X}{k}", f"x_{Y}{l}")
+                want = (4 * c[k] * c[l] / V_A**2 * cg                          # eq:x-rel
+                        + ep * ((1 - 2 * a[(k, k)]) * (k == l) - (1 - rho_g) * 4 * c[k] * c[l] / V_A))
+                assert abs(got - want) < tol, f"eq:x-rel for {name} at ({k},{l})"
+                if k != l:
+                    assert abs(got / (4 * a[(k, l)]) - ratio) < 1e-8, f"eq:x-rel-ratio {name}"
+                if k == l:
+                    same += b[k] ** 2 * got
+                else:
+                    cross += b[k] * b[l] * got
+            for lev in ("g", "y"):                                          # eq:x-g-rel
+                want = 2 * c[k] / V_A * cov(f"g_{X}", f"{lev}_{Y}")
+                assert abs(cov(f"x_{X}{k}", f"{lev}_{Y}") - want) < tol, f"eq:x-g-rel {name}"
+        checked += 3
+        # eq:same-cross, and that the two parts sum back to Cov[g, g]
+        wgt = 4 * sum(b[k] ** 2 * c[k] ** 2 for k in kk) / V_A**2
+        assert abs(same - ((1 - rho_g) * V_A * ep + wgt * Delta)) < tol, f"same-variant {name}"
+        assert abs(cross - (1 - wgt) * Delta) < tol, f"cross-variant {name}"
+        assert abs(same + cross - cg) < tol
+        # eq:A-given-path, the exact line
+        EA = sum(cov(f"x_{X}{k}", f"x_{Y}{k}") for k in kk) / len(kk)
+        want = (ep * sum(1 - 2 * a[(k, k)] for k in kk) / len(kk)
+                + sum(4 * c[k] ** 2 / V_A**2 for k in kk) / len(kk) * Delta)
+        assert abs(EA - want) < tol, f"eq:A-given-path {name}"
+        checked += 4
+
+    # -- eq:z-rel: alleles reduce to the transmitting parents' genotypes -----------------------
+    def desc(anc, w):                 # is w a descendant of anc?
+        return w in par and (anc in par[w] or any(desc(anc, q) for q in par[w]))
+    for name, (X, Y), *_ in PATH_CLS_CASES:
+        if X == Y:
+            continue
+        for u in ("mat", "pat"):
+            for v in ("mat", "pat"):
+                for k in kk:
+                    for l in kk:
+                        got = cov(_z(X, u, k), _z(Y, v, l))
+                        if desc(X, Y):             # lineal: replace the descendant's allele only
+                            pY = par[Y][0 if v == "mat" else 1]
+                            want = 0.5 * cov(_z(X, u, k), f"x_{pY}{l}")
+                        elif desc(Y, X):
+                            pX = par[X][0 if u == "mat" else 1]
+                            want = 0.5 * cov(f"x_{pX}{k}", _z(Y, v, l))
+                        elif X in par and Y in par:
+                            pX, pY = par[X][0 if u == "mat" else 1], par[Y][0 if v == "mat" else 1]
+                            want = 0.25 * cov(f"x_{pX}{k}", f"x_{pY}{l}")
+                        else:
+                            continue
+                        assert abs(got - want) < tol, f"eq:z-rel {name} {u}{v} ({k},{l})"
+                if X in par and not desc(Y, X):
+                    pX = par[X][0 if u == "mat" else 1]
+                    for k in kk:
+                        want = c[k] / V_A * cov(f"g_{pX}", f"y_{Y}")
+                        assert abs(cov(_z(X, u, k), f"y_{Y}") - want) < tol, f"eq:z-rel y {name}"
+        checked += 1
+    # the half-sibling example in the text: the two fathers' alleles carry rho_y a_kl
+    for k in kk:
+        for l in kk:
+            assert abs(cov(_z("a", "mat", k), _z("h", "pat", l)) - rho_y * a[(k, l)]) < tol
+    checked += 1
+
+    # -- eq:sib-given-meioses, by exhaustive enumeration of the transmission indicators --------
+    import itertools
+    n = 4 * len(kk)
+    idx = lambda who, o, k: (0 if who == "m" else 2 * len(kk)) + (0 if o == "mat" else len(kk)) + (k - 1)
+    S = np.zeros((n, n))
+    for w1 in "mp":
+        for w2 in "mp":
+            for o1 in ("mat", "pat"):
+                for o2 in ("mat", "pat"):
+                    for k in kk:
+                        for l in kk:
+                            S[idx(w1, o1, k), idx(w2, o2, l)] = cov(_z(w1, o1, k), _z(w2, o2, l))
+    bb = np.array([b[k] for k in kk])
+    for B in itertools.product((0, 1), repeat=n):
+        B = np.array(B).reshape(4, len(kk))
+        w = [np.zeros(n), np.zeros(n)]
+        for s_, (rm, rp) in enumerate(((0, 1), (2, 3))):
+            for j, k in enumerate(kk):
+                w[s_][idx("m", "mat" if B[rm, j] else "pat", k)] += b[k]
+                w[s_][idx("p", "mat" if B[rp, j] else "pat", k)] += b[k]
+        ibd = (B[0] == B[2]).astype(int) + (B[1] == B[3]).astype(int)
+        want = 0.5 * V_A * (1 + rho_g) + sum(
+            b[k] ** 2 * (1 - 2 * a[(k, k)]) * 0.5 * (ibd[j] - 1) for j, k in enumerate(kk))
+        assert abs(w[0] @ S @ w[1] - want) < tol, "eq:sib-given-meioses"
+    checked += 1
+
+    # -- eq:g-given-meioses and eq:y-given-pi's slope, by gene-dropping -------------------------
+    # Given the meioses every allele is a copy of one founder allele, so a conditional
+    # cross-product is a quadratic form in the founders' covariance matrix.
+    rng = random.Random(20260930)
+    fal = [(f, o, k) for f in F for o in ("mat", "pat") for k in kk]
+    allv = [_z(*u) for u in fal] + [f"e_{w}" for w in people]
+    pos = {v: i for i, v in enumerate(allv)}
+    SA = np.array([[cov(u, v) for v in allv] for u in allv])
+    def drop():
+        src = {(f, o, k): (f, o, k) for f in F for o in ("mat", "pat") for k in kk}
+        for ch, m, p in K:
+            for o, pr in (("mat", m), ("pat", p)):
+                for k in kk:
+                    src[(ch, o, k)] = src[(pr, rng.choice(("mat", "pat")), k)]
+        return src
+    breaks = {"half cousins", "step cousins"}
+    for name, (X, Y), _, _, kinds in PATH_CLS_CASES:
+        ep, worst = Epi(X, Y), {}
+        for lev in ("gg", "yg", "gy", "yy"):
+            base, worst[lev] = cov(f"{lev[0]}_{X}", f"{lev[1]}_{Y}"), 0.0
+            # eq:y-given-pi: rho_y in the slope when an ANCESTOR is read at the phenotype
+            old = (lev[0] == "y" and kinds[0] == "old") or (lev[1] == "y" and kinds[1] == "old")
+            r = rho_y if old else rho_g
+            for _ in range(150):
+                s_ = drop()
+                wX, wY = np.zeros(len(allv)), np.zeros(len(allv))
+                for o in ("mat", "pat"):
+                    for k in kk:
+                        wX[pos[_z(*s_[(X, o, k)])]] += b[k]
+                        wY[pos[_z(*s_[(Y, o, k)])]] += b[k]
+                if lev[0] == "y":
+                    wX[pos[f"e_{X}"]] += 1
+                if lev[1] == "y":
+                    wY[pos[f"e_{Y}"]] += 1
+                ibd = {k: sum(s_[(X, u, k)] == s_[(Y, v, k)] for u in ("mat", "pat")
+                              for v in ("mat", "pat")) for k in kk}
+                # eq:g-given-meioses written with eq:c-decomp's weights, (1-r) 2 beta_k c_k
+                want = base + sum(2 * b[k] * c[k] * (1 - r) * (ibd[k] / 2 - ep) for k in kk)
+                worst[lev] = max(worst[lev], abs(wX @ SA @ wY - want))
+        if name in breaks:
+            # the text says these two FAIL, and why; a pass here would mean the text is wrong
+            assert worst["gg"] > 1e-3, f"{name} was expected to break eq:g-given-meioses"
+        else:
+            assert max(worst.values()) < tol, f"eq:g-given-meioses / slope for {name}: {worst}"
+        checked += 1
+    return checked
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="run the checks, write nothing")
@@ -2829,6 +3191,7 @@ def main() -> int:
     print(f"gen-2 alleles: {check_gen2_alleles(3)} results agree with pathMgr")
     for m_c in (3, 5):
         print(f"general M_c={m_c}: {check_general_formulas(m_c)} results agree with pathMgr")
+    print(f"genomic rel.:  {check_genomic_relatedness()} results agree with pathMgr")
 
     if args.check:
         return 0

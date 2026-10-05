@@ -174,23 +174,48 @@ Notably, this formula does not require any knowledge of the relatedness of the t
 
 \subsection{Level 1 --- genome-wide allelic sharing}\label{sec:level1}
 If we do not know the causal effect sizes, then we cannot apply \eqref{eq:level0}.
-However, we can assume that genetic effects' cross-products are independent of individuals' allelic sharing patterns.
+We therefore adopt the framework whereby variant effects sizes are random effects.
+Because we do not have any variant-specific information for distinguishing variants apart, their priors are identical up to the first two moments:
 
-\begin{assumption}{Random-effects}{Random effects, exchangeable across variants}
-    \unsure{I think in the future I should actually split these up into separate assumptions because later deritvations only rely on a subset of these}
-Treating the effects as random, they are mean-zero and uncorrelated across variants, the distribution of their cross-products $\{\beta_k \beta_{k'}\}$ is independent of the genotypes $\bX$, and every variant carries the same second moment:
-$$ \E[\beta_k]=0, \quad \E[\beta_k \beta_{k'}] = 0 \ \ (k \neq k'), \quad \E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}], \quad \E[\beta_k^2] = \E[\beta_{k'}^2] . $$
-The last condition is a statement about the \emph{prior} we place on effects, not about their realized values: it says we have no information distinguishing one variant from another, so we weight them symmetrically.
-\bundles{the infinitesimal / random-effects model.}
+\begin{assumption}{Zero-mean-effects}{Effects are mean-zero}
+The expected effect of every variant is zero:
+$$ \E[\beta_k] \;=\; 0 . $$
+\bundles{the infinitesimal / random-effects model; effects are as likely to raise the trait as to lower it.}
 \end{assumption}
 
-Taking the expectation of \eqref{eq:level0} over the effects, and using the independence of the cross-products from the genotypes (\assumptionid{Random-effects}) to replace $\E[\beta_k \beta_{k'} \mid \bX]$ by $\E[\beta_k \beta_{k'}]$:
+\begin{assumption}{Exchangeable-effects}{Every variant carries the same effect variance}
+Every variant has the same expected squared effect:
+$$ \E[\beta_k^2] \;=\; \E[\beta_{k'}^2] . $$
+
+\bundles{the infinitesimal / random-effects model; equal per-standardized-allele effect variance across variants.}
+\end{assumption}
+
+\begin{assumption}{Uncorrelated-effects}{Effects are uncorrelated across variants}
+The effects of two different variants have zero expected cross-product:
+$$ \E[\beta_k \beta_{k'}] \;=\; 0 \qquad (k \neq k') . $$
+\bundles{the infinitesimal / random-effects model, whose effects are drawn independently across variants.}
+\end{assumption}
+
+In the following assumption, we preclude genotype information, a form of variant-specific information, from influencing our priors for variants' effect sizes up to the second moment.
+Assortative mating and population stratification violate this assumption by ``leaking'' information regarding the first two moments of variant effect sizes.
+We are effectively imposing a constraint on any non-random mating that is correlated with effect size distributions.
+Later, in \assumptionid{Non-IBD-indep}, we impose a maximal version of this constraint.
+
+\begin{assumption}{Genotype-independent-effects}{Observing genotypes does not change the effects' first two moments}
+Conditioning on the genotypes leaves the first and second moments of the effects unchanged:
+$$ \E[\beta_k \mid \bX] \;=\; \E[\beta_k], \qquad \E[\beta_k \beta_{k'} \mid \bX] \;=\; \E[\beta_k \beta_{k'}] \qquad \text{for all } k, k' . $$
+\bundles{effects drawn independently of the genotypes; in particular, no selection and no assortative mating, both of which make the genotypes informative about the effects.}
+\end{assumption}
+
+Taking the expectation of \eqref{eq:level0} over the effects:
 $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
-    = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'}.
+    = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'} \mid \bX]\, x_{ik} x_{jk'}
+    = \sum_{k}\sum_{k'} \E[\beta_k \beta_{k'}]\, x_{ik} x_{jk'} ,
 $$
-Because the effects are mean-zero and uncorrelated across variants, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$; the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes.
-What remains is the diagonal, weighted by each variant's effect variance:
+the second step by \assumptionid{Genotype-independent-effects}.
+By \assumptionid{Uncorrelated-effects}, $\E[\beta_k\beta_{k'}] = 0$ whenever $k\neq k'$; the entire off-diagonal ($k\neq k'$) collapses regardless of any correlation between the genotypes.
+What remains is the diagonal, weighted by each variant's effect variance, which by \assumptionid{Exchangeable-effects} is the same for every variant:
 $$
     \E[\,g_i g_j \mid \bx_i, \bx_j \,]
     = \sum_{k} \E[\beta_k^2]\, x_{ik} x_{jk}.
@@ -201,6 +226,7 @@ Therefore
 \begin{equation}
     C_{ij}(\bx_i, \bx_j) \;=\; V_A \cdot \frac{1}{M}\sum_{k} x_{ik} x_{jk} .
 \end{equation}
+Unlike at Level 0, this cross-product is also a covariance: $\E[g_i \mid \bx_i, \bx_j] = \sum_k \E[\beta_k \mid \bX]\, x_{ik} = 0$ by \assumptionid{Genotype-independent-effects} and \assumptionid{Zero-mean-effects}.
 The quantity multiplying $V_A$ is the genome--wide genotype cross-product (i.e. allelic sharing), which we'll define by:
 \begin{equation}\label{eq:A-def}
     A_{ij} \;:=\; \frac{1}{M}\sum_{k} x_{ik} x_{jk}
@@ -328,7 +354,7 @@ This is valid down the generative chain $d_{ij}\to\pi_{ij}\to(\bx_i,\bx_j)\to y$
 \textbf{Level} & \textbf{Conditioned on} & $\E[y_i y_j \mid \cdot]$ & \textbf{New assumptions} \\
 \hline
 0 & causal genotypes & $g_i g_j$ & \assumptionid{Additivity} (given \assumptionid{No-IGE}, \assumptionid{Env-indep}) \\
-1 & realized sharing $A_{ij}$ & $V_A\,A_{ij}$ & \assumptionid{Random-effects} \\
+1 & realized sharing $A_{ij}$ & $V_A\,A_{ij}$ & \assumptionid{Zero-mean-effects}, \assumptionid{Exchangeable-effects}, \assumptionid{Uncorrelated-effects}, \assumptionid{Genotype-independent-effects} \\
 2 & realized relatedness $\pi_{ij}$ & $V_A\,\pi_{ij}$ & \assumptionid{No-mutation}, \assumptionid{Non-IBD-indep}, \assumptionid{No-inbreeding} \\
 3 & genetic degree $d_{ij}$ & $V_A\,\bar\pi_{d_{ij}}$ & \assumptionid{Genetic-degree} \\
 \hline
@@ -836,12 +862,20 @@ The four chains then contribute $c^{(t)}_k \cdot \mu^{(t)} \cdot c^{(t)}_l$ in t
 Setting $t=0$ recovers \eqref{eq:a-gen1}, since $c^{(0)}_k = \tfrac12\beta_k$ and $\muo = \rho_y/\VYo$.
 
 \paragraph{Covariance within a gamete.}
-When both alleles came from the \emph{same} parent, no chain can leave that parent and therefore the co-path is not crossed:
+To make derivations easier, we also assume that which chromosome in the parent an inherited allele is from is independent across variants.
+
+\begin{assumption}{Unlinked}{Variants are independently segregated}
+The transmission indicators of different variants are independent: for $k \neq l$, $B^{(m)}_{ok} \perp B^{(m)}_{ol}$, and likewise on the paternal side.
+Equivalently, every pair of causal variants recombines with probability $\tfrac12$ in every meiosis.
+\bundles{free recombination, no physical linkage}
+\end{assumption}
+
+Under \assumptionid{Unlinked},
 \begin{equation}\label{eq:s-recursion}
     \boxed{\ s^{(t+1)}_{kl} \;=\; \tfrac14 \Cov[\,x_{ik},\, x_{il}\,] \;=\; \tfrac12\Big(s^{(t)}_{kl} + a^{(t)}_{kl}\Big) \ }
 \end{equation}
 using \eqref{eq:x-from-as} for the parent's genotype covariance.
-In other words, when picking two non-linked alleles from the same gamete in an offspring, they are equally likely to have been from the same vs different gamete in the parent.
+In other words, when picking two alleles from the same gamete in an offspring, they are equally likely to have been from the same vs different gamete in the parent.
 Therefore, the covariance between the two offspring's alleles is the average of the across- vs same-gamete covariance in the parent generation.
 
 While $s^{(1)}_{kl} = 0$, the second generation is where the same-gamete covariance becomes non-zero: $s^{(2)}_{kl} = \tfrac12 a^{(1)}_{kl} = \beta_k\beta_l\rho_y/(8\VYo)$.
@@ -1161,7 +1195,7 @@ Since $s^{(\mathrm{eq})}_{kl} = a^{(\mathrm{eq})}_{kl}$, \eqref{eq:x-from-as} co
     \boxed{\ \Cov\big[\,x_{ik},\, x_{il}\,\big] \;=\; 4\,a^{(\mathrm{eq})}_{kl} \;=\; \frac{\beta_k\,\beta_l}{\VAo} \cdot \frac{\rhogeq}{1-\rhogeq} \qquad (k \neq l) \ }
 \end{equation}
 
-\subsection{Covariance between relatives}
+\subsection{Covariance between relatives at the level of phenotypic and genetic values}\label{sec:am-rel-values}
 Now that we have derived the statistical properties of the population at equilibrium under assortative mating, we will determine the expected covariance between pairs of individuals given some set of information, similar to Section~\ref{sec:random-mating} of this write-up.
 In this section, we only consider information obtained from a pedigree.
 
@@ -1704,19 +1738,340 @@ $A$ is the oldest individual on $\Lin(A,D)$, so $C_A = (1+\rho_y)/(1+\rho_g)$, w
     \end{floatcard}
 \end{table}
 
-\comment{For agents, the below is to not be edited yet. The user will explicitly say when to edit below this point. The text below this was written previously but is not guaranteed to be correct. This region ends at the matching comment just above the references.}
-
-\subsection{Additional information from relatedness information}
+\subsection{Covariance between relatives at the level of genotypes and alleles}\label{sec:am-rel-geno}
 So far, we have derived the covariance between individuals solely given their relationship in a pedigree.
 If we have additional information about the two individuals $i$ and $j$, such as their IBS-based relatedness, $A_{ij}$, defined in \eqref{eq:A-def}, or their IBD-based relatedness, $\pi_{ij}$, defined in \eqref{eq:pi-def}, then we can obtain a more precise quantity.
+First, we will derive the covariance between geneotypes and alleles within the same individual.
+Then we will generalize to covariances across relatives like in Section~\ref{sec:am-rel-values}.
+We'll then assess how measures of relatedness are impacted by assortative mating and how they predict covariances.
 
-\subsubsection{Impact of assortative mating on IBS-relatedness}
-Earlier in Section~\ref{sec:level1}, we used the \assumptionid{Random-effects} assumption to rewrite the expected genetic cross-product, \eqref{eq:level0}, as instead being the product of the IBS-based relatedness, $A_{ij}$, and the sum of squared effect sizes, $\VAo$.
-However, specifically the $\E[\beta_k \beta_{k'} \mid \bX] = \E[\beta_k \beta_{k'}]$ condition of that assumption no longer holds, since large-effect variants will also tend to have larger genotype cross-products, as modeled by $a_{kk'}$ and $s_{kk'}$, therefore creating a dependence between the products $x_{ik} x_{jk'}$ and $\beta_k \beta_{k'}$.
-We can make use of the equilibrium expression for $a_{kl}^{(eq)} = s_{kl}^{(eq)}$ we derived earlier:
-\todo{Write the multi-step equations that express eq4 }
+\subsubsection{Genotypic and allelic covariance within an individual}\label{sec:am-geno-within}
+In \eqref{eq:s-eq}, we derived that at equilibrium, the covariance between alleles on the same gamete vs different gametes is identical: $s_{kl} = a_{kl}$ (except for the trivial case of $k = l$, where $s_{kk} = \tfrac12$).
+We can express the covariance between any two alleles in an individual with a single equation:
+\begin{equation}\label{eq:z-within}
+    \boxed{\ \Cov\!\big[\,z^{(u)}_{ik},\, z^{(v)}_{il}\,\big] \;=\; a_{kl} \;+\; \big(\tfrac12 - a_{kk}\big)\,\mathbf{1}[\,u = v,\ k = l\,] \ }
+\end{equation}
+The second term simply accounts for the additional covariance of an allele with itself needed to reach its fixed variance value of $\tfrac12$.
+Plugging this into \eqref{eq:x-from-as} and using $\delta_{kl}$ as indicator variable for when $k=l$ returns a single expression for the covariance between genotypes within an individual:
+\begin{equation}\label{eq:x-within}
+    \Cov[\,x_{ik},\, x_{il}\,] \;=\; 4a_{kl} \;+\; \big(1 - 2a_{kk}\big)\,\delta_{kl} ,
+\end{equation}
 
-\comment{For agents, the above is the end of the do-not-edit region opened earlier; everything from here down may be edited again, the bibliography included.}
+To express the covariance of genotypes/alleles between two distinct individuals, it will help to condition on their genetic values.
+First, we revisit the covariance between an allele and its proband's phenotype, $c_k$, defined in \eqref{eq:c-def}.
+Expanding the phenotype into genotypes and alleles (per \assumptionid{GE-indep}, the proband's environment is independent of their genetics and therefore removed from the formula) and applying \eqref{eq:z-within}, $a_{kl} = \mu c_k c_l$ from \eqref{eq:a-recursion}, $\sum_l \beta_l c_l = \tfrac12 V_A$ from \eqref{eq:VA-from-as}, and $\mu V_A = \rho_g$ from \eqref{eq:rhog-t}:
+\begin{equation}\label{eq:c-decomp}
+\begin{gathered}
+\begin{aligned}
+    c_k \;=\; \Cov\!\big[\,z^{(u)}_{ik},\, y_i\,\big]
+    \;&=\; \sum_l \beta_l \sum_{v \in \{m,p\}} \Cov\!\big[\,z^{(u)}_{ik},\, z^{(v)}_{il}\,\big]
+    \;=\; \sum_l \beta_l \Big(\big(\tfrac12 - a_{kk}\big)\,\delta_{kl} + 2a_{kl}\Big) \\[4pt]
+    \;&=\; \underbrace{\beta_k\big(\tfrac12 - a_{kk}\big)}_{\text{the allele itself}} \;+\; \underbrace{2\mu c_k \sum_l \beta_l c_l}_{\text{through other alleles}} \\[4pt]
+    \;&=\; \beta_k\big(\tfrac12 - a_{kk}\big) \;+\; 2\mu c_k \cdot \tfrac12 V_A \\[4pt]
+    \;&=\; \beta_k\big(\tfrac12 - a_{kk}\big) \;+\; \rho_g\, c_k
+\end{aligned} \\[8pt]
+    \boxed{\ \beta_k\big(\tfrac12 - a_{kk}\big) \;=\; \big(1-\rho_g\big)\, c_k \ }
+\end{gathered}
+\end{equation}
+This equation is exact and does not make use of the later approximation of $c_k$ we derived (\approximationid{Uniform-inflation}).
+This decomposition shows how an allele's covariance with its proband's phenotype is split between its own direct effect, captured by $\beta_k$, and the effects of its correlated alleles due to assortartive mating.
+Scaling between $\beta_k$ and $c_k$ only requires the genome-wide correlation between spouses' genetic values, $\rho_g$, and a correction for the increased variance of genotypes under assortative mating, captured by $a_kk$, which is small in practice.
+If we were to plug in $a_{kk} = \mu c_k^2$ from \eqref{eq:a-recursion} into \eqref{eq:c-decomp} above, we'd rederive the quadratic formula we obtained in \eqref{eq:c-eq-quadratic} to obtain a closed-form solution for $c_k$.
+We now multiply both sides of the above equation by $2\beta_k$, sum across all variants, and make use of the $V_A = 2\sum_k \beta_k c_k$ identity \eqref{eq:VA-from-as} to obtain:
+\begin{equation}\label{eq:c-decomp-sum}
+\begin{aligned}
+    2\beta_k \cdot \beta_k\big(\tfrac12 - a_{kk}\big) \;&=\; 2\beta_k \cdot \big(1-\rho_g\big)\, c_k \\[4pt]
+    \beta_k^2\big(1 - 2a_{kk}\big) \;&=\; 2\big(1-\rho_g\big)\,\beta_k c_k \\[4pt]
+    \sum_k \beta_k^2\big(1 - 2a_{kk}\big) \;&=\; 2\big(1-\rho_g\big)\sum_k \beta_k c_k \\[4pt]
+    \;&=\; \big(1-\rho_g\big)V_A \\[4pt]
+    \;&\approx\; \VAo
+\end{aligned}
+\end{equation}
+The last approximation comes from \approximationid{VA-inflation}, with the error coming from failing to account for the slightly increased variance of genotypes under assortative mating.
+We obtained practically the same equation in \eqref{eq:VA-eq-exact} and again in \eqref{eq:g-seg-var} when expressing the variance in genetic values that comes from random segregation in meiosis.
+
+If we seek to isolate the covariance between genotypes attributable to assortative-mating-like processes, it will be useful to regress out the covariance in the probands' genetic values, which we derived in Section~\ref{sec:am-rel-values} under the context of assortative mating.
+A genotype is the sum of its two alleles, each of which covaries with the carrier's phenotype by $c_k$ \eqref{eq:c-def}, and the environment does not covary with the genotype by \assumptionid{GE-indep}, so
+\begin{equation}\label{eq:x-g-within}
+    \Cov[\,x_{ik},\, g_i\,] \;=\; \Cov[\,x_{ik},\, y_i\,]
+    \;=\; \Cov\!\big[\,z^{(m)}_{ik},\, y_i\,\big] + \Cov\!\big[\,z^{(p)}_{ik},\, y_i\,\big]
+    \;=\; \boxed{\ 2c_k\ }
+\end{equation}
+The genetic value is mean-zero with variance $V_A$, so the linear prediction of the genotype from it is
+\begin{equation}\label{eq:x-given-g}
+    \E[\,x_{ik} \mid g_i\,] \;=\; \frac{\Cov[\,x_{ik},\, g_i\,]}{\Var[\,g_i\,]}\, g_i
+    \;=\; \boxed{\ \frac{2c_k}{V_A}\, g_i\ }
+\end{equation}
+Equation \eqref{eq:x-given-g} is the linear prediction of $x_{ik}$ from $g_i$.
+Subtracting this from each respective genotype and computing the covariance between them is equivalent to the additional covariance between genotypes conditional on the covariance between their probands' genetic values.
+This reveals that, once the genetic value is accounted for, trait-increasing alleles are actually negatively correlated \emph{within} individuals, as expected of conditioning on a collider.
+\begin{equation}\label{eq:x-resid-within}
+\begin{aligned}
+    &\Cov\!\Big[\,x_{ik} - \tfrac{2c_k}{V_A} g_i,\ x_{il} - \tfrac{2c_l}{V_A} g_i\,\Big] \\[4pt]
+    &\quad=\; \Cov[\,x_{ik},\, x_{il}\,]
+    - \tfrac{2c_l}{V_A}\Cov[\,x_{ik},\, g_i\,]
+    - \tfrac{2c_k}{V_A}\Cov[\,g_i,\, x_{il}\,]
+    + \tfrac{2c_k}{V_A}\tfrac{2c_l}{V_A}\Var[\,g_i\,] \\[4pt]
+    &\quad=\; \Cov[\,x_{ik},\, x_{il}\,] - \frac{4c_k c_l}{V_A} - \frac{4c_k c_l}{V_A} + \frac{4c_k c_l}{V_A}
+    \;=\; \Cov[\,x_{ik},\, x_{il}\,] - \frac{4c_k c_l}{V_A} \\[4pt]
+    &\quad=\; 4\mu c_k c_l + \big(1 - 2a_{kk}\big)\,\delta_{kl} - \frac{4c_k c_l}{V_A}
+    \;=\; \big(1 - 2a_{kk}\big)\,\delta_{kl} - \big(1 - \mu V_A\big)\frac{4c_k c_l}{V_A} \\[4pt]
+    &\quad=\; \boxed{\ \big(1 - 2a_{kk}\big)\,\delta_{kl} \;-\; \big(1-\rho_g\big)\frac{4c_k c_l}{V_A}\ } .
+\end{aligned}
+\end{equation}
+Previously in \eqref{eq:c-decomp}, we demonstrated that $1 - 2a_{kk} = 2(1-\rho_g)\,c_k/\beta_k$, which plugging into the above formula returns an alternate parameterization:
+\begin{equation}\label{eq:x-resid-within-alt}
+\begin{aligned}
+    \Cov\!\Big[\,x_{ik} - \tfrac{2c_k}{V_A} g_i,\ x_{il} - \tfrac{2c_l}{V_A} g_i\,\Big]
+    \;&=\; \big(1 - 2a_{kk}\big)\,\delta_{kl} \;-\; \big(1-\rho_g\big)\frac{4c_k c_l}{V_A} \\[4pt]
+    \;&=\; 2\big(1-\rho_g\big)\frac{c_k}{\beta_k}\,\delta_{kl} \;-\; \big(1-\rho_g\big)\frac{4c_k c_l}{V_A} \\[4pt]
+    \;&=\; \big(1-\rho_g\big)\Big[\frac{2c_k}{\beta_k}\,\delta_{kl} \;-\; \frac{4c_k c_l}{V_A}\Big]
+\end{aligned}
+\end{equation}
+Note that when $\beta_k=0$, the ratio $c_k/\beta_k$ stays finite: $c_k/\beta_k = 1/\big((1-\rho_g) + \sqrt{(1-\rho_g)^2 + 2\mu\beta_k^2}\big)$ \eqref{eq:c-eq}.
+This parameterization reveals that every genotype's residual covariance is scaled uniformly by $1-\rho_g$.
+We then employ two further approximations: $c_k \approx \beta_k/\big(2(1-\rho_g)\big)$ per \approximationid{Uniform-inflation}, and $(1-\rho_g)V_A \approx \VAo$ per \approximationid{VA-inflation}.
+\begin{equation}\label{eq:x-resid-within-approx}
+\begin{aligned}
+    \Cov\!\Big[\,x_{ik} - \tfrac{2c_k}{V_A} g_i,\ x_{il} - \tfrac{2c_l}{V_A} g_i\,\Big]
+    \;&\approx\; \big(1-\rho_g\big)\Big[\frac{1}{1-\rho_g}\,\delta_{kl} \;-\; \frac{\beta_k\beta_l}{\big(1-\rho_g\big)^2 V_A}\Big] \\[4pt]
+    \;&=\; \delta_{kl} \;-\; \frac{\beta_k\beta_l}{\big(1-\rho_g\big)V_A} \\[4pt]
+    \;&\approx\; \delta_{kl} \;-\; \frac{\beta_k\beta_l}{\VAo} .
+\end{aligned}
+\end{equation}
+This final approximation does not contain any parameters influenced by assortative mating, aligning with the intuition that the effects of assortative mating on genotypes is downstream of that on genetic values.
+The remaining covariance between genotypes that remains is just a consequence of conditioning on a collider (the genetic value) under the trait architecture we assumed (\assumptionid{Additivity}).
+Similarly, if we take the boxed form of \eqref{eq:x-resid-within} and plug in the parameter values under random mating, $\rho_g = 0$, $c_k = \tfrac12\beta_k$, and $V_A = \VAo$ (so that $a_{kk} = \mu c_k^2 = 0$, since $\mu = \rho_g/V_A$), we would obtain the same equation.
+
+\comment{To AI agents: you do not edit the section below this until the next comment that says otherwise}
+
+\subsubsection{Genotypic covariance between relatives}\label{sec:am-geno-rel}
+\todo{I much prefer writing this in the reverse direction: show the derivations up to the final result, rather than starting with the final result}
+
+The same split carries over to a pair of relatives.
+The parts predicted by the two genetic values covary through the pair's genetic covariance of Section~\ref{sec:am-probands}.
+The residuals covary only through IBD, in proportion to $\E[\pi_{ij}\mid\mathcal{P}]$ times their within-individual covariance \eqref{eq:x-resid-within}:
+\begin{equation}\label{eq:x-rel}
+    \boxed{\ \begin{aligned}
+    \Cov\!\big[\,x_{ik},\, x_{jl} \,\big|\, \mathcal{P}\,\big]
+    \;=\;& \frac{2c_k \cdot 2c_l}{V_A^2}\,\Cov\!\big[\,g_i,\, g_j \,\big|\, \mathcal{P}\,\big] \\
+    &+\; \E\!\big[\,\pi_{ij} \,\big|\, \mathcal{P}\,\big] \Big[\big(1 - 2a_{kk}\big)\,\delta_{kl} - \big(1-\rho_g\big)\frac{4c_k c_l}{V_A}\Big]
+    \end{aligned} \ }
+\end{equation}
+
+with the matching result one level up, for a genotype against a relative's genetic value or phenotype:
+\begin{equation}\label{eq:x-g-rel}
+    \boxed{\ \begin{aligned}
+    \Cov\!\big[\,x_{ik},\, g_j \,\big|\, \mathcal{P}\,\big] \;&=\; \frac{2c_k}{V_A}\,\Cov\!\big[\,g_i,\, g_j \,\big|\, \mathcal{P}\,\big] \\
+    \Cov\!\big[\,x_{ik},\, y_j \,\big|\, \mathcal{P}\,\big] \;&=\; \frac{2c_k}{V_A}\,\Cov\!\big[\,g_i,\, y_j \,\big|\, \mathcal{P}\,\big]
+    \end{aligned} \ }
+\end{equation}
+The second of these is $\tfrac{2c_k}{V_A} C_j \Cov[\,g_i,\, g_j \mid \mathcal{P}\,]$ by \eqref{eq:proband-correction}.
+Setting $j = i$ recovers \eqref{eq:x-within} from \eqref{eq:x-rel}, since $\E[\pi_{ii}] = 1$ and $\Cov[g_i, g_i] = V_A$, and recovers $\Cov[x_{ik}, g_i] = 2c_k$ from \eqref{eq:x-g-rel}.
+
+\paragraph{Derivation.}
+Under \approximationid{Dominant-path}, every covariance between two individuals on a path is built from the within-individual covariance by two moves: stepping from an individual to their parents across a meiosis, and crossing a co-path between mates.
+We show that each move preserves \eqref{eq:x-rel} and \eqref{eq:x-g-rel}, so both hold for every pair.
+
+\emph{Meiosis.}
+Summing \eqref{eq:seg-def} over an offspring's two gametes gives the genotype-level version of \eqref{eq:g-transmit},
+$$ x_{ok} \;=\; \tfrac12 x_{m(o)k} + \tfrac12 x_{p(o)k} + \big(z^{\perp(m)}_{ok} + z^{\perp(p)}_{ok}\big) , $$
+where the segregation deviations are uncorrelated with everyone except $o$ and $o$'s descendants.
+So for any $j$ who is neither $o$ nor a descendant of $o$, $\Cov[x_{ok}, x_{jl}]$ is the average of the two parents' covariances with $x_{jl}$.
+The right-hand side of \eqref{eq:x-rel} averages in the same way, because it is linear in $\Cov[g_o, g_j]$ and $\E[\pi_{oj}]$, and both of those are averages over the two parents: the first by \eqref{eq:g-transmit}, the second because $o$ carries one allele from each parent, each IBD with a given allele of $j$ with the probability that the corresponding parental allele is.
+The same holds for \eqref{eq:x-g-rel}.
+
+\emph{Co-path.}
+Crossing the co-path between mates $m$ and $p$, with $i$ on $m$'s side and $j$ on $p$'s, \eqref{eq:leg-rule} and then \eqref{eq:x-g-rel} for both factors give
+$$
+\begin{aligned}
+    \Cov[\,x_{ik},\, x_{jl}\,] \;&=\; \Cov[\,x_{ik},\, y_m\,]\,\mu\,\Cov[\,y_p,\, x_{jl}\,] \\
+    \;&=\; \frac{2c_k \cdot 2c_l}{V_A^2}\,\Cov[\,g_i,\, y_m\,]\,\mu\,\Cov[\,y_p,\, g_j\,] \;=\; \frac{2c_k \cdot 2c_l}{V_A^2}\,\Cov[\,g_i,\, g_j\,] ,
+\end{aligned}
+$$
+the last step being \eqref{eq:leg-rule} again, at the level of genetic values.
+This is \eqref{eq:x-rel} with no IBD term, as \assumptionid{Outbred-mating-chain} requires across a co-path.
+
+\emph{Genotype against genetic value.}
+Weighting \eqref{eq:x-rel} by $\beta_l$ and summing over $l$ gives $\Cov[x_{ik}, g_j]$.
+The residual term vanishes identically, because by \eqref{eq:c-decomp}
+$$ \sum_l \beta_l \Big[\big(1 - 2a_{kk}\big)\,\delta_{kl} - \big(1-\rho_g\big)\frac{4c_k c_l}{V_A}\Big]
+\;=\; \beta_k\big(1 - 2a_{kk}\big) - 2\big(1-\rho_g\big)c_k \;=\; 0 , $$
+and the first term gives the first half of \eqref{eq:x-g-rel}, using $\sum_l 2\beta_l c_l = V_A$.
+The residual is uncorrelated with every genetic value, not only its carrier's.
+For the phenotype, $\Cov[x_{ik}, e_j]$ is non-zero only through co-paths leaving $j$, since $e_j$ has no other connections in the diagram; each such chain reaches $x_{ik}$ through a covariance with some phenotype, which by the argument above is proportional to $2c_k$, so the constant of proportionality is again $\Cov[g_i, e_j]/V_A$.
+Adding the two gives the second half of \eqref{eq:x-g-rel}.
+The co-path step uses \eqref{eq:x-g-rel} for pairs one move shorter, so the three steps together are an induction on the number of moves.
+
+Contracting \eqref{eq:x-rel} with $\beta_k\beta_l$ returns $\Cov[g_i, g_j \mid \mathcal{P}]$, as it must: the residual term drops out by the identity above.
+
+\subsubsection{Allelic covariance between relatives}\label{sec:am-allele-rel}
+No separate result is needed at the allele level.
+By \eqref{eq:transmit-mean}, an allele is half its transmitting parent's genotype plus a segregation deviation that is uncorrelated with everyone other than its carrier and the carrier's descendants.
+Write $u(i)$ for the parent $i$ received allele $u$ from --- $m(i)$ for $u = m$ and $p(i)$ for $u = p$.
+Then for relatives $i$ and $j$ neither of whom is descended from the other,
+\begin{equation}\label{eq:z-rel}
+    \boxed{\ \begin{aligned}
+    \Cov\!\big[\,z^{(u)}_{ik},\, z^{(v)}_{jl}\,\big] \;&=\; \tfrac14\,\Cov\!\big[\,x_{u(i)k},\, x_{v(j)l}\,\big] \\
+    \Cov\!\big[\,z^{(u)}_{ik},\, y_{j}\,\big] \;&=\; \frac{c_k}{V_A}\,\Cov\!\big[\,g_{u(i)},\, y_{j}\,\big]
+    \end{aligned} \ }
+\end{equation}
+where the right-hand sides are \eqref{eq:x-rel} and \eqref{eq:x-g-rel} evaluated for the transmitting parents.
+The second is the relatives' version of \eqref{eq:c-def}.
+When $j$ is descended from $i$, only $j$'s allele is replaced, $\Cov[z^{(u)}_{ik}, z^{(v)}_{jl}] = \tfrac12\Cov[z^{(u)}_{ik}, x_{v(j)l}]$, and the step is repeated down the lineal chain until it reaches $i$ itself, where \eqref{eq:z-within} applies.
+
+For example, the two paternal alleles of maternal half-siblings come from fathers at mating distance $2$, who share no IBD and have $\Cov[g, g] = \rho_g\rho_y V_A$ by \eqref{eq:chain-g}.
+So \eqref{eq:z-rel} and \eqref{eq:x-rel} give $\Cov[z^{(p)}_{ik}, z^{(p)}_{jl}] = \rho_y\, a_{kl}$, whereas every other pairing of their alleles has covariance $a_{kl}$ (plus an IBD term at $k = l$ for the two maternal alleles).
+The genotype covariance averages the four.
+
+\subsubsection{Examples}\label{sec:am-geno-examples}
+For $k \neq l$, dividing \eqref{eq:x-rel} by the within-individual value $4a_{kl} = 4\rho_g c_k c_l / V_A$ gives the fraction of an individual's own cross-variant disequilibrium that a relative shares with them:
+\begin{equation}\label{eq:x-rel-ratio}
+    \frac{\Cov\!\big[\,x_{ik},\, x_{jl} \mid \mathcal{P}\,\big]}{4a_{kl}}
+    \;=\; \frac{\Cov[\,g_i,\, g_j \mid \mathcal{P}\,]/V_A \;-\; \big(1-\rho_g\big)\,\E[\,\pi_{ij} \mid \mathcal{P}\,]}{\rho_g}
+    \qquad (k \neq l) .
+\end{equation}
+It is the same for every pair of distinct variants.
+Table~\ref{tab:x-rel-classes} evaluates it for the relationship classes of Table~\ref{tab:relationship-classes}.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{2.0}
+    \setlength{\tabcolsep}{3pt}
+    \scriptsize
+    \begin{tabular}{l|c|c|c}
+        relationship
+            & $\E[\,\pi_{ij} \mid \mathcal{P}\,]$
+            & $\Cov[\,g_i,\, g_j \mid \mathcal{P}\,]/V_A$
+            & $\Cov[\,x_{ik},\, x_{jl} \mid \mathcal{P}\,]/4a_{kl}$, \ $k \neq l$ \\
+        \hline
+        self & $1$ & $1$ & $1$ \\
+        mates & $0$ & $\rho_g$ & $1$ \\
+        parent--offspring, full siblings & $\tfrac12$ & $\tfrac{1+\rho_g}{2}$ & $1$ \\
+        grandparent--grandchild, avuncular & $\tfrac14$ & $\big(\tfrac{1+\rho_g}{2}\big)^2$ & $\tfrac{3+\rho_g}{4}$ \\
+        first cousins & $\tfrac18$ & $\big(\tfrac{1+\rho_g}{2}\big)^3$ & $\tfrac{4+3\rho_g+\rho_g^2}{8}$ \\
+        half siblings & $\tfrac14$ & $\tfrac{1+2\rho_g+\rho_g\rho_y}{4}$ & $\tfrac{3+\rho_y}{4}$ \\
+        step siblings & $0$ & $\rho_g\big(\tfrac{1+\rho_y}{2}\big)^2$ & $\big(\tfrac{1+\rho_y}{2}\big)^2$ \\
+        mating distance $\Nmu \geq 1$ & $0$ & $\rho_g\rho_y^{\,\Nmu-1}$ & $\rho_y^{\,\Nmu-1}$ \\
+        lineal distance $\Nlin$ & $2^{-\Nlin}$ & $\big(\tfrac{1+\rho_g}{2}\big)^{\Nlin}$ & $\dfrac{(1+\rho_g)^{\Nlin} - (1-\rho_g)}{2^{\Nlin}\rho_g}$ \\
+    \end{tabular}
+    \caption{%
+        The two inputs of \eqref{eq:x-rel} and the cross-variant ratio \eqref{eq:x-rel-ratio} they imply, for common relationship classes.
+        First-degree relatives and mates share \emph{all} of an individual's own cross-variant disequilibrium, which is the equilibrium version of the observation under Table~\ref{tab:relatives-gen1} that the cross-variant row is the same for self, siblings and parent--offspring.
+        The last column stays finite as $\rho_g \to 0$ --- the lineal entry tends to $(\Nlin + 1)/2^{\Nlin}$ --- while the $a_{kl}$ it multiplies vanishes.%
+    }
+    \label{tab:x-rel-classes}
+    \end{floatcard}
+\end{table}
+
+\subsubsection{Measures of relatedness}\label{sec:am-relatedness-measures}
+The genetic covariance is a sum over pairs of variants,
+$$ \Cov[\,g_i,\, g_j \mid \mathcal{P}\,] \;=\; \underbrace{\sum_k \beta_k^2\, \Cov[\,x_{ik},\, x_{jk} \mid \mathcal{P}\,]}_{\text{same-variant}} \;+\; \underbrace{\sum_{k \neq l} \beta_k\beta_l\, \Cov[\,x_{ik},\, x_{jl} \mid \mathcal{P}\,]}_{\text{cross-variant}} , $$
+and \eqref{eq:x-rel} evaluates both.
+Using \eqref{eq:c-decomp} for the IBD term,
+\begin{equation}\label{eq:same-cross}
+\begin{aligned}
+    \text{same-variant} \;&=\; \big(1-\rho_g\big)V_A\,\E[\,\pi_{ij} \mid \mathcal{P}\,] \;+\; \frac{4\sum_k \beta_k^2 c_k^2}{V_A^2}\,\Delta_{ij} , \\[4pt]
+    \text{cross-variant} \;&=\; \Big(1 - \frac{4\sum_k \beta_k^2 c_k^2}{V_A^2}\Big)\,\Delta_{ij} , \\[4pt]
+    \Delta_{ij} \;&:=\; \Cov[\,g_i,\, g_j \mid \mathcal{P}\,] - \big(1-\rho_g\big)V_A\,\E[\,\pi_{ij} \mid \mathcal{P}\,] .
+\end{aligned}
+\end{equation}
+\unsure{$\Delta_{ij}$ is the one new symbol in this section; it is $\rho_g V_A$ times the last column of Table~\ref{tab:x-rel-classes}. Could be written out instead if it only appears here.}
+Under \approximationid{Uniform-inflation} and \approximationid{VA-inflation}, $c_k \approx \beta_k/(2(1-\rho_g))$ and $(1-\rho_g)V_A = \VAo$, so the weight is
+$$ \frac{4\sum_k \beta_k^2 c_k^2}{V_A^2} \;\approx\; \frac{\sum_k \beta_k^4}{\big(\VAo\big)^2} \;=\; \frac{1}{M_e} $$
+by \eqref{eq:Me-def}.
+So the same-variant part is $\VAo\,\E[\pi_{ij}\mid\mathcal{P}]$ --- the random-mating answer, with the random-mating additive variance --- and everything assortment adds, $\Delta_{ij}$, sits in the cross-variant part, apart from a share $1/M_e$ that \assumptionid{Large-Me} makes negligible.
+
+The allelic sharing \eqref{eq:A-def} is an unweighted average of the same-variant covariances, so by \eqref{eq:x-rel} its expectation given the path is
+\begin{equation}\label{eq:A-given-path}
+    \begin{aligned}
+    \E[\,A_{ij} \mid \mathcal{P}\,]
+    \;&=\; \E[\,\pi_{ij} \mid \mathcal{P}\,]\;\frac1M\sum_k \big(1 - 2a_{kk}\big) \;+\; \Big(\frac1M\sum_k \frac{4c_k^2}{V_A^2}\Big)\,\Delta_{ij} \\
+    \;&\approx\; \E[\,\pi_{ij} \mid \mathcal{P}\,] ,
+    \end{aligned}
+\end{equation}
+where the approximation drops terms of order $\rho_g/\big((1-\rho_g)M\big)$.
+Under \approximationid{Uniform-inflation}, $\tfrac1M\sum_k a_{kk} \approx \rho_g/\big(4(1-\rho_g)M\big)$ and $\tfrac1M\sum_k 4c_k^2/V_A^2 \approx 1/(M\VAo)$.
+Neither $A_{ij}$ nor $\pi_{ij}$ therefore carries any information about $\Delta_{ij}$.
+Mates make this plain: they share no IBD and $\E[A_{ij} \mid \mathcal{P}] \approx 0$, yet their genetic covariance is $\rho_g V_A$, all of it cross-variant.
+This is why the path cannot be dropped once $A_{ij}$ or $\pi_{ij}$ is known: assortment's contribution is carried by cross-variant covariance, which only the path determines.
+
+It is also where the two halves of the random-effects model part ways.
+\eqref{eq:x-rel} makes the cross-variant covariance of genotypes proportional to $c_k c_l$, and so to $\beta_k\beta_l$, so the genotypes of a pair carry information about the sign of $\beta_k\beta_l$ and \assumptionid{Uncorrelated-effects} fails.
+\assumptionid{Exchangeable-effects} fails only through $a_{kk}$, which is of relative order $\beta_k^2/\VAo$ and so small by \assumptionid{Large-Me}.
+
+\subsubsection{Conditioning on realized IBD}\label{sec:am-cond-ibd}
+We now condition on the meioses along the path --- the transmission indicators $B$ of \eqref{eq:transmit} for every transmission between the pair and their common ancestors --- which fixes the pair's IBD state $\IBD_{ij}(k)$ at every variant.
+
+\paragraph{Full siblings.}
+Write $o_1, o_2$ for the siblings and $m, p$ for their parents.
+By \eqref{eq:g-transmit} each sibling is $\tfrac12 g_m + \tfrac12 g_p + g^\perp_o$, and the indicators are independent of the parents' genotypes, so conditioning on them leaves the parental part alone.
+The parental part is also uncorrelated with every segregation deviation given the indicators, since $\Cov[g_m, z^{(m)}_{mk} - z^{(p)}_{mk}] = c_k - c_k = 0$.
+What remains is the covariance of the two segregation deviations given the indicators.
+By \eqref{eq:seg-def},
+$$ g^\perp_o \;=\; \sum_k \beta_k\Big[\big(B^{(m)}_{ok} - \tfrac12\big)\big(z^{(m)}_{mk} - z^{(p)}_{mk}\big) + \big(B^{(p)}_{ok} - \tfrac12\big)\big(z^{(m)}_{pk} - z^{(p)}_{pk}\big)\Big] . $$
+Given the indicators, every product $\big(B^{(u)}_{o_1k}-\tfrac12\big)\big(B^{(v)}_{o_2l}-\tfrac12\big)$ is fixed at $\pm\tfrac14$, and:
+\begin{itemize}
+    \item for $k \neq l$, the two allele differences are uncorrelated, since $\Cov[z^{(m)}_k - z^{(p)}_k,\, z^{(m)}_l - z^{(p)}_l] = 2(s_{kl} - a_{kl}) = 0$ by \eqref{eq:s-eq};
+    \item across the two parents they are uncorrelated too, because a co-path gives both of a parent's alleles the same covariance with the other parent;
+    \item for $k = l$ and the same parent, $\Var[z^{(m)}_k - z^{(p)}_k] = 1 - 2a_{kk}$, and the product of indicators is $+\tfrac14$ when the siblings received the same allele from that parent --- i.e.\ share it IBD --- and $-\tfrac14$ when not.
+\end{itemize}
+Summing over both parents,
+\begin{equation}\label{eq:sib-given-meioses}
+    \E\big[\,g_{o_1} g_{o_2} \,\big|\, B\,\big]
+    \;=\; \tfrac12 V_A\big(1+\rho_g\big) \;+\; \sum_k \beta_k^2\big(1 - 2a_{kk}\big)\,\tfrac12\big(\IBD_{o_1o_2}(k) - 1\big) .
+\end{equation}
+
+\paragraph{Other relationships.}
+The same holds, with $\tfrac12$ replaced by $\E[\pi_{ij} \mid \mathcal{P}]$, for every class in Table~\ref{tab:relationship-classes} except half cousins and step cousins:
+\begin{equation}\label{eq:g-given-meioses}
+    \boxed{\ \E\big[\,g_i g_j \,\big|\, B,\, \mathcal{P}\,\big]
+    \;=\; \Cov\!\big[\,g_i,\, g_j \,\big|\, \mathcal{P}\,\big]
+    \;+\; \sum_k \beta_k^2\big(1 - 2a_{kk}\big)\Big(\tfrac12\IBD_{ij}(k) - \E\big[\,\pi_{ij} \,\big|\, \mathcal{P}\,\big]\Big) \ }
+\end{equation}
+It fails when a proband's allele can descend from either of two grandparents who stand in different relations to the other proband.
+Then the meioses decide which grandparent an allele came from, which changes its cross-variant covariance with the other proband by \eqref{eq:z-rel}, and that change is not a function of IBD.
+In half cousins, an allele of one cousin descends from the shared grandparent or from that grandparent's mate, while an allele of the other descends from the shared grandparent or from the shared grandparent's \emph{other} mate, and those two mates are at mating distance $2$ rather than $1$.
+\unsure{The same argument predicts a failure for great-grandparent--great-grandchild, whose descending allele can come through an ancestor's mate, who is off the path. Not in the verification pedigree yet. The general correction term is not derived.}
+
+\paragraph{From meioses to $\pi_{ij}$.}
+By \eqref{eq:c-decomp}, the weights in \eqref{eq:g-given-meioses} are $\beta_k^2(1 - 2a_{kk}) = (1-\rho_g)\cdot 2\beta_k c_k$, and $2\beta_k c_k / V_A$ is variant $k$'s share of $V_A$ by \eqref{eq:VA-from-as}.
+So the sum is $(1-\rho_g)V_A$ times the difference between the \emph{variance-weighted} fraction of the genome shared IBD and its expectation.
+
+\begin{approximation}{IBD-share}{The variance-weighted IBD fraction is the IBD fraction}
+    Realized IBD is unrelated to how $V_A$ is spread over the variants, so the variance-weighted fraction of the genome that a pair shares IBD equals the unweighted one:
+    $$ \sum_k \frac{2\beta_k c_k}{V_A}\;\tfrac12\IBD_{ij}(k) \;\approx\; \pi_{ij} . $$
+    \justification{IBD states are set by meioses, which are independent of the effects, so the weighted and unweighted averages have the same expectation. They differ by sampling noise, which is small when $V_A$ is spread over many variants (\assumptionid{Large-Me}) that are not clustered in a few IBD segments.}
+\end{approximation}
+
+With it, \eqref{eq:g-given-meioses} depends on the meioses only through $\pi_{ij}$:
+\begin{equation}\label{eq:g-given-pi}
+    \boxed{\ \E\big[\,g_i g_j \,\big|\, \pi_{ij},\, \mathcal{P}\,\big]
+    \;\approx\; \Cov\!\big[\,g_i,\, g_j \,\big|\, \mathcal{P}\,\big]
+    \;+\; \big(1-\rho_g\big)V_A\,\Big(\pi_{ij} - \E\big[\,\pi_{ij} \,\big|\, \mathcal{P}\,\big]\Big) \ }
+\end{equation}
+The slope is $(1-\rho_g)V_A = 2\Var[g^\perp_o]$ exactly, by \eqref{eq:g-seg-var}, and $\approx \VAo$ under \approximationid{VA-inflation}.
+The departure of a pair's realized IBD from its expectation is produced by segregation, and segregation variance is the one variance component that assortative mating does not inflate.
+So realized IBD moves the genetic covariance at the rate set by the \emph{random-mating} additive variance, while the path supplies the level, including all of assortment's cross-variant contribution.
+
+\paragraph{Phenotypes.}
+Reading a proband at the phenotype adds its environment, which is correlated with its mates' alleles.
+For a proband with no mate on the path --- the youngest individual of a lineal chain, as for siblings and cousins --- the environment is uncorrelated with every meiosis, and \eqref{eq:g-given-meioses} holds for phenotypes with $\Cov[y_i, y_j \mid \mathcal{P}]$ in place of $\Cov[g_i, g_j \mid \mathcal{P}]$.
+When the proband read at the phenotype is an \emph{ancestor} of the other, their environment is correlated with the alleles of their mate, which the descendant inherits exactly where it does not inherit the ancestor's own; the slope then becomes $(1-\rho_y)V_A$ in place of $(1-\rho_g)V_A$:
+\begin{equation}\label{eq:y-given-pi}
+    \E\big[\,y_i y_j \,\big|\, \pi_{ij},\, \mathcal{P}\,\big]
+    \;\approx\; \Cov\!\big[\,y_i,\, y_j \,\big|\, \mathcal{P}\,\big]
+    \;+\; \big(1-\rho_\ast\big)V_A\,\Big(\pi_{ij} - \E\big[\,\pi_{ij} \,\big|\, \mathcal{P}\,\big]\Big) ,
+\end{equation}
+where $\rho_\ast = \rho_y$ when a proband is the source of a lineal chain, and $\rho_\ast = \rho_g$ otherwise.
+This is the same substitution of $\rho_y$ for $\rho_g$ in the proband's own edges that produced \eqref{eq:proband-correction}.
+
+\unsure{Linkage. Under \assumptionid{Unlinked}, the IBD states of different variants are independent, so $\pi_{ij}$ concentrates at $\E[\pi_{ij}\mid\mathcal{P}]$ with variance of order $1/M$, and \eqref{eq:g-given-pi} has almost nothing to condition on. \eqref{eq:g-given-meioses} is exact for any realized meioses, but the realistic variation in $\pi_{ij}$ comes from linkage, which also changes the equilibrium disequilibrium between linked variants ($s_{kl} \neq a_{kl}$). Applying these results to real genomes needs either an approximation that linked pairs are a negligible share of all pairs of variants, or a derivation with linkage.}
+
+\subsubsection{Conditioning on allelic sharing}\label{sec:am-cond-A}
+\todo{Not yet derived. Conditioning on $A_{ij}$ needs $\Cov[g_i g_j, A_{ij} \mid \mathcal{P}]$, a fourth moment of the genotypes, which \eqref{eq:x-rel} alone does not give. The analogue of \eqref{eq:g-given-pi} does NOT follow by replacing $\pi_{ij}$ with $A_{ij}$: unlike the meioses, $A_{ij}$ is a function of the genotypes, and through the within-individual disequilibrium it is correlated with the cross-variant part as well. A preliminary calculation under a Gaussian approximation to the genotypes suggests that, for unrelated pairs, the regression slope of $g_i g_j$ on $A_{ij}$ is $\sum_k (2c_k)^2 \approx \VAo/(1-\rho_g)^2$ rather than $\VAo$. Unverified.}
+
+\comment{To AI agents: you may edit below this}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}
