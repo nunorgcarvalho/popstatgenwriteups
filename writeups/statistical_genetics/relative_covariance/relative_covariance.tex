@@ -1843,9 +1843,30 @@ This final approximation does not contain any parameters influenced by assortati
 The remaining covariance between genotypes that remains is just a consequence of conditioning on a collider (the genetic value) under the trait architecture we assumed (\assumptionid{Additivity}).
 Similarly, if we take the boxed form of \eqref{eq:x-resid-within} and plug in the parameter values under random mating, $\rho_g = 0$, $c_k = \tfrac12\beta_k$, and $V_A = \VAo$ (so that $a_{kk} = \mu c_k^2 = 0$, since $\mu = \rho_g/V_A$), we would obtain the same equation.
 
-\comment{To AI agents: you do not edit the section below this until the next comment that says otherwise}
+
 
 \subsubsection{Genotypic covariance between relatives}\label{sec:am-geno-rel}
+To expand our understanding across relatives, we'll take the same approach: partition the total covariance into a term captured by the covariance in genetic values, derived in Section~\ref{sec:am-rel-values}, and a residual term capturing the leftover covariance.
+In the within-individual case we just derived in Section~\ref{sec:am-geno-within}, this residual covariance is just the negative correlation resulting from conditioning on a collider and is largely uninteresting in closed form:
+
+\begin{equation}\label{eq:x-within-split}
+\begin{aligned}
+    \Cov[\,x_{ik},\, x_{il}\,]
+    \;&=\; \underbrace{\frac{2c_k}{V_A}\,\frac{2c_l}{V_A}\,\Var[\,g_i\,]}_{\text{captured by genetic value}}
+    \;+\; \underbrace{\Cov\!\Big[\,x_{ik} - \tfrac{2c_k}{V_A} g_i,\ x_{il} - \tfrac{2c_l}{V_A} g_i\,\Big]}_{\text{residual}} \\[4pt]
+    \;&=\; \frac{4c_k c_l}{V_A} \;+\; \Big[\big(1 - 2a_{kk}\big)\,\delta_{kl} \;-\; \big(1-\rho_g\big)\frac{4c_k c_l}{V_A}\Big] ,
+\end{aligned}
+\end{equation}
+with no cross terms because each residual is uncorrelated with $g_i$ by construction, and the residual taken from \eqref{eq:x-resid-within}.
+
+But when looking across relatives, a more precise residual can be obtained when variant-specific IBD information is included.
+Genome-wide expected IBD given the path between the relatives already affects the genetic value covariance, but variant-specific IBD does not, which we begin to address here.
+
+Like before, we can obtain the expected genotype given the respective proband's genetic value and regress it out from the genotype.
+Then, we derive the covariance between these residuals.
+
+\comment{To AI agents: you do not edit the section below this until the next comment that says otherwise}
+
 \todo{I much prefer writing this in the reverse direction: show the derivations up to the final result, rather than starting with the final result}
 
 The same split carries over to a pair of relatives.
