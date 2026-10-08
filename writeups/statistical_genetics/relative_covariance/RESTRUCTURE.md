@@ -24,8 +24,12 @@ the path plus genotypes, and so on.
 **Convention.**
 - A **curly (calligraphic) letter** is the *full* information of a kind.
 - A **bold letter** is the concrete object we work with, typically a matrix.
-- **Functions are plain $f$.** There are no special letter styles for functions and no curly
+- **Functions are $f$, subscripted by what they produce:** $f_y$, $f_g$, $f_e$, and
+  $f_g^{(k)}$ per variant. There are no special letter styles for functions and no curly
   function symbols.
+- **A tilde marks a non-standardized quantity** ($\tilde{g}_i$, $\tilde{\beta}_k$). The main
+  text works with standardized ones. Raw genotype counts $G$ are the exception, since the
+  capital letter already marks them.
 - Change as little of the existing practical notation as possible:
   - $g_i$ stays the genetic value;
   - $x_{ik}$ stays the standardized genotype;
@@ -35,7 +39,7 @@ the path plus genotypes, and so on.
 | kind | full (curly) | concrete (bold) | notes |
 |---|---|---|---|
 | Genetic data | $\mathcal{G}$: all true genetic data of the individuals **in the study** (sample / population under study) | $\mathbf{G}$: the raw genotype matrix (allele counts 0/1/2). Entries stay **capitalized**, $G_{ik}$, so that lowercase $g_i$ remains the genetic value. $\mathbf{X}$: the standardized genotype matrix, entries $x_{ik}$ | $\mathcal{G}$ does **not** include ancestors outside the study. Their contribution arrives through the pedigree. |
-| Pedigree / path | $\mathcal{P}$: the **pedigree**, i.e. the full history of descent and mating **back to a fixed depth** (some number of generations): everyone involved in any mating, all their offspring, all ancestors and descendants within that window. Its oldest members are the **founders**. | $\mathbf{P}$: the **path**, an ordered list of mating and lineal **sequences** between two people | Every current $\mathcal{P}$ (all of which mean *path*) is renamed $\mathbf{P}$. The path carries only the familial relationship, with no variant-specific information. |
+| Pedigree / path | $\mathcal{P}$: the **pedigree**, i.e. the full history of descent and mating **back to a fixed depth** (some number of generations): everyone involved in any mating, all their offspring, all ancestors and descendants within that window. Its oldest members are the **founders**. | $\mathbf{P}$: the **path**, an ordered list of mating and lineal **chains** between two people | Every current $\mathcal{P}$ (all of which mean *path*) is renamed $\mathbf{P}$. The path carries only the familial relationship, with no variant-specific information. |
 | Transmission | $\mathcal{T}$: **backward-looking**, in the spirit of coalescent theory. For every allele, at every variant, it traces whom that allele was inherited from, back through the past: its ancestral lineage. | $\mathbf{T}$: open | Variant-specific information about where each allele came from. Phasing and parent-of-origin assignment are the first step back along a lineage. True IBD is two lineages meeting. IBD-inference output constrains where lineages meet. All of these are constraints on $\mathcal{T}$. |
 | Environment | $\mathcal{E}$: all environmental information, including random noise | $e$ | |
 | Parameters | — | $\beta_k$, $\rho_y$, $V_E$, ... | **Not information about the pair.** Parameters are a separate category from data-information. Level 0 and Level 1 of the current Section 1 differ only in whether $\beta$ is a known parameter or a random effect. |
@@ -50,14 +54,13 @@ the path plus genotypes, and so on.
     $\mathrm{Cov}[x_k,y]/\mathrm{Var}[x_k] = 2b_k/(1+2a_{kk})$, so $b_k$ is the marginal
     covariance, and equals half the OLS slope only up to the $a_{kk}$ factor.
   - Side benefit: this frees $c$. The current text also uses $c(N_\mathcal{M})$ for the
-    correlation function inside the mating-sequence weight (`eq:chain-weight`).
+    correlation function inside the mating-chain weight (`eq:chain-weight`).
   - The existing `\bb` macro ("tested effect size vector") already fits this reading.
-- **Mating chain → mating sequence; lineal chain → lineal sequence.**
-  - The symbols $\mathcal{M}$, $\mathcal{L}$, $N_\mathcal{M}$, $N_\mathcal{L}$ are unchanged.
-  - This resolves the naming collision with Wright's tracing rules, which keep the word
-    **chain** (a "valid chain" through a path diagram).
-  - It follows that the "chain digraph" becomes the **sequence digraph**, and every
-    "chain" in the pedigree material becomes "sequence".
+- **Mating chain and lineal chain are kept** (a rename to "sequence" was tried and reversed).
+  - The symbols $\mathcal{M}$, $\mathcal{L}$, $N_\mathcal{M}$, $N_\mathcal{L}$ and the
+    "chain digraph" are unchanged.
+  - Wright's tracing rules also speak of a "valid chain" through a path diagram; context tells
+    the two apart.
 
 Other notation rules:
 - **Estimand, not estimate.** Everything is derived assuming perfect knowledge of whatever we
@@ -86,7 +89,7 @@ with a small **information-flow diagram**.
 - **Mating information lives only in $\mathcal{P}$.**
   - A backward lineage never records a mating.
   - Under random mating, mating information carries nothing genetic.
-  - Under assortative mating, mates (and relatives along a mating sequence) are correlated
+  - Under assortative mating, mates (and relatives along a mating chain) are correlated
     without sharing any lineage. Mating information then carries **all** of assortment's
     cross-variant covariance.
   - This is why mating stands beside meiosis as its own fundamental process.
@@ -194,7 +197,7 @@ them.
   - Define the co-path **generically**, as matching on some variable. §3 makes it specific to
     $y$ under Primary-AM.
 - **The graph material** (current 2.3.2–2.3.5): mating graph, meiosis graph, mating
-  sequences, lineal sequences, tracing paths, the sequence digraph.
+  chains, lineal chains, tracing paths, the chain digraph.
   - The genetic-value-level path diagram (`fig:g-only`) is the pedigree graph with
     coefficients attached. Say so; it ties the two halves of this subsection together.
 - **Path sufficiency**, one assumption replacing Outbred-mating-chain and Dominant-path.
@@ -203,7 +206,7 @@ them.
     approximated by a single path.
   - It has two halves, one per fundamental process:
     - **meiosis/coalescence half** (the current Outbred-mating-chain): all coalescences
-      within the window happen at ancestors on the path's lineal sequences;
+      within the window happen at ancestors on the path's lineal chains;
     - **mating half** (the current Dominant-path): other mating routes are negligible.
   - The covariance-based justification (path factors below 1) comes later, in §3.
 - **No-inbreeding becomes exact** under the pedigree window. It replaces the current "a couple
@@ -280,7 +283,7 @@ them.
 - The equilibrium results stay as they are, in $b_k$ notation.
 
 **Covariance between relatives at the level of genetic values and phenotypes.**
-- Jump straight to the formulas, since sequences and paths are already defined.
+- Jump straight to the formulas, since chains and paths are already defined.
 - The genetic-value transmission equation $g_o = \tfrac12 g_m + \tfrac12 g_p + g^\perp_o$
   becomes one line: meiosis plus Additivity.
 - The covariance-based justification of path sufficiency goes here.
@@ -335,7 +338,7 @@ them.
 | 2.2.3 generation-1 results, `tab:relatives-gen1` | §3, shortened to an illustration |
 | Unlinked, `eq:s-recursion` | §1.3 meiosis, written with $r_{kl}$ |
 | 2.3.1 genetic-value transmission | §3, one line from §1.3 + Additivity |
-| 2.3.2–2.3.5 framework, mating/lineal chains, path tracing | §1.4, as mating/lineal **sequences** and the sequence digraph |
+| 2.3.2–2.3.5 framework, mating/lineal chains, path tracing | §1.4 |
 | "mates" includes non-reproducing / same-sex pairs (2.3.2) | §1.3 mating |
 | Outbred-mating-chain, Dominant-path | merged into path sufficiency: statement → §1.4; covariance justification → §3 |
 | step-sibling figure | §1 running example, extended with a full-sibling pair |
@@ -364,11 +367,8 @@ them.
 
 1. **Bold $\mathbf{T}$**: what concrete object represents transmission. Candidates: the array
    of transmission indicators $B$ (forward), or each allele's source ancestor (backward).
-2. **Telling several functions apart**: plain $f$ for the genetic value, but how do we write
-   the phenotype and environment functions (subscripts such as $f_g$, $f_e$, or only $f$ when
-   there is one)?
-3. **Generative model for $\mathbf{G}$, or only definitions?** Leaning: define only what is
+2. **Generative model for $\mathbf{G}$, or only definitions?** Leaning: define only what is
    needed (allele frequency for random draws, HWE standardization).
-4. **`\bA` clash**: it is both the GRM (Section 1) and the directed-edge matrix of path
+3. **`\bA` clash**: it is both the GRM (Section 1) and the directed-edge matrix of path
    analysis (2.2.1). Rename one during the restructure.
-5. **Section 1 title**: "Measuring relatedness" is the working title.
+4. **Section 1 title**: "Measuring relatedness" is the working title.

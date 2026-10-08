@@ -1629,6 +1629,44 @@ def path_example_pedigree() -> str:
     return "\n".join(out)
 
 
+#: The step-sibling pedigree drawn one node per PERSON, in the style of path_example_pedigree:
+#: parents in a row on top, each child centred under its two parents. Same people, matings and
+#: children as STEP_SIB_*, so check_step_sib_figure covers it as well.
+STEP_SIB_PEOPLE_NODES = (
+    ("A", 0.00, 1.50), ("B", 2.00, 1.50), ("C", 4.00, 1.50), ("D", 6.00, 1.50),
+    ("E", 1.00, 0.00), ("F", 3.00, 0.00), ("G", 5.00, 0.00),
+)
+STEP_SIB_PEOPLE_GENERATIONS = ((1.50, "t"), (0.00, "t+1"))
+
+
+def step_sib_people() -> str:
+    """The bare tikzpicture for the step-sibling pedigree, one node per individual."""
+    out = [
+        r"\definecolor{pmCPath9}{HTML}{999999}",
+        r"\definecolor{pmCPathR}{HTML}{B03A2E}",
+        r"\definecolor{pmCPathB}{HTML}{1F77B4}",
+        r"\begin{tikzpicture}[",
+        r"  every node/.style={font=\small},",
+        r"  pmPerson/.style={draw=black, fill=pmCPathB!12, circle, inner sep=0.04cm,",
+        r"                   minimum size=0.60cm},",
+        r"  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.9pt},",
+        r"  pmCopath/.style={line width=1.6pt, draw=pmCPathR},",
+        r"  pmGen/.style={font=\footnotesize, text=pmCPath9, anchor=east},",
+        r"]",
+    ]
+    for y, lab in STEP_SIB_PEOPLE_GENERATIONS:
+        out.append(rf"  \node[pmGen] at (-0.700,{y:.3f}) {{${lab}$}};")
+    for name, x, y in STEP_SIB_PEOPLE_NODES:
+        out.append(rf"  \node[pmPerson] ({name}) at ({x:.3f},{y:.3f}) {{${name}$}};")
+    for child, a, b in STEP_SIB_KIDS:
+        for parent in (a, b):
+            out.append(rf"  \draw[pmDirected] ({parent}) -- ({child});")
+    for a, b in STEP_SIB_MATINGS:
+        out.append(rf"  \draw[pmCopath] ({a}) -- ({b});")
+    out.append(r"\end{tikzpicture}")
+    return "\n".join(out)
+
+
 def check_path_example() -> int:
     """Assert what the example figure and its surrounding text claim about this pedigree.
 
@@ -3356,6 +3394,11 @@ def main() -> int:
             ),
         )
     )
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # The same step-sibling pedigree, one node per person (v2). Hand-laid like Figure 6.
+    target = HERE / "step_sib_people.tikz"
+    target.write_text(step_sib_people() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 6: the worked example path. Hand-laid rather than rendered from a model, because

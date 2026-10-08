@@ -1,0 +1,30 @@
+\definecolor{pmCPath9}{HTML}{999999}
+\definecolor{pmCPathR}{HTML}{B03A2E}
+\definecolor{pmCPathB}{HTML}{1F77B4}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  pmPerson/.style={draw=black, fill=pmCPathB!12, circle, inner sep=0.04cm,
+                   minimum size=0.60cm},
+  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.9pt},
+  pmCopath/.style={line width=1.6pt, draw=pmCPathR},
+  pmGen/.style={font=\footnotesize, text=pmCPath9, anchor=east},
+]
+  \node[pmGen] at (-0.700,1.500) {$t$};
+  \node[pmGen] at (-0.700,0.000) {$t+1$};
+  \node[pmPerson] (A) at (0.000,1.500) {$A$};
+  \node[pmPerson] (B) at (2.000,1.500) {$B$};
+  \node[pmPerson] (C) at (4.000,1.500) {$C$};
+  \node[pmPerson] (D) at (6.000,1.500) {$D$};
+  \node[pmPerson] (E) at (1.000,0.000) {$E$};
+  \node[pmPerson] (F) at (3.000,0.000) {$F$};
+  \node[pmPerson] (G) at (5.000,0.000) {$G$};
+  \draw[pmDirected] (A) -- (E);
+  \draw[pmDirected] (B) -- (E);
+  \draw[pmDirected] (B) -- (F);
+  \draw[pmDirected] (C) -- (F);
+  \draw[pmDirected] (C) -- (G);
+  \draw[pmDirected] (D) -- (G);
+  \draw[pmCopath] (A) -- (B);
+  \draw[pmCopath] (B) -- (C);
+  \draw[pmCopath] (C) -- (D);
+\end{tikzpicture}

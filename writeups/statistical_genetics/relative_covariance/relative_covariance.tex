@@ -6,6 +6,7 @@
 \makeatother
 \usepackage{config}
 \usepackage{macros}
+\usepackage{array} % ragged-right p{} columns in tables
 
 % =================================================================================================
 % STYLE GUIDE -- for agents and collaborators editing this file. Not rendered; readers never see
@@ -21,12 +22,16 @@
 %     \mathbf{X}, x_{ik}     standardized genotype matrix.
 %     \mathcal{P}            the PEDIGREE: full history of descent and mating back to a fixed
 %                            depth, whose oldest members are the founders.
-%     \mathbf{P}             a PATH between two individuals (an ordered list of sequences).
+%     \mathbf{P}             a PATH between two individuals (an ordered list of chains).
 %     \mathcal{T}            TRANSMISSION, backward-looking: for every allele, the lineage it was
 %                            inherited along. IBD = two lineages coalescing within the pedigree.
 %     \mathcal{E}            all environmental information, including noise.
 %   Parameters (beta_k, rho_y, V_E, ...) are a separate category from information.
-%   Functions are plain f. Hats are reserved for estimates.
+%   Functions are f, subscripted by what they produce: f_y, f_g, f_e, and f_g^{(k)} per variant.
+%   Hats are reserved for estimates.
+%   A TILDE marks a NON-STANDARDIZED quantity (\tilde{g}_i, \tilde{\beta}_k); the main text works
+%   with standardized ones (g_i, \beta_k, x_{ik}, z_{ik}). Raw genotype counts G are the exception:
+%   the capital letter already marks them.
 %
 % SYMBOLS
 %   y, g, e         phenotype, genetic (breeding) value, environmental component; y = g + e.
@@ -62,12 +67,12 @@
 %   One node set -- individuals -- carrying two edge sets. Undirected edges are matings and give
 %   the MATING GRAPH; directed parent-to-offspring edges are meioses and give the MEIOSIS GRAPH.
 %   Calligraphic letters name objects in them, with a matching N for the distance or count:
-%     \Mu  = \mathcal{M}   mating sequence,   \Nmu  = N_\mathcal{M}   mating distance
-%     \Lin = \mathcal{L}   lineal sequence,   \Nlin = N_\mathcal{L}   lineal distance
+%     \Mu  = \mathcal{M}   mating chain,      \Nmu  = N_\mathcal{M}   mating distance
+%     \Lin = \mathcal{L}   lineal chain,      \Nlin = N_\mathcal{L}   lineal distance
 %     \Anc = \mathcal{A}   ancestors
-%     \mathbf{P}           a path,            N_o                     out-degree in the sequence digraph
-%   "Sequence" is for pedigree objects; "chain" is reserved for Wright's tracing rules (a valid
-%   chain through a path diagram).
+%     \mathbf{P}           a path,            N_o                     out-degree in the chain digraph
+%   "Chain" names the pedigree objects (mating and lineal chains, the chain digraph). Wright's
+%   tracing rules also speak of a valid chain through a path diagram; context tells them apart.
 %   Distances are infinity, not undefined, when no connection exists -- that makes the
 %   dominant-path comparison work without a case split.
 %
@@ -122,98 +127,494 @@
 AI was heavily used as a tool for making this document.
 My general workflow is to discuss with AI the direction that I want to take the writeup in and then I ask it to write a first draft.
 I then read through the draft until I feel confident I understand it, and then typically I rewrite the document myself, borrowing certain derivations and a few sentences from the AI's initial draft.
-The final result is a hodge-podge of contirbutions from the AI and I.}
+The final result is a hodgepodge of contributions from the AI and me.
+The AI has access to tools that can validate the theoretical findings.}
 
-% Introduction. v1: the opening paragraph after the note.
+The purpose of this document is to establish a unified framework for how genetic and trait data is generated in order to derive useful population and statistical genetics models.
+Particularly, a core goal is deriving the covariance in phenotypes between two individuals given some set of limited information about them.
+The first section of this document establishes the base framework we use for trait architecture and population structure.
+Subsequent sections iteratively add more complexity to these processes and explore the consequence on downstream parameters.
+Generally, we take the weaker form of an assumption needed to make some subsequent claim.
 
 % =================================================================================================
-\section{Measuring relatedness}\label{sec:relatedness}
+\section{Base Model}\label{sec:base-model}
 % Framework that everything downstream refers to. A running example pedigree containing both a
 % full-sibling and a step-sibling pair carries through the whole section (extends v1
 % fig:step-sib).
 
-\subsection{Information and notation}\label{sec:info}
+\subsection{Causal form of phenotypes}\label{sec:pheno-form}
+Suppose we are studying a population of individuals.
+We use $\mathcal{Y}$ to represent all phenotypic information regarding our population, and $\tilde{y}$ denotes a particular \textbf{phenotype} we are studying.
+Phenotype $\tilde{y}$ is a function $f_y$ of genetic information $\mathcal{G}$ and non-genetic (i.e. environmental) information $\mathcal{E}$, such that for individual $i$, we can write:
+$$ \tilde{y}_i := f_y(\mathcal{G}_i, \mathcal{E}_i) $$
+We impose the following constraints on the form of $f_y$ and its components:
 
-\subsubsection{Kinds of information}\label{sec:info-kinds}
-% Genetic data (\mathcal{G}, \mathbf{G}, \mathbf{X}); pedigree and path (\mathcal{P}, \mathbf{P});
-% transmission (\mathcal{T}, backward-looking); environment (\mathcal{E}); parameters as a
-% separate category. Curly = full information, bold = concrete object; functions are f.
-% Estimands, not estimates. Genotypes are the core level: maternal/paternal alleles need T.
+\begin{assumption}{Additive-phenotype}{Additive phenotype}
+The phenotype is the sum of a \textbf{genetic value} and an \textbf{environmental value},
+$$ \tilde{y}_i := \tilde{g}_i + \tilde{e}_i $$
+where $\tilde{g}$ is a function of genetic information only,
+$$ \tilde{g}_i := f_g(\mathcal{G}_i) $$
+and $\tilde{e}$ is a function of environmental information only:
+$$ \tilde{e}_i := f_e(\mathcal{E}_i)$$
+\bundles{no gene--environment interaction (GxE).}
+\end{assumption}
 
-\subsubsection{How the kinds of information relate}\label{sec:info-relations}
-% Information-flow diagram. T and P overlap, neither contains the other; mating information
-% lives only in P; T and G are connected but not equivalent (mutation; G covers only the study
-% individuals). Information-approximation assumptions as a recurring pattern.
+\begin{assumption}{GE-indep}{Gene--environment independence}
+An individual's environmental value is independent of their own genetic value:
+$$ \tilde{g}_i \perp \tilde{e}_i $$
+\bundles{no gene--environment correlation within an individual.}
+\end{assumption}
 
-\subsection{Population baseline}\label{sec:baseline}
+\begin{assumption}{No-IGE}{No indirect genetic effects}
+One individual's genetic value is independent of another individual's environmental value:
+$$ \tilde{g}_i \perp \tilde{e}_j \ \ (i \neq j) . $$
+\bundles{no indirect (e.g.\ parental) genetic effects}
+\end{assumption}
 
-\subsubsection{Allele frequency and standardization}\label{sec:baseline-freq}
-% Reference the random-union-of-gametes / Hardy--Weinberg model. Allele frequency as what a
-% random draw tends to be. Standardize \mathbf{G} into \mathbf{X} (and alleles into z) under HWE
-% with the true frequency. v1: "Building the model from haploid alleles", Constant-freq.
+\begin{assumption}{Env-indep}{Independent environments}
+The environmental value is independent across individuals, including relatives:
+$$ \tilde{e}_i \perp \tilde{e}_j \ \ (i \neq j). $$
+\bundles{no shared environment (e.g. household effects, population stratification), no IGEs}
+\end{assumption}
 
-\subsubsection{Departures from the baseline}\label{sec:baseline-departures}
-% a_kl and s_kl as descriptors: a_kk excess homozygosity (Var[x] = 1 + 2a_kk); a_kl non-gametic
-% and s_kl gametic disequilibrium. Zero under HWE and linkage equilibrium. Separating s from a
-% needs T. v1: eq:as-def, eq:x-from-as, eq:varx-a.
+From all possible genetic information about an individual, we focus solely on biallelic genetic variants, called just \textbf{variants} from now on.
+For a given variant, each individual possesses two alleles, each inherited from a different parent $u \in \{m,p\}$ (maternal or paternal, respectively) denoted by a superscript.
+Each allele is either the reference allele (coded as a $0$) or the alternate allele ($1$).
+We can thus define haploid alternate allele counts $G_{ik}^{(m)}, G_{ik}^{(p)} \in \{0,1\}$.
+\begin{assumption}{Biallelic}{Biallelic variants only}
+The genetic value depends on an individual's genetic information only through their alleles at $M$ biallelic variants:
+$$ f_g(\mathcal{G}_i) \;=\; f_g\Big(\big\{G_{ik}^{(m)}, G_{ik}^{(p)}\big\}_{k=1}^{M}\Big) . $$
+\bundles{no contribution from multiallelic variants, e.g. structural variants or copy-number variation.}
+\end{assumption}
 
-\subsection{The fundamental processes}\label{sec:processes}
+In practice, this assumption is violated as non-biallelic markers (e.g. copy-number variants) causally influence traits.
+Later, we will model scenarios where we have only genotyped a subset of biallelic variants and derive quantities that depend on genotyped biallelic variants vs all genetic variants.
+We will make the approximation that the contribution of non-genotyped non-biallelic variants is similar in form to that of non-genotyped biallelic variants. 
 
-\subsubsection{Meiosis}\label{sec:meiosis}
-% Explicit assumptions: 50/50 segregation, recombination. Transmission indicators, the
-% segregation residual and its variance 1/4 - a_kk/2. Gametic disequilibrium under meiosis with
-% recombination fraction r_kl (Unlinked as r = 1/2). Constant-freq mostly from fair segregation.
-% v1: eq:transmit, eq:transmit-mean, eq:seg-def, eq:seg-var-a, Unlinked, eq:s-recursion.
+Each variant's effect on the genetic value is additive across $M$ variants:
+\begin{assumption}{Additivity}{Additive genetic value}
+    An individual's genetic value is the sum of each variant's effect, $f_g^{(k)}$:
+    $$\tilde{g}_i := \sum_{k=1}^{M} f_g^{(k)}(G_{ik}^{(m)},G_{ik}^{(p)})$$
+    \bundles{no gene-gene interactions (e.g. epistasis)}
+\end{assumption}
 
-\subsubsection{Mating}\label{sec:mating}
-% Mating as its own fundamental act; how it is encoded. "Mates" = any pair assorting on the
-% phenotype, including non-reproducing and same-sex pairs. The two processes are the two
-% special edge types of path diagrams (meiosis: 1/2 edges + segregation self-loop; mating:
-% co-path).
+Summing haploid alternate allele counts yields an individual's \textbf{genotype} at a variant $G_{ik} \in \{0,1,2\}$:
+$$ G_{ik} := G_{ik}^{(m)} + G_{ik}^{(p)} $$
+We assume that a variant's effect can be described by a linear function with causal effect size $\tilde{\beta}_k \in \mathbb{R}$:
 
-\subsection{Pedigrees, paths and path diagrams}\label{sec:paths}
+\begin{assumption}{Linearity}{Linear variant effects}
+Each variant's contribution to the genetic value is a linear function of the individual's genotype at that variant:
+$$ f_g^{(k)}\big(G_{ik}^{(m)}, G_{ik}^{(p)}\big) \;=\; \tilde{\beta}_k\, G_{ik} . $$
+\bundles{no dominance; no parent-of-origin effects, since the contribution depends on the two alleles only through their sum.}
+\end{assumption}
 
-\subsubsection{Path diagrams}\label{sec:path-analysis}
-% Wright's tracing rules, co-path defined generically (matching on some variable). The
-% genetic-value-level diagram is the pedigree graph with coefficients attached. v1: Section
-% 2.2.1.
+A variant is causal if and only if $\tilde{\beta}_k \neq 0$.
+Because we assume a linear and additive model, the genetic value can also be called a \emph{breeding value}, although we stick to the former term.
 
-\subsubsection{Mating and meiosis graphs}\label{sec:graphs}
-% v1: "Framework for deriving covariance formulas".
+\subsection{Standardization}\label{sec:standardization}
+We define the \textbf{allele frequency} of a variant $p_k \in (0,1)$ to be the expected allele of an individual:
+$$\E[G_{ik}^{(u)}] = p_k \qquad \text{for } u \in \{m, p\}$$
+It follows that $\Var[G_{ik}^{(u)}] = p_k (1 - p_k)$ and $\E[G_{ik}] = 2 p_k$.
+From now on, we only work with \textbf{standardized} versions of alleles and genotypes, $z_{ik}^{(u)}, x_{ik} \in \mathbb{R}$, defined as:
+$$ z_{ik}^{(u)} := \frac{G_{ik}^{(u)} - p_k }{\sqrt{2 p_k (1 - p_k)}}$$
+$$ x_{ik} := z_{ik}^{(m)} + z_{ik}^{(p)} = \frac{G_{ik} - 2 p_k }{\sqrt{2 p_k (1 - p_k)}}$$
+This results in $\E[z_{ik}^{(u)}] = \E[x_{ik}] = 0$ and $\Var[z_{ik}^{(u)}] = \tfrac12$.
+We also define standardized effects:
+$$ \beta_k := \tilde{\beta}_k \sqrt{2 p_k (1 - p_k)} $$
 
-\subsubsection{Mating sequences}\label{sec:mating-sequences}
-% No-mating-loops, mating distance. v1: "Mating chains".
+This lets us define the centered genetic value $g_i$:
+$$
+\begin{aligned}
+    g_i \;:=\; \tilde{g}_i - \E[\tilde{g}_i]
+    \;&=\; \sum_{k=1}^{M} \tilde{\beta}_k \big(G_{ik} - 2p_k\big) \\
+    \;&=\; \sum_{k=1}^{M} \tilde{\beta}_k \sqrt{2 p_k (1 - p_k)}\; x_{ik} \\
+    \;&=\; \sum_{k=1}^{M} \beta_k\, x_{ik}
+\end{aligned}
+$$
 
-\subsubsection{Lineal sequences}\label{sec:lineal-sequences}
-% Discrete-generations, ancestors, lineal distance. No-inbreeding exact under the pedigree
-% window. v1: "Lineal chains".
+It follows that $\E[g_i] = 0$.
+We center the environmental value in the same way, $e_i := \tilde{e}_i - \E[\tilde{e}_i]$, and with it the phenotype:
+$$ y_i \;:=\; \tilde{y}_i - \E[\tilde{y}_i] \;=\; \big(\tilde{g}_i - \E[\tilde{g}_i]\big) + \big(\tilde{e}_i - \E[\tilde{e}_i]\big) \;=\; g_i + e_i $$
+so that $\E[y_i] = \E[e_i] = 0$.
+From now on, we only refer to the centered and/or standardized version of variables.
 
-\subsubsection{Paths between relatives}\label{sec:paths-between}
-% Paths as alternating mating and lineal sequences; the sequence digraph. v1: "Tracing paths
-% between relatives", fig:path-example.
+\subsection{Pedigrees and paths}\label{sec:pedpath}
+So far, we have discussed three categories of information: phenotypic ($\mathcal{Y}$), genetic ($\mathcal{G}$), and environmental ($\mathcal{E}$).
+A fourth category of information is the \textbf{pedigree}, $\mathcal{P}$, which describes familial relations between individuals in a population.
+A pedigree is a graph composed of nodes and edges, where each node represents an individual.
+A major goal of ours is to condense the information in a full pedigree down to sets of paths between pairs of individuals.
+To understand which paths are useful to us, we need to establish the different types of edges that connect nodes in the pedigree.
 
-\subsubsection{Path sufficiency}\label{sec:path-sufficiency}
-% One assumption replacing Outbred-mating-chain and Dominant-path: E[. | \mathcal{P}] approx
-% E[. | \mathbf{P}]. Meiosis/coalescence half and mating half. Covariance justification deferred
-% to Section 3.
+\subsubsection{Types of edges in a pedigree}
 
-\subsection{Measures of relatedness}\label{sec:measures}
+\paragraph{Mating}
+Individuals in a population may form pairs, such as to produce offspring, which we call \textbf{mate} pairs.
+Note that if the pair-formation process is the same for non-offspring-producing pairs (e.g. homosexual couples), then we still model and refer to them as mates.
+We do not make any assumptions about monogamy, i.e. an individual can be part of multiple mate pairs.
+\textbf{Random mating} refers to when for a given individual, the probability of mating with any other individual in the population's mating pool is uniform across individuals.
+A large amount of theory later in this document is dedicated to modelling and understanding the consequences of \textbf{non-random mating}.
+Mating pairs are represented by an undirected edge between them in the pedigree.
+The pedigree constrained to just nodes and mating edges is called a \emph{mating graph}.
 
-\subsubsection{Identity by descent}\label{sec:ibd}
-% IBD at variant k as a function of T: lineages coalescing within the pedigree's time frame.
-% No-mutation within the window, so IBD implies IBS. No-inbreeding as non-coalescence of an
-% individual's own two alleles.
+\paragraph{Meiosis}
+While the term \textbf{meiosis} specifically refers to the biological process of gamete-formation, here we use it to describe the transmission of alleles from parent to offspring.
+Understanding meiosis does not require knowledge of the offspring's other parent, but it is true nonetheless that meiotic processes always occur in pairs from both mating parents.
+Meiotic transmission is represented by a directed edge in the pedigree pointing from parent to offspring.
+The pedigree constrained to just nodes and meiotic edges is called a \emph{meiosis graph}.
+
+\paragraph{Other building blocks}
+It is possible to come up with any other type of edge that connects nodes and constrains the joint distribution of information across individuals.
+For example, adopted children do not follow the same laws of meiosis as biological offspring, but may still be influenced by non-genetic transmission shared with biological offspring.
+We only define these additional types of edges when needed.
+
+
+
+All subsequent analysis of pedigrees is greatly simplified with the following assumption:
+
+\begin{assumption}{Discrete-generations}{Discrete, non-overlapping generations}
+The population is partitioned into generations indexed by $t$, and every individual mates within their own generation.
+Offspring produced from such a mating are of generation $t+1$.
+\bundles{no overlapping generations, no mating across generations, sequential generations between parent-offspring pairs.}
+\end{assumption}
+
+\subsubsection{Mating chains}
+A \emph{run} of edges is a sequence of edges in which each edge begins at the node where the previous one ends.
+In order to describe the mating graph in terms of runs, we'll need the following assumption:
+
+\begin{assumption}{No-mating-loops}{The mating graph is a forest}
+    A \emph{cycle} in the mating graph is a run of edges that returns to its starting node without visiting any other node twice.
+    A graph with no cycles is a \emph{forest}, and each of its connected components is a \emph{tree}.
+
+    We assume the mating graph is a forest.
+    As a consequence, two nodes in the same tree are joined by exactly one run of edges that visits no node twice, and two nodes in different trees are joined by none.
+\end{assumption}
+
+For $X \neq Y$ in the same tree, the \textbf{mating chain} $\Mu(X,Y)$ is that unique run of edges connecting them, read as the ordered list of individuals it passes through, from $X$ to $Y$.
+The \textbf{mating distance} $\Nmu(X,Y)$ is the number of edges on that chain, i.e. the number of matings crossed in getting from $X$ to $Y$, and is one fewer than the size of it:
+\begin{equation}\label{eq:mating-dist}
+    \boxed{\ \Nmu(X,Y) \;=\; \big|\Mu(X,Y)\big| - 1 \ }
+\end{equation}
+We additionally set $\Nmu(X,X) = 0$, and $\Nmu(X,Y) = \infty$ when $X$ and $Y$ lie in different trees, meaning no sequence of matings connects them at all.
+
+The figure below shows a pedigree structure where $\Nmu = 0, 1, 2, 3, \infty$ can be observed:
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \input{figures/step_sib_people.tikz}
+        \caption{%
+            A pedigree of four parents joined by three matings, with one child per mating.
+            Meioses are black directed edges and matings are red undirected edges.
+            Reading left to right, $A$ and $B$ are the parents of $E$, $B$ and $C$ of $F$, and $C$ and $D$ of $G$.
+            Each parent is $\Nmu = 0$ to themselves.
+            Each parent is $\Nmu = 1$ to their own mate, e.g.\ $(A,B)$; $\Nmu = 2$ to their mate's other mate, e.g.\ $(A,C)$ and $(B,D)$; and $\Nmu = 3$ across the whole chain, $(A,D)$.
+            In the offspring generation, by contrast, every pair is $\Nmu = \infty$: none of $E$, $F$, $G$ has mated, so no chain of matings connects any two of them.%
+        }
+        \label{fig:step-sib}
+    \end{floatcard}
+\end{figure}
+
+\subsubsection{Lineal chains}\label{sec:lineal-chains}
+The \emph{meiosis graph} consists only of the directed edges (parent-to-offspring meioses) between nodes.
+Every individual has two edges coming in, one from each parent.
+A \emph{directed run} is a sequence of alternating nodes and edges that always follows the direction of the edges.
+A directed run can be traced from a node onto itself (i.e. is zero-length).
+Under \assumptionid{Discrete-generations} every edge steps from one generation to the next, so following edges forward always moves forward in time.
+Therefore, the meiosis graph is guaranteed to be a \emph{directed acyclic graph}.
+
+Let $t_X$ denote the generation that an individual $X$ belongs to, according to \assumptionid{Discrete-generations}.
+Let $m(X)$ and $p(X)$ denote the two parents, mother and father, of an individual $X$, i.e. the two nodes with an edge into $X$.
+If a directed run leads from $Y$ to $X$, then $Y$ is an \textbf{ancestor} of $X$, $X$ is a \textbf{descendant} of $Y$, and the two are \textbf{lineal relatives} to each other.
+
+For lineal relatives $X$ and $Y$, the \textbf{lineal chain} $\Lin(X,Y)$ is a directed run between them, read as the ordered list of individuals it passes through, from $X$ to $Y$.
+The \textbf{lineal distance} $\Nlin(X,Y)$ is the number of edges on that chain, i.e. the number of meioses separating the two.
+Under \assumptionid{Discrete-generations}, it is just the number of generations between them:
+    \begin{equation}\label{eq:lineal-dist}
+        \boxed{\ \Nlin(X,Y) \;=\; \big|\Lin(X,Y)\big| - 1 \;=\; \big|\, t_X - t_Y \,\big| \ }
+    \end{equation}
+We additionally set $\Nlin(X,X) = 0$, and $\Nlin(X,Y) = \infty$ if $X$ and $Y$ are not lineal relatives.
+
+\subsubsection{Paths}
+\todo{Modify this to explicitly name these as "pedigree paths"}
+
+A \emph{path} $\mathbf{P}(A,B)$ between probands $A$ and $B$ is a sequence of chains, alternating between lineal and mating, in which each chain begins at the node where the previous one ends.
+The first chain begins at node $A$, the last ends at $B$, and no individual is visited twice across the entire path.
+We can think of a path itself as being a \emph{chain digraph}, where the nodes are chains, and the edges connect lineal chains to mating chains, or vice-versa.
+Since mating chains contain individuals of the same generation while lineal chains contain individuals spanning multiple generations, we enforce edges to be directed such that the older chain points to the younger chain.
+The number of edges leaving a chain node is its out-degree, $N_o \in \{0,1,2\}$, and the number of edges entering it is its in-degree.
+Non-terminal lineal chains will always have an out-degree of 1 and an in-degree of 1.
+
+Furthermore, we require that whenever a mating chain has an out-edge, the mating chain must contain both the parents of the second-oldest individual in the lineal chain it points to.
+In other words, the terminal individual node of two connected lineal and mating chains must be the ``outer'' parent.
+One can think of an out-edge from a mating chain as representing a mate pair, rather than an individual.
+
+Below is a pedigree where the path between $A$ and $B$ is traced, which spans 2 mating chains and 3 lineal chains, followed by its equivalent digraph.
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \makebox[\linewidth][l]{\textbf{(A)}}
+        \input{figures/path_example_pedigree.tikz}
+
+        \vspace{1.0em}
+        \makebox[\linewidth][l]{\textbf{(B)}}
+        \input{figures/path_example_digraph.tikz}
+        \caption{%
+            (A) A pedigree shown as a graph containing a highlighted path connecting $A$ and $B$.
+            Meioses are denoted by black directed edges while matings are denoted by red undirected edges.
+            (B) The chain digraph equivalent of the highlighted path:
+            $\mathbf{P}(A,B) = \big(\Lin(A,D),\ \Mu(D,F),\ \Lin(F,I),\ \Mu(I,L),\ \Lin(L,B)\big)$.
+            Edges are oriented to always point from the older chain to the younger chain.
+            Properties of each chain are listed.
+            Note that proband $A$ acts as a source while proband $B$ acts as a sink.
+        }
+        \label{fig:path-example}
+    \end{floatcard}
+\end{figure}
+
+\paragraph{Dominant path} In a full pedigree, any two individuals will have at least one path connecting them, since everyone shares a common ancestor.
+In fact, arbitrarily many paths can be drawn, since all ancestors across individuals also share their own common ancestors.
+The \emph{dominant path} is the single best path at condensing the information of the pedigree regarding two individuals.
+The exact definition of ``best'' depends on the specific applications discussed later, but can be broadly thought as the path that most closely approximates the statistical consequences of the full pedigree.
+
+\subsection{Transmission}\label{sec:transmission}
+A fifth category of information is transmission, $\mathcal{T}$, which catalogs which parental alleles were inherited by each individual in the population.
+Unless we are discussing time-dependent processes (like assortative mating not under equilibrium), we omit the notational use of $t$ for clarity.
+We make the following explicit assumption about the dynamics of allele frequencies:
+\begin{assumption}{Constant-freq}{Constant allele frequencies}
+The allele frequency $p_k$ of each variant is the same in every generation:
+$$ \E\big[G_{ik}^{(u)}\big] \;=\; p_k \qquad \text{for every individual } i \text{ of every generation} . $$
+\bundles{no selection, no mutations, no migration, no drift (i.e. infinite population size).}
+\end{assumption}
+
+\paragraph{Alleles}
+While already implicitly covered in \assumptionid{Constant-freq}, we make the following claim explicit, but frame it as an \emph{approximation}:
+
+\begin{approximation}{No-mutation}{No mutations}
+Every transmitted allele is an exact copy of the parental allele it was inherited from; 
+i.e. no de-novo mutations occur.
+\justification{Empirically, mutation rates are very low: on the order of $10^{-8}$ per base pair per generation in humans.}
+\end{approximation}
+
+An offspring's allele is a function of the transmitting parent's two alleles.
+
+\begin{assumption}{Segregation}{Segregation}
+    Individual $i$'s allele inherited from parent $u(i)$ is one of the two alleles of $u(i)$:
+    $$ z^{(u)}_{ik} \;:=\; T^{(u)}_{ik}\, z^{(m)}_{u(i),k} \;+\; \big(1 - T^{(u)}_{ik}\big)\, z^{(p)}_{u(i),k} $$
+    where $T^{(u)}_{ik} \in \{0,1\}$ is an indicator variable for whether the maternally-inherited ($1$) or paternally-inherited ($0$) allele of parent $u(i)$ was transmitted to $i$.
+    \bundles{Mendel's law of segregation.}
+\end{assumption}
+
+\unsure{Note to self: at some point I want to develop this more carefully to account for linkage}
+
+\begin{assumption}{Independent-assortment}{Independent assortment}
+    Every transmission indicator is an independent uniform Bernoulli trial:
+    $$ T^{(u)}_{ik} \sim \mathrm{Bernoulli}(\tfrac12), $$
+    independently across variants $k$, parents $u$ and offspring $i$, and independently of every allele except those it passes on (the offspring's, and their descendants').
+    \bundles{Mendel's law of independent assortment; no physical linkage (every pair of variants recombines with probability $\tfrac12$); independent meioses across offspring; no meiotic drive.}
+\end{assumption}
+
+It follows that the expected offspring allele given the transmitting parent's alleles is given by:
+$$ \E[z^{(u)}_{ik} \mid z^{(m)}_{u(i),k}, z^{(p)}_{u(i),k}] =
+\tfrac12 (z^{(m)}_{u(i),k} + z^{(p)}_{u(i),k}) = 
+\tfrac12 x_{u(i),k} = 
+\E[z^{(u)}_{ik} \mid x_{u(i),k} ] $$
+We can alternatively define the offspring allele as the sum of its expected value plus an uncorrelated segregation residual:
+$$ z^{(u)}_{ik} = \tfrac12 x_{u(i),k} + z^{\perp(u)}_{ik}$$
+Note that there is some abuse of notation here, as while the residual is uncorrelated with parental alleles, it is not independent of them.
+An alternative parameterization of the segregation residual is:
+$$ z^{\perp(u)}_{ik} = \big(T^{(u)}_{ik} - \tfrac12\big)\big(z^{(m)}_{u(i),k} - z^{(p)}_{u(i),k}\big) $$
+
+\paragraph{Genotypes}
+We can define genotype transmission the same way:
+$$
+\begin{aligned}
+    x_{ik} \;&=\; z^{(m)}_{ik} + z^{(p)}_{ik} \\
+    \;&=\; \tfrac12 x_{m(i),k} + z^{\perp(m)}_{ik} \;+\; \tfrac12 x_{p(i),k} + z^{\perp(p)}_{ik} \\
+    \;&=\; \tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} + x^{\perp}_{ik}
+\end{aligned}
+$$
+where $x^{\perp}_{ik} \;:=\; z^{\perp(m)}_{ik} + z^{\perp(p)}_{ik}$.
+Each allele residual has mean zero given its parent's alleles, so the genotype residual has mean zero given both parents' alleles, and
+$$ \E\big[x_{ik} \mid x_{m(i),k},\, x_{p(i),k}\big] \;=\; \tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} . $$
+
+\paragraph{Genetic values}
+Finally, we can also define genetic value transmission:
+$$
+\begin{aligned}
+    g_i \;&=\; \sum_{k=1}^{M} \beta_k\, x_{ik} \\
+    \;&=\; \sum_{k=1}^{M} \beta_k \Big(\tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} + x^{\perp}_{ik}\Big) \\
+    \;&=\; \tfrac12 g_{m(i)} + \tfrac12 g_{p(i)} + g^{\perp}_i ,
+    \qquad g^{\perp}_i \;:=\; \sum_{k=1}^{M} \beta_k\, x^{\perp}_{ik} .
+\end{aligned}
+$$
+The residual $g^{\perp}_i$ has mean zero given the parents' alleles, and $g_{m(i)}$ and $g_{p(i)}$ are functions of those alleles, so
+$$ \E\big[g_i \mid g_{m(i)},\, g_{p(i)}\big] \;=\; \tfrac12 g_{m(i)} + \tfrac12 g_{p(i)} . $$
+
+\subsection{Categories of information}
+We summarize here the five categories of information we've discussed:
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.6}
+    \setlength{\tabcolsep}{5pt}
+    \footnotesize
+    \begin{tabular}{l c >{\raggedright\arraybackslash}p{4.3cm} >{\raggedright\arraybackslash}p{5.9cm}}
+        \textbf{Category} & \textbf{Symbol} & \textbf{Description} & \textbf{Examples} \\
+        \hline
+        Phenotypic    & $\mathcal{Y}$ & All phenotypic information & Measured phenotypes \\
+        Genetic       & $\mathcal{G}$ & All genetic information & Genotyped biallelic variants \\
+        Environmental & $\mathcal{E}$ & All non-genetic information & Shared and unique environment, ``random'' noise \\
+        Pedigree      & $\mathcal{P}$ & The familial relations between individuals & Matings, meioses, relationship types \\
+        Transmission  & $\mathcal{T}$ & Which parental alleles were inherited by each individual & Phasing, parent-of-origin ascertainment, IBD segments, recombination \\
+    \end{tabular}
+    \caption{%
+        The five categories of information.%
+    }
+    \label{tab:info-categories}
+    \end{floatcard}
+\end{table}
+
+Information belonging to one category can causally influence the distribution of certain information in current and subsequent generations.
+The table below provides examples of how different categories (rows) can directly affect other categories (columns).
+Many of these topics are discussed throughout the document.
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.8}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{c|*{5}{>{\raggedright\arraybackslash}p{2.5cm}}}
+        & $\mathcal{Y}$ & $\mathcal{G}$ & $\mathcal{E}$ & $\mathcal{P}$ & $\mathcal{T}$ \\
+        \hline
+        $\mathcal{Y}$ & & & Cultural transmission, Mate convergence & Primary assortment & \\
+        $\mathcal{G}$ & Trait architecture & Allelic transmission & & & \\
+        $\mathcal{E}$ & Trait architecture & & Social stratification & & \\
+        $\mathcal{P}$ & & Linkage disequilibrium & & New generations append onto previous ones & Defines domain \\
+        $\mathcal{T}$ & & Segregation & & & Linkage\\
+    \end{tabular}
+    \caption{%
+        How the information category in each row directly affects the category in each column.%
+    }
+    \label{tab:info-flow}
+    \end{floatcard}
+\end{table}
+
+\subsection{Identity-by-state (IBS)}\label{sec:ibs}
+
+Two alleles of the same locus are said to be \textbf{identical-by-state (IBS)} if they have the same allelic state:
+$$
+\begin{aligned}
+    \mathrm{IBS}\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big)
+    \;&:=\; \begin{cases}
+        1 & G^{(u)}_{ik} = G^{(v)}_{jk} \\
+        0 & G^{(u)}_{ik} \neq G^{(v)}_{jk}
+    \end{cases} \\[4pt]
+    \;&=\; 1 - \big(G^{(u)}_{ik} - G^{(v)}_{jk}\big)^2
+\end{aligned}
+$$
+The second step follows from each allele count being either $0$ or $1$, so that their squared difference is $1$ exactly when the two differ and $0$ when they are equal.
+The average IBS value across all same-locus allele pairs between two individuals is their \textbf{IBS proportion}:
+$$ \overline{\mathrm{IBS}}_{ij} \;:=\; \frac{1}{4M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \mathrm{IBS}\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big) $$
+
+Cross-products often have clean statistical properties, and only unphased genotypic data is often available.
+Therefore, we define \textbf{genotypic similarity}, $A_{ij} \in \mathbb{R}$, to be an IBS-based measure of relatedness equivalent to the average standardized genotype cross-product across all same-locus pairs:
+$$ A_{ij} := \frac{1}{M} \sum_{k=1}^{M} x_{ik} x_{jk} $$
+
+Note that since we define $A_{ij}$ in terms of standardized genotypes, rarer variants contribute relatively more.
+The form of this property is not motivated by theory but empirically is often useful for downstream tasks.
+Genotypic similarity can be parameterized in terms of allele cross-products by expanding each genotype into its two alleles:
+$$
+\begin{aligned}
+    A_{ij} \;&=\; \frac{1}{M} \sum_{k=1}^{M} \big(z^{(m)}_{ik} + z^{(p)}_{ik}\big)\big(z^{(m)}_{jk} + z^{(p)}_{jk}\big) \\[4pt]
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} z^{(u)}_{ik}\, z^{(v)}_{jk}
+\end{aligned}
+$$
+
+The matrix $A$ defined for all $i,j$ pairs is called the (IBS-based) \textbf{genetic relationship matrix}.
+Observe that IBS-based measures of relatedness only depend on genetic information $\mathcal{G}$ in the form of allele or genotype states.
+Often, not all relevant variants are genotyped.
+Suppose we order variants such that $k \in \{1 , ... , M_T\}$ index all the genotyped variants, where $M_T \leq M$, while the remaining variants are ungenotyped.
+We can consider genotypic similarity computed from genotyped variants to be an estimate of the true genotypic similarity:
+
+$$ \widehat{A}_{ij} := \frac{1}{M_T} \sum_{k=1}^{M_T} x_{ik} x_{jk} $$
+
+Later, we will explore how the two differ in their relationship with useful estimands.
+
+\subsection{Identity-by-descent (IBD)}\label{sec:ibd}
+
+\subsubsection{Coalescence}\label{sec:coalescence}
+
+In Section~\ref{sec:lineal-chains}, parent-offspring pairs define the meiosis graph.
+For each variant, the \textbf{coalescence graph} is the allele-level version of the meiosis graph, where each allele is a node and directed edges represent parent-to-offspring transmission.
+Each individual is represented by 2 nodes (one for each allele) in a coalescence graph, and like a meiosis graph, a coalescence graph is a \emph{directed acyclic graph}.
+
+Consider three alleles $k$, $k'$, and $l$ on a coalescence graph, where $k \neq k'$ and $t_l \leq t_k , t_{k'}$.
+Suppose a directed run can be traced from $l$ to $k$ and also from $l$ to $k'$.
+The most recent allele $l$ for which this is true is the \emph{coalescence point} between $k$ and $k'$ and the \emph{coalescence path} is the union of the two directed runs.
+The coalescence point is unique and guaranteed to exist for any pair of same-locus alleles in a finite population, since all individuals share a common ancestor.
+
+To avoid the contradictions that emerge from our assumptions so far, we must be more careful in defining IBD.
+Specifically, it cannot be simultaneously true that (1) all alleles eventually coalesce, (2) variation in allelic state exists, and (3) mutations do not occur.
+Yet, the first claim is true, as just explained.
+The second claim is true because we restrict our analyses to polymorphic sites (implied by $p_k \in (0,1)$ in Section~\ref{sec:standardization}).
+And the third claim is true if we take the \approximationid{No-mutation} approximation to be exactly true.
+
+Clearly, the easiest way to resolve this is to admit that \approximationid{No-mutation} is not true, something we already know from biology.
+Allowing for mutations resolves the contradiction because two alleles with different states are the result of a mutation occurring at some point in their coalescence path.
+
+However, modelling mutations complicates analysis with little gain when studying small time frames.
+So instead, we define the \emph{recent coalescence graph} to be the coalescence graph restricted to alleles that are not older than some baseline generation, $t \geq t_B$.
+As a consequence, two alleles are no longer guaranteed to have a \emph{recent coalescence path}.
+This lets us replace \approximationid{No-mutation} with a much weaker form that resolves the contradiction, ensures the previous derivations still hold, and leads to practically useful definitions:
+
+\begin{assumption}{No-recent-mutation}{No mutations since the baseline generation}
+Every transmission into a generation $t \geq t_B$ copies the parental allele exactly: no de novo mutation occurs on any path of the recent coalescence graph.
+\bundles{recent IBD implies IBS.}
+\end{assumption}
+
+Two alleles are said to be \textbf{identical-by-descent (IBD)} if they \emph{recently coalesce}.
+Non-IBS allele pairs are guaranteed to be non-IBD, and, equivalently, IBD pairs are necessarily IBS.
+Alleles are considered to be IBD with themselves.
+
+\subsubsection{Measures of relatedness}\label{sec:measures-relatedness}
+
+We cna use genome-wide IBD state to define measures of relatedness.
+In the following definitions, we use $\mathcal{G}$ in place of $G$ because we are referring to the allele itself and not necessarily its genotypic state.
+IBD is a form of transmission information $\mathcal{T}$ because it constrains the distribution of the transmission indicators $T$ across the pedigree to guarantee the existence of the coalescence path.
+
+The \textbf{coefficient of kinship}, $\Theta_{ij} \in [0,1]$, between two individuals is the proportion of allele pairs between the two that are IBD:
+$$ \Theta_{ij} := \frac{1}{4M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \mathrm{IBD}(\mathcal{G}^{(u)}_{ik},\mathcal{G}^{(v)}_{jk}) $$
+
+The \textbf{coefficient of relatedness}, $\pi_{ij} \in [0,2]$, is simply twice the coefficient of kinship: 
+$$ \pi_{ij} := 2\Theta_{ij} $$
+
+\textbf{Inbreeding} is when a genotype's two alleles recently coalesce, implying that the parents of the proband have a \emph{recent common ancestor} (not younger than $t\geq t_B$).
+The \textbf{coefficient of inbreeding}, $f_i \in [0,1]$, of an individual is the excess coefficient of relatedness they have with themselves:
+$$
+\begin{aligned}
+    f_i \;&:=\; \pi_{ii} - 1 \;=\; 2\Theta_{ii} - 1 \\[4pt]
+    \;&=\; \frac{2}{4M} \sum_{k=1}^{M} \Big[ \mathrm{IBD}(\mathcal{G}^{(m)}_{ik},\mathcal{G}^{(m)}_{ik}) + \mathrm{IBD}(\mathcal{G}^{(p)}_{ik},\mathcal{G}^{(p)}_{ik}) + 2\,\mathrm{IBD}(\mathcal{G}^{(m)}_{ik},\mathcal{G}^{(p)}_{ik}) \Big] - 1 \\[4pt]
+    \;&=\; \frac{1}{2M} \sum_{k=1}^{M} \Big[ 2 + 2\,\mathrm{IBD}(\mathcal{G}^{(m)}_{ik},\mathcal{G}^{(p)}_{ik}) \Big] - 1 \\[4pt]
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \mathrm{IBD}(\mathcal{G}^{(m)}_{ik},\mathcal{G}^{(p)}_{ik})
+\end{aligned}
+$$
+
+\subsubsection{Relationship between pedigree and relatedness}
+Here, we derive the expected coefficient of relatedness between two individuals given their pedigree, $\E[\pi_{ij} \mid \mathcal{P}]$, by making use of the path framework we have developed.
+This form of relatedness is entirely dependent on the presence of IBD alleles, and for alleles to be IBD, they must possess a recent coalescence path.
+In the context of whom alleles belong to, a coalescence graph is just a subset of the meiosis graph.
+That is, an allele can only be inherited from one of the carrier's parents; therefore, the coalescence path can only pass through individuals that are also on a meiosis path between the two carriers, $\mathbf{P}_{ij}$.
+
+Consider two probands, $i$ and $j$.
+If a recent meiosis path cannot be traced between them (i.e. they don't share a recent common ancestor), then a recent coalescence path will not exist between any of their two alleles.
+As IBD only arises from recent coalescence paths, the expected coefficient of kinship for recently unrelated individuals is zero:
+\todo{Is this the right notation for saying that if no meiosis path exists, then the expected pi is 0? Modify if needed, particulartly since I didn't define notation for a meiosis path. Perhaps we can use $\mathbb{P}^{(\mathcal{L})}_{ij}$ to denote a meiosis path? And perhaps $\mathcal{P}^{(\mathcal{L})}$ refers to the set of meiosis paths? And perhaps the no-superscript case refers to a pedigree path (which is the union of meioses and matings). The difference between a meiosis path and a meiosis chain is the latter can only go in one direction, but the former can reverse direction on a common ancestor. Previous sections should reflect this notation change}
+$$ \E[\pi_{ij} | \mathbb{P}_{ij} = \{ \} ] = 0 $$
+
+
+
 
 \subsubsection{Realized relatedness}\label{sec:realized-relatedness}
 % pi_ij as a summary of T. v1: eq:pi-def.
-
-\subsubsection{Allelic sharing}\label{sec:allelic-sharing}
-% A_ij as a function of genotypes. v1: eq:A-def.
-
-\subsubsection{Founders}\label{sec:founders}
-% Non-coalescing lineages reach distinct founder alleles; founders are draws from the
-% population under the mating regime. Non-IBD-indep split into (a) independent founder draws and
-% (b) matings independent of genotypes.
 
 % =================================================================================================
 \section{Additive genetics under random mating}\label{sec:random-mating}
@@ -265,7 +666,7 @@ The final result is a hodge-podge of contirbutions from the AI and I.}
 \subsubsection{Inheritance of genetic values}\label{sec:am-g-inheritance}
 % One line from meiosis + Additivity. v1: eq:g-transmit, eq:g-seg-var.
 
-\subsubsection{Covariance along a single sequence}\label{sec:am-sequence-cov}
+\subsubsection{Covariance along a single chain}\label{sec:am-chain-cov}
 % v1: "Covariance along a single chain".
 
 \subsubsection{Covariance between probands on a path}\label{sec:am-probands}
