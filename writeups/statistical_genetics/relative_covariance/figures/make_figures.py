@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import collections
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +24,7 @@ import sympy as sp
 
 import pathmgr as pm
 from pathmgr.render import DiagramStyle, Layout, to_tikz
+from pathmgr.render.diagnostics import diagnose
 
 HERE = Path(__file__).resolve().parent
 
@@ -1054,6 +1056,469 @@ def check_g_only_figure() -> int:
 
 
 # ----------------------------------------------------------------------------------------------
+# v2, fig:ibd-one-gen and tab:ibd-one-gen: founder alleles across one generation.
+#
+# The nodes are FOUNDER ALLELES (\mathring z in the text): the value of the founder allele each
+# allele descends from, with variance 1/2 and IBD alleles sharing a value. A covariance between two
+# of them given the pedigree is half their expected IBD state (eq:allele-kinship), so every
+# bidirected edge carries 1/2 times an expected IBD state and every check below doubles a
+# covariance to get one back.
+# The parents are any two mates in the pedigree, NOT founders (Outbred-founders makes founders
+# non-inbred and unrelated): inbred (f_m, f_p = \widehat f_m, \widehat f_p) and related to each
+# other (one expected IBD state per cross-parent allele pair, k_uv = \widehat\Theta^{(uv)}_{mp}),
+# which summarizes their undrawn ancestry. Each offspring allele gets the residual variance of
+# eq:founder-resid-var as exogenous variance, which is what holds its variance at 1/2.
+# ----------------------------------------------------------------------------------------------
+
+_IBD_FROM = {"mat": "m", "pat": "p"}       # the parent an offspring allele is inherited from
+
+
+def _zh(who: str, origin: str) -> str:
+    return f"zh_{origin}_{who}"
+
+
+def ibd_one_generation() -> pm.Model:
+    founders = [_zh(w, o) for w in "mp" for o in ("mat", "pat")]
+    kids = [_zh(k, o) for k in "ij" for o in ("mat", "pat")]
+    lines = [
+        "latent: " + ", ".join(founders + kids),
+        "real: f_m, f_p, k_mm, k_mp, k_pm, k_pp",
+        *[f"label: {_zh(w, o)} = $\\mathring{{z}}^{{({o[0]})}}_{{{w}k}}$"
+          for w in "mpij" for o in ("mat", "pat")],
+        *[f"{n} ~~ 1/2*{n}" for n in founders],
+        f"{_zh('m', 'mat')} ~~ f_m/2*{_zh('m', 'pat')}",
+        f"{_zh('p', 'mat')} ~~ f_p/2*{_zh('p', 'pat')}",
+        *[f"{_zh('m', u)} ~~ k_{u[0]}{v[0]}/2*{_zh('p', v)}"
+          for u in ("mat", "pat") for v in ("mat", "pat")],
+    ]
+    for k in "ij":
+        for origin, par in _IBD_FROM.items():
+            child = _zh(k, origin)
+            # eq:founder-transmit and eq:founder-resid-var
+            lines.append(f"{child} ~ 1/2*{_zh(par, 'mat')} + 1/2*{_zh(par, 'pat')}")
+            lines.append(f"{child} ~~ (1 - f_{par})/4*{child}")
+    return pm.from_text("\n".join(lines), name="founder alleles across one generation")
+
+
+# Chosen by a sweep over the parent gap, the spacing between parents, the row height, the
+# offspring inset and the spacing of each offspring's two alleles, scored by diagnose(): zero
+# collisions, zero ambiguous labels, zero crossings, 8.8cm wide. The offspring alleles sit 2.2 apart
+# rather than the parents' 2.0 because their loop labels, 1/4(1 - \widehat f), are wider than the
+# node gap. Offspring loops are sent straight down; left to the placer, the inner ones lean
+# sideways into the transmission edges.
+IBD_ONE_GEN_LAYOUT = Layout({
+    _zh("m", "mat"): (0.0, 3.0), _zh("m", "pat"): (2.0, 3.0),
+    _zh("p", "mat"): (5.5, 3.0), _zh("p", "pat"): (7.5, 3.0),
+    _zh("i", "mat"): (0.4, 0.0), _zh("i", "pat"): (2.6, 0.0),
+    _zh("j", "mat"): (4.9, 0.0), _zh("j", "pat"): (7.1, 0.0),
+})
+
+
+def ibd_one_generation_style() -> DiagramStyle:
+    """Labels in the document's own symbols. Three groups of edges are left unlabelled and named
+    by the caption instead: the eight transmission edges (all 1/2), the four founder variances
+    (all 1/2), and the four cross-parent bidirected edges. Labelling those last four was tried:
+    four arcs among four collinear nodes put labels over nodes and on the wrong arcs (3 ambiguous,
+    3 label-edge collisions at best), and the caption states their values in one clause."""
+    overrides = {
+        (_zh("m", "mat"), _zh("m", "pat")): r"\tfrac12 \widehat{f}_m",
+        (_zh("p", "mat"), _zh("p", "pat")): r"\tfrac12 \widehat{f}_p",
+    }
+    for k in "ij":
+        for origin, par in _IBD_FROM.items():
+            overrides[(_zh(k, origin), _zh(k, origin))] = rf"\tfrac14(1-\widehat{{f}}_{par})"
+    founders = [_zh(w, o) for w in "mp" for o in ("mat", "pat")]
+    suppressed = (
+        {(_zh(par, a), _zh(k, o)) for k in "ij" for o, par in _IBD_FROM.items()
+         for a in ("mat", "pat")}
+        | {(n, n) for n in founders}
+        | {(_zh("m", u), _zh("p", v)) for u in ("mat", "pat") for v in ("mat", "pat")}
+    )
+    return DiagramStyle(
+        show_variances=True,
+        show_unit_coefficients=False,
+        label_overrides=overrides,
+        suppressed_labels=frozenset(suppressed),
+        loop_overrides={_zh(k, o): (270.0, IBD_ONE_GEN_LOOSENESS) for k in "ij" for o in ("mat", "pat")},
+    )
+
+
+#: Tighter than pathMgr's default of 6, which drew loops nearly as big as the nodes.
+IBD_ONE_GEN_LOOSENESS = 4.0
+
+
+def ibd_one_generation_tikz(model: pm.Model, style: DiagramStyle) -> str:
+    """to_tikz plus two fixes pathMgr has no option for.
+
+    1. The founders' loops have suppressed labels, so pathMgr never places them and emits its
+       default looseness; they are tightened here to match the offspring loops.
+    2. pathMgr puts a loop's label a fixed clearance past ITS OWN estimate of the arc, and that
+       estimate (a quadratic through the arc's ends) falls short of the cubic TikZ actually draws,
+       so the label lands on the loop. Attaching the label to the loop path itself, at the apex
+       and anchored below it, puts it under the drawn arc whatever its true size.
+    Both substitutions are counted, so a change in pathMgr's output fails here, not in the PDF.
+    """
+    tikz = to_tikz(model, layout=IBD_ONE_GEN_LAYOUT, style=style)
+    tikz, n_founder = re.subn(
+        r"to\[loop above, looseness=6,",
+        f"to[loop above, looseness={IBD_ONE_GEN_LOOSENESS:g},",
+        tikz,
+    )
+    tikz, n_offspring = re.subn(
+        r"(\\draw\[pmBidirected[^\n]*?to\[loop, [^\]\n]*\]) (\(zh_\w+\));\n"
+        r"  \\node\[pmLabelAt\] at \([^)\n]*\) (\{[^\n]*\});\n",
+        r"\1 node[pmLabelAt, pos=0.5, below=1pt] \3 \2;\n",
+        tikz,
+    )
+    assert (n_founder, n_offspring) == (4, 4), (n_founder, n_offspring)
+    return tikz
+
+
+def check_ibd_one_generation() -> int:
+    """Assert every entry of tab:ibd-one-gen, eq:founder-resid-var, and the worked sibling chain
+    sum, against the diagram. IBD probability = 2 x covariance (eq:allele-kinship)."""
+    model = ibd_one_generation()
+    assert not [i for i in model.validate() if i.severity == "error"], model.validate()
+    e = pm.RAMEngine(model)
+    f_m, f_p = model.sym("f_m"), model.sym("f_p")
+    theta_mp = sum(model.sym(f"k_{u}{v}") for u in "mp" for v in "mp") / 4   # eq:parents-kinship
+    half, quarter, eighth = sp.Rational(1, 2), sp.Rational(1, 4), sp.Rational(1, 8)
+    ibd = lambda a, b: 2 * e.cov(a, b)
+    rand = lambda A, B: sum(ibd(a, b) for a in A for b in B) / (len(A) * len(B))
+    M = [_zh("m", o) for o in ("mat", "pat")]
+    I = [_zh("i", o) for o in ("mat", "pat")]
+    J = [_zh("j", o) for o in ("mat", "pat")]
+    checked = 0
+
+    # every allele, founder or not, has variance 1/2 (Section 1.2); for the offspring this is
+    # what the residual variance of eq:founder-resid-var is for
+    for k in "ij":
+        for o in ("mat", "pat"):
+            assert sp.simplify(e.var(_zh(k, o)) - half) == 0, f"Var[{_zh(k, o)}]"
+            checked += 1
+
+    # tab:ibd-one-gen, General column, row by row
+    general = [
+        (ibd(*M), f_m),
+        (rand(M, [_zh("i", "mat")]), half * (1 + f_m)),
+        (rand(M, I), quarter * (1 + f_m) + half * theta_mp),
+        (ibd(*I), theta_mp),
+        (ibd(_zh("i", "mat"), _zh("j", "mat")), half * (1 + f_m)),
+        (rand(I, J), quarter + eighth * (f_m + f_p) + half * theta_mp),
+    ]
+    # the three constrained columns are the General entry with f_m = f_p = 0, theta_mp = 0, or
+    # both; asserted by substituting into the DIAGRAM's result, not into the typed formula
+    no_kin = {model.sym(f"k_{u}{v}"): 0 for u in "mp" for v in "mp"}
+    no_f = {f_m: 0, f_p: 0}
+    columns = [
+        (no_f, [0, half, quarter + half * theta_mp, theta_mp, half,
+                quarter + half * theta_mp]),
+        (no_kin, [f_m, half * (1 + f_m), quarter * (1 + f_m), 0, half * (1 + f_m),
+                  quarter + eighth * (f_m + f_p)]),
+        ({**no_f, **no_kin}, [0, half, quarter, 0, half, quarter]),
+    ]
+    for got, want in general:
+        assert sp.simplify(got - want) == 0, (got, want)
+        checked += 1
+    for subs, wants in columns:
+        for (got, _), want in zip(general, wants):
+            assert sp.simplify(got.subs(subs) - want) == 0, (subs, got, want)
+            checked += 1
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
+# v2 fig:ibd-cousins: full first cousins i and j in an outbred recent pedigree, drawn as
+# fig:ibd-one-gen two generations down. Their fathers p(i) and p(j) are full brothers, so the two
+# most recent common ancestors are the paternal grandparents, m(p(i)) = m(p(j)) and
+# p(p(i)) = p(p(j)). Under Unrelated-mates the grandparents are non-inbred and unrelated,
+# so the between-parent arrows of fig:ibd-one-gen are gone. Each cousin's maternal allele comes
+# from a mother outside the drawn pedigree, so it is exogenous: the only node drawn for her.
+# The figure is about which allele can flow where, so it carries no coefficients and no variance
+# loops; the model behind it is the full one, and the check traces it.
+# ----------------------------------------------------------------------------------------------
+
+#: individual -> (node-name stem, label subscript); generation order
+_COUSIN_WHO = {"mp": ("mp", "m(p(i)),k"), "pp": ("pp", "p(p(i)),k"),
+               "pi": ("pi", "p(i),k"), "pj": ("pj", "p(j),k"),
+               "i": ("i", "ik"), "j": ("j", "jk")}
+#: (child allele) -> its parent in the drawn pedigree; the cousins' maternal alleles have none
+_COUSIN_FROM = {("pi", "mat"): "mp", ("pi", "pat"): "pp",
+                ("pj", "mat"): "mp", ("pj", "pat"): "pp",
+                ("i", "pat"): "pi", ("j", "pat"): "pj"}
+
+
+def ibd_cousins() -> pm.Model:
+    exogenous = [_zh(w, o) for w in ("mp", "pp") for o in ("mat", "pat")] \
+        + [_zh("i", "mat"), _zh("j", "mat")]
+    lines = [
+        "latent: " + ", ".join(_zh(w, o) for w in _COUSIN_WHO for o in ("mat", "pat")),
+        *[f"label: {_zh(w, o)} = $\\mathring{{z}}^{{({o[0]})}}_{{{sub}}}$"
+          for w, (_, sub) in _COUSIN_WHO.items() for o in ("mat", "pat")],
+        *[f"{n} ~~ 1/2*{n}" for n in exogenous],
+    ]
+    for (who, o), par in _COUSIN_FROM.items():
+        child = _zh(who, o)
+        # eq:founder-transmit; every parent is non-inbred, so eq:founder-resid-var gives 1/4
+        lines.append(f"{child} ~ 1/2*{_zh(par, 'mat')} + 1/2*{_zh(par, 'pat')}")
+        lines.append(f"{child} ~~ 1/4*{child}")
+    return pm.from_text("\n".join(lines), name="full first cousins")
+
+
+# The middle row is fig:ibd-one-gen's offspring row, so the two figures read as one generation and
+# its extension. The grandparents' labels, m(p(i)) and p(p(i)), are wider than fig:ibd-one-gen's
+# m and p, so their pairs sit 2.5 apart rather than 2.0, or the two ellipses touch. Each cousin's
+# pedigree allele sits under its father's pair; the exogenous maternal allele goes outboard, where
+# nothing crosses it.
+IBD_COUSINS_LAYOUT = Layout({
+    _zh("mp", "mat"): (-0.25, 6.0), _zh("mp", "pat"): (2.25, 6.0),
+    _zh("pp", "mat"): (5.25, 6.0), _zh("pp", "pat"): (7.75, 6.0),
+    _zh("pi", "mat"): (0.4, 3.0), _zh("pi", "pat"): (2.6, 3.0),
+    _zh("pj", "mat"): (4.9, 3.0), _zh("pj", "pat"): (7.1, 3.0),
+    _zh("i", "mat"): (-0.8, 0.0), _zh("i", "pat"): (1.5, 0.0),
+    _zh("j", "pat"): (6.0, 0.0), _zh("j", "mat"): (8.3, 0.0),
+})
+
+
+def ibd_cousins_style() -> DiagramStyle:
+    """No coefficients and no variance loops: every directed edge is 1/2 and the caption says so."""
+    suppressed = {(_zh(par, a), _zh(who, o)) for (who, o), par in _COUSIN_FROM.items()
+                  for a in ("mat", "pat")}
+    return DiagramStyle(show_variances=False, show_unit_coefficients=False,
+                        suppressed_labels=frozenset(suppressed))
+
+
+def check_ibd_cousins() -> int:
+    """The cousin figure's model against the outbred-pedigree results of Section 1.7.6: four
+    possible coalescence paths between the cousins' paternal alleles, each of length 4, and none
+    through a maternal allele, so Theta_ij = 1/4 * 4 * 2^-4 = |A| 2^-(n_i + n_j + 1) = 1/16."""
+    model = ibd_cousins()
+    assert not [i for i in model.validate() if i.severity == "error"], model.validate()
+    e = pm.RAMEngine(model)
+    ibd = lambda a, b: sp.simplify(2 * e.cov(a, b))
+    checked = 0
+    for w in _COUSIN_WHO:
+        for o in ("mat", "pat"):
+            assert sp.simplify(e.var(_zh(w, o)) - sp.Rational(1, 2)) == 0, (w, o)
+            checked += 1
+    want = {("pat", "pat"): sp.Rational(1, 4)}            # 4 paths x 2^-4
+    for u in ("mat", "pat"):
+        for v in ("mat", "pat"):
+            got = ibd(_zh("i", u), _zh("j", v))
+            assert got == want.get((u, v), 0), (u, v, got)
+            checked += 1
+    theta = sum(ibd(_zh("i", u), _zh("j", v)) for u in ("mat", "pat") for v in ("mat", "pat")) / 4
+    n_mrca, n_i, n_j = 2, 2, 2
+    assert theta == sp.Rational(n_mrca, 2 ** (n_i + n_j + 1)) == sp.Rational(1, 16), theta
+    # the fathers are full siblings, and each cousin's paternal allele is a grandchild's
+    assert ibd(_zh("pi", "mat"), _zh("pj", "mat")) == sp.Rational(1, 2)
+    assert ibd(_zh("pi", "mat"), _zh("pj", "pat")) == 0     # parent-of-origin: never shared
+    assert ibd(_zh("i", "pat"), _zh("mp", "mat")) == sp.Rational(1, 4)
+    return checked + 4
+
+
+# ----------------------------------------------------------------------------------------------
+# v2, Section 1.7.6: the outbred closed forms against the general coalescence-path sum.
+#
+# One outbred pedigree holding every relationship the text names: full and half siblings,
+# avuncular, grandparent, full and half first cousins, full second cousins, self. For EVERY pair
+# of individuals in it, the MRCAs are found from the definition (common ancestors of the most
+# recent generation that has one, each individual counted as their own ancestor), Unrelated-mates
+# and Max-MRCAs are asserted to hold, and then
+#   |C(i,j)| = 2|A_ij|,  every path has length N_T = (t_i - t_hat) + (t_j - t_hat),
+#   Theta_ij = 1/4 |C(i,j)| 2^-N_T = 1/2 2^-d_ij,  d_ij = N_T - 1 (full) or N_T (half, lineal)
+# are checked against eq:kinship-cpaths, the sum _ibd_cpath_sum already checked against exact
+# enumeration and pathMgr on inbred pedigrees.
+# ----------------------------------------------------------------------------------------------
+
+#: founders (any generation: married-in individuals included), then (child, mother, father)
+DEGREE_FOUNDERS = ("A", "B", "C", "D", "E", "F", "G", "I")
+DEGREE_KIDS = (
+    ("S1", "B", "A"), ("S2", "B", "A"), ("H", "C", "A"),        # S1, S2 full sibs; H their half sib
+    ("K1", "D", "S1"), ("K2", "E", "S2"), ("K3", "F", "H"),     # K1, K2 full cousins; K3 half
+    ("L1", "G", "K1"), ("L2", "I", "K2"),                       # L1, L2 full second cousins
+)
+DEGREE_FOUNDER_GEN = {"A": 0, "B": 0, "C": 0, "D": 1, "E": 1, "F": 1, "G": 2, "I": 2}
+#: the degree each named relationship must come out with (the textbook values)
+DEGREE_WANT = {
+    ("S1", "S1"): 0, ("A", "S1"): 1, ("S1", "S2"): 1, ("S1", "H"): 2, ("A", "K1"): 2,
+    ("S1", "K2"): 2, ("K1", "K2"): 3, ("K1", "K3"): 4, ("L1", "L2"): 5,
+}
+
+
+def check_genetic_degree() -> int:
+    parents = {c: (m, p) for c, m, p in DEGREE_KIDS}
+    gen = dict(DEGREE_FOUNDER_GEN)
+    for c, m, p in DEGREE_KIDS:
+        assert gen[m] == gen[p]
+        gen[c] = gen[m] + 1
+    people = list(DEGREE_FOUNDERS) + [c for c, _, _ in DEGREE_KIDS]
+
+    def anc(x):                                # recent ancestors, x included (zero-length run)
+        out = {x}
+        if x in parents:
+            for par in parents[x]:
+                out |= anc(par)
+        return out
+
+    # Unrelated-mates
+    for _, m, p in DEGREE_KIDS:
+        assert not anc(m) & anc(p), (m, p)
+
+    checked = 0
+    seen = set()
+    for a in people:
+        for b in people:
+            common = anc(a) & anc(b)
+            theta = sum(_ibd_cpath_sum(parents, gen, (a, u), (b, v))
+                        for u in "mp" for v in "mp") / 4               # eq:kinship-cpaths
+            if not common:                                             # unrelated
+                assert theta == 0, (a, b, theta)
+                checked += 1
+                continue
+            t_hat = max(gen[x] for x in common)
+            mrca = {x for x in common if gen[x] == t_hat}
+            # Max-MRCAs: at most two, mates if two, every other common ancestor above one
+            assert len(mrca) in (1, 2), (a, b, mrca)
+            if len(mrca) == 2:
+                assert tuple(sorted(mrca)) in {tuple(sorted((m, p))) for _, m, p in DEGREE_KIDS}
+            assert all(any(x in anc(y) for y in mrca) for x in common), (a, b)
+            n_t = (gen[a] - t_hat) + (gen[b] - t_hat)
+            n_paths = 2 * len(mrca)
+            d = n_t - 1 if len(mrca) == 2 else n_t
+            assert theta == sp.Rational(n_paths, 4) * sp.Rational(1, 2) ** n_t, (a, b, theta)
+            assert theta == sp.Rational(1, 2) * sp.Rational(1, 2) ** d, (a, b, theta, d)
+            seen.add((a, b))
+            if (a, b) in DEGREE_WANT:
+                assert d == DEGREE_WANT[(a, b)], (a, b, d)
+            checked += 2
+    assert set(DEGREE_WANT) <= seen
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
+# v2, eq:ibd-cpaths and eq:kinship-cpaths: the possible-coalescence-path sum, on INBRED pedigrees.
+#
+# Three independent computations of the expected IBD state of every allele pair, which must agree:
+#   1. the definition: E[IBD | P] by exact enumeration of every transmission outcome, an allele
+#      pair being IBD when both trace back to the same founder allele;
+#   2. the text's sum over possible coalescence paths, eq:possible-cpaths and eq:ibd-cpaths;
+#   3. pathMgr: 2 x Cov given P on the founder-allele path diagram, built one generation at a time
+#      with eq:founder-transmit and the residual variance of eq:founder-resid-var.
+# Founders are exactly generation 0, and founder alleles are pairwise non-IBD (Outbred-founders).
+# An allele is (individual, side), side "m" or "p" meaning inherited from m(i) or p(i).
+# ----------------------------------------------------------------------------------------------
+
+#: name -> (founders, (child, mother, father) in generation order). Every one is inbred, and each
+#: has a pair of chains that pass through the same individual by different alleles, which is the
+#: case "share no other allele" has to get right.
+IBD_CPATH_PEDIGREES = {
+    # Z is the child of two half-siblings, who share the parent A
+    "half-sib mating": (("A", "B", "C"), (("X", "A", "B"), ("Y", "A", "C"),
+                                           ("Z", "X", "Y"), ("W", "X", "Y"))),
+    # K is the child of two double first cousins
+    "double cousins": (("A", "B", "C", "D"), (("E", "A", "B"), ("F", "A", "B"),
+                                              ("G", "C", "D"), ("H", "C", "D"),
+                                              ("I", "E", "G"), ("J", "H", "F"),
+                                              ("K", "I", "J"))),
+    # three generations of full-sib mating, so the inbred parents have inbred parents
+    "repeated sib mating": (("A", "B"), (("C", "A", "B"), ("D", "A", "B"),
+                                         ("E", "C", "D"), ("F", "C", "D"),
+                                         ("G", "E", "F"), ("H", "E", "F"))),
+}
+
+
+def _ibd_cpath_sum(parents, gen, a, b):
+    """eq:ibd-cpaths: sum of 2^-|C| over the possible coalescence paths of alleles a and b.
+
+    A possible transmission chain back to generation t is a word in {m,p}^(t_i - t)
+    (eq:possible-tchains), turned here into the list of alleles it visits, sink first."""
+    def chains(allele, t):
+        who, side = allele
+        if gen[who] == t:
+            return [[allele]]
+        if who not in parents:
+            return []                      # a founder: no chain reaches further back
+        parent = parents[who][0 if side == "m" else 1]
+        return [[allele] + rest for s in "mp" for rest in chains((parent, s), t)]
+
+    total = sp.Integer(0)
+    for t in range(0, min(gen[a[0]], gen[b[0]]) + 1):
+        for c1 in chains(a, t):
+            for c2 in chains(b, t):
+                # same source, and no other allele shared
+                if c1[-1] == c2[-1] and set(c1) & set(c2) == {c1[-1]}:
+                    total += sp.Rational(1, 2) ** ((len(c1) - 1) + (len(c2) - 1))
+    return total
+
+
+def check_ibd_cpaths() -> int:
+    """Assert the possible-coalescence-path sum against the definition of expected IBD and against
+    pathMgr, for every allele pair of every pedigree in IBD_CPATH_PEDIGREES."""
+    import itertools
+    half = sp.Rational(1, 2)
+    checked = 0
+    for name, (founders, kids) in IBD_CPATH_PEDIGREES.items():
+        parents = {c: (m, p) for c, m, p in kids}
+        gen = {f: 0 for f in founders}
+        for c, m, p in kids:
+            assert gen[m] == gen[p], f"{name}: {m} and {p} mate across generations"
+            gen[c] = gen[m] + 1
+        people = list(founders) + [c for c, _, _ in kids]
+        alleles = [(w, s) for w in people for s in "mp"]
+        node = lambda al: f"z_{al[0]}_{al[1]}"
+
+        # 1. the definition, by exact enumeration: each non-founder allele copies one of its
+        #    parent's two alleles with probability 1/2, independently (Independent-assortment)
+        meioses = [(c, s) for c, _, _ in kids for s in "mp"]
+        exact = collections.Counter()
+        for picks in itertools.product("mp", repeat=len(meioses)):
+            pick = dict(zip(meioses, picks))
+            source = {}
+            for w in people:                               # generation order
+                for s in "mp":
+                    if w in parents:
+                        parent = parents[w][0 if s == "m" else 1]
+                        source[(w, s)] = source[(parent, pick[(w, s)])]
+                    else:
+                        source[(w, s)] = (w, s)            # a founder allele is its own source
+            for a, b in itertools.combinations_with_replacement(alleles, 2):
+                exact[(a, b)] += source[a] == source[b]
+        n_outcomes = 2 ** len(meioses)
+
+        # 3. pathMgr, one generation at a time: an offspring allele's residual variance needs its
+        #    parent's f, which is a covariance in the model built so far
+        lines = ["latent: " + ", ".join(node(al) for al in alleles)]
+        lines += [f"{node((w, s))} ~~ 1/2*{node((w, s))}" for w in founders for s in "mp"]
+        for depth in range(1, max(gen.values()) + 1):
+            e = pm.RAMEngine(pm.from_text("\n".join(lines), name=name))
+            for c, m, p in kids:
+                if gen[c] != depth:
+                    continue
+                for s, par in (("m", m), ("p", p)):
+                    f_par = 2 * e.cov(node((par, "m")), node((par, "p")))
+                    resid = sp.nsimplify((1 - f_par) / 4)
+                    lines.append(f"{node((c, s))} ~ 1/2*{node((par, 'm'))} + 1/2*{node((par, 'p'))}")
+                    lines.append(f"{node((c, s))} ~~ {resid}*{node((c, s))}")
+        e = pm.RAMEngine(pm.from_text("\n".join(lines), name=name))
+
+        for al in alleles:                                 # every allele keeps variance 1/2
+            assert sp.simplify(e.var(node(al)) - half) == 0, (name, al)
+            checked += 1
+        for a, b in itertools.combinations_with_replacement(alleles, 2):
+            definition = sp.Rational(exact[(a, b)], n_outcomes)
+            path_sum = _ibd_cpath_sum(parents, gen, a, b)
+            traced = sp.simplify(2 * e.cov(node(a), node(b)))
+            assert path_sum == definition, (name, a, b, path_sum, definition)
+            assert sp.simplify(traced - definition) == 0, (name, a, b, traced, definition)
+            checked += 2
+        # and the inbred individual the pedigree was built for really is inbred
+        last = kids[-1][0]
+        assert exact[((last, "m"), (last, "p"))] > 0, (name, last)
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
 # Section 2.3: expected covariance between relatives, by (modified) degree.
 #
 # Every model here is at equilibrium and genetic-value level, and every co-path is declared by its
@@ -1589,11 +2054,19 @@ PATH_EX_EDGES = frozenset({
 })
 
 
-def path_example_pedigree() -> str:
-    """The bare tikzpicture for the worked example path.
+#: v2 calls arbitrary individuals i and j, so its copy of the figure names the probands i and j.
+#: The I and J already in the pedigree would then read as the probands' capitals, so they become
+#: Q and R. Only the drawn names change: node ids, and every check, keep v1's letters.
+PATH_EX_V2_NAMES = {"A": "i", "B": "j", "I": "Q", "J": "R"}
+
+
+def path_example_pedigree(names: dict[str, str] | None = None) -> str:
+    """The bare tikzpicture for the worked example path. `names` replaces the drawn name of the
+    named individuals.
 
     Highlighted edges are exactly the ones the path's chains traverse, PATH_EX_EDGES.
     """
+    names = names or {}
     on = PATH_EX_ON_PATH
     out = [
         r"\definecolor{pmCPath9}{HTML}{999999}",
@@ -1616,7 +2089,8 @@ def path_example_pedigree() -> str:
         out.append(rf"  \node[pmGen] at (-0.700,{y:.3f}) {{${lab}$}};")
     for name, x, y, is_on in PATH_EX_NODES:
         style = "pmPerson" if is_on else "pmPersonOff"
-        out.append(rf"  \node[{style}] ({name}) at ({x:.3f},{y:.3f}) {{${name}$}};")
+        out.append(rf"  \node[{style}] ({name}) at ({x:.3f},{y:.3f}) "
+                   rf"{{${names.get(name, name)}$}};")
     for child, a, b in PATH_EX_KIDS:
         for parent in (a, b):
             live = (parent, child) in PATH_EX_EDGES
@@ -1933,8 +2407,19 @@ PATH_EX_DIGRAPH_EDGES = (
 )
 
 
-def path_example_digraph() -> str:
-    """The bare tikzpicture for the chain digraph of the example path."""
+#: v2 writes a lineal chain source first, \Lin(ancestor, descendant), because its arrow is
+#: single-headed there; v1 writes it in the order the path visits it. Only L(F,I) is climbed,
+#: so it is the only label that differs. v1 keeps its own file and stays byte-identical.
+PATH_EX_DIGRAPH_V2_LABELS = {
+    "pA": r"$i$", "L1": r"$\Lin(i,D)$", "L2": r"$\Lin(Q,F)$",
+    "M2": r"$\Mu(Q,L)$", "L3": r"$\Lin(L,j)$", "pB": r"$j$",
+}
+
+
+def path_example_digraph(labels: dict[str, str] | None = None) -> str:
+    """The bare tikzpicture for the chain digraph of the example path. `labels` replaces the
+    label of the named nodes."""
+    labels = labels or {}
     x = {k: 2.15 * i for i, (k, _, _, _) in enumerate(PATH_EX_DIGRAPH)}
     out = [
         r"\definecolor{pmCPathB}{HTML}{1F77B4}",
@@ -1953,6 +2438,7 @@ def path_example_digraph() -> str:
     ]
     style = {"proband": "cdProband", "lineal": "cdLineal", "mating": "cdMating"}
     for key, label, note, kind in PATH_EX_DIGRAPH:
+        label = labels.get(key, label)
         out.append(rf"  \node[{style[kind]}] ({key}) at ({x[key]:.3f},0.000) {{{label}}};")
         if note:
             out.append(rf"  \node[cdNote] at ({x[key]:.3f},-0.460) {{{note}}};")
@@ -3216,6 +3702,10 @@ def main() -> int:
     print(f"equilibrium:   {check_equilibrium()} results agree with pathMgr")
     print(f"g transmit:    {check_g_transmit(2)} results agree with pathMgr")
     print(f"g-only figure: {check_g_only_figure()} results agree with pathMgr")
+    print(f"IBD one gen:   {check_ibd_one_generation()} results agree with pathMgr")
+    print(f"IBD c-paths:   {check_ibd_cpaths()} results agree with pathMgr")
+    print(f"IBD cousins:   {check_ibd_cousins()} results agree with pathMgr")
+    print(f"genetic degree: {check_genetic_degree()} results agree with the c-path sum")
     print(f"chain formulas: {check_chain_formulas()} results agree with pathMgr")
     print(f"pedigree sets: {check_pedigree_sets()} results agree with pathMgr")
     print(f"one-step rules: {check_one_step_rules()} results agree with pathMgr")
@@ -3362,6 +3852,23 @@ def main() -> int:
     )
     print(f"wrote {target.relative_to(HERE.parent)}")
 
+    # v2 fig:ibd-one-gen. The layout was chosen against diagnose(), so hold it to that: a model or
+    # placement change that makes this figure worse fails here instead of shipping.
+    ibd_model, ibd_style = ibd_one_generation(), ibd_one_generation_style()
+    report = diagnose(ibd_model, IBD_ONE_GEN_LAYOUT, ibd_style, max_width=15.0)
+    assert not report.collisions.collisions and not report.collisions.ambiguous, report
+    target = HERE / "ibd_one_generation.tikz"
+    target.write_text(ibd_one_generation_tikz(ibd_model, ibd_style))
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # v2 fig:ibd-cousins, held to diagnose() the same way
+    cousins_model, cousins_style = ibd_cousins(), ibd_cousins_style()
+    report = diagnose(cousins_model, IBD_COUSINS_LAYOUT, cousins_style, max_width=15.0)
+    assert not report.collisions.collisions and not report.collisions.ambiguous, report
+    target = HERE / "ibd_cousins.tikz"
+    target.write_text(to_tikz(cousins_model, layout=IBD_COUSINS_LAYOUT, style=cousins_style))
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
     # Figure 5: the step-sibling pedigree that the mating-count definition is read off. Same
     # conventions as Figure 4, so the two can be compared directly; the disturbance is relabelled
     # to the document's name for it for the same reason.
@@ -3407,10 +3914,16 @@ def main() -> int:
     target = HERE / "path_example_pedigree.tikz"
     target.write_text(path_example_pedigree() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
+    target = HERE / "path_example_pedigree_v2.tikz"
+    target.write_text(path_example_pedigree(PATH_EX_V2_NAMES) + "\n")
+    print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 7: the chain digraph of that same path. Hand-laid; see check_chain_digraph.
     target = HERE / "path_example_digraph.tikz"
     target.write_text(path_example_digraph() + "\n")
+    print(f"wrote {target.relative_to(HERE.parent)}")
+    target = HERE / "path_example_digraph_v2.tikz"
+    target.write_text(path_example_digraph(PATH_EX_DIGRAPH_V2_LABELS) + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     stale = HERE / "mated_pair_2v_traced.tikz"

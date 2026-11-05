@@ -40,6 +40,14 @@
 \newcommand{\Nlin}{N_{\mathcal{L}}}             % lineal distance, in meioses
 \newcommand{\Nd}{N_{\mathcal{D}}}               % descent distance, in meioses
 \newcommand{\IMu}{\mathbf{1}_{\mathcal{M}}}   % indicator that two individuals have mated
+% Chains and paths carry an arrow: double-headed for an object whose two ends play symmetric roles,
+% single-headed for one that runs from a source to a sink. A plain T is one realized object; a
+% blackboard T is the set of possible ones that the pedigree allows.
+\newcommand{\PedPath}{\overleftrightarrow{\mathbf{P}}}  % pedigree path \PedPath(A,B) between two individuals
+\newcommand{\Tchain}{\overrightarrow{T}}                 % transmission chain, ancestral allele -> focal allele
+\newcommand{\Tset}{\overrightarrow{\mathbb{T}}}          % the set of possible transmission chains
+\newcommand{\Cpath}{\overleftrightarrow{T}}              % coalescence path: two transmission chains from one source
+\newcommand{\Cset}{\overleftrightarrow{\mathbb{T}}}      % the set of possible coalescence paths
 
 % Generation-indexed variance components. Under assortative mating the additive variance is
 % no longer constant across generations, so the scale has to be pinned to a named generation:

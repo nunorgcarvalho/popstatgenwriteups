@@ -37,10 +37,14 @@
 % \comment -- neither: a note about the manuscript itself (scope markers, instructions to
 % collaborators, reminders about what a region is for).  Set in italic as well as coloured, so a
 % comment is distinguishable from a todo at a glance even in greyscale or on a monochrome printout.
-\newcommand{\todo}[1]{\textcolor{blue}{#1}}
-\newcommand{\unsure}[1]{\textcolor{orange}{#1}}
+% All three take whole paragraphs: \textcolor cannot (its argument may not contain \par, so a
+% note with a blank line in it fails with "Paragraph ended before \@textcolor was complete"), so
+% they switch colour inside a group instead. \leavevmode stops a note that opens a paragraph from
+% putting the colour change in vertical mode, which would add a spurious line of space.
+\newcommand{\todo}[1]{{\leavevmode\color{blue}#1}}
+\newcommand{\unsure}[1]{{\leavevmode\color{orange}#1}}
 \definecolor{commentink}{RGB}{110,85,145}
-\newcommand{\comment}[1]{{\color{commentink}\itshape #1}}
+\newcommand{\comment}[1]{{\leavevmode\color{commentink}\itshape #1}}
 
 % revision markup -- \add marks text being introduced, \remove text being taken out, so that a
 % large rewrite can be read against what it replaces. Both are scaffolding: they are meant to be
@@ -79,6 +83,29 @@
 \makeatother
 \newenvironment{added}{\begin{pgwbar}{addink}}{\end{pgwbar}}
 \newenvironment{removed}{\begin{pgwbar}{removeink}}{\end{pgwbar}}
+
+% appendices %%%%
+% \appendixsections replaces \appendix. Each later \section is headed "Appendix A: Title", is
+% cited as "Appendix~\ref{...}" -> "Appendix A", and numbers its equations, figures and tables
+% as A1, A2, ... (no dot), restarting in every appendix. The \theH... redefinitions give
+% hyperref distinct anchors, so "Figure A1" cannot link to the main text's Figure 1.
+\makeatletter
+\newcommand{\appendixsections}{%
+  \appendix
+  \renewcommand{\thesection}{\Alph{section}}%
+  \renewcommand{\thesubsection}{\thesection.\arabic{subsection}}%
+  \renewcommand{\theequation}{\thesection\arabic{equation}}%
+  \renewcommand{\thefigure}{\thesection\arabic{figure}}%
+  \renewcommand{\thetable}{\thesection\arabic{table}}%
+  \renewcommand{\theHsection}{appendix.\Alph{section}}%
+  \renewcommand{\theHequation}{appendix.\Alph{section}.\arabic{equation}}%
+  \renewcommand{\theHfigure}{appendix.\Alph{section}.\arabic{figure}}%
+  \renewcommand{\theHtable}{appendix.\Alph{section}.\arabic{table}}%
+  \@addtoreset{equation}{section}\@addtoreset{figure}{section}\@addtoreset{table}{section}%
+  \renewcommand{\@seccntformat}[1]{%
+    \ifnum\pdfstrcmp{##1}{section}=0 Appendix~\thesection:\ \else\csname the##1\endcsname\quad\fi}%
+}
+\makeatother
 
 % floats %%%%
 % Captions are set smaller than body text with a bold label, so a caption is visibly not body
