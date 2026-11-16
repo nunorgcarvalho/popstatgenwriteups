@@ -167,15 +167,20 @@
 % Usage:
 %   \begin{assumption}{A3}{Random, exchangeable causal effects}
 %     <mathematical statement>
-%     \bundles{the infinitesimal / random-effects model}
+%     \related{the infinitesimal / random-effects model; implied by \assumptionid{A7} (Section~\ref{...}).}
 %   \end{assumption}
 % Arg 1 is a STABLE identifier (e.g. A3) meant to be reused verbatim across writeups when
-% the same assumption reappears; arg 2 is a short human-readable name. \bundles{...} is an
-% optional trailing note listing the common terminology that implies this assumption.
+% the same assumption reappears; arg 2 is a short human-readable name. \related{...} is one
+% optional trailing note listing concepts with similar definitions or requirements (not a 1-to-1
+% mapping), and, for assumptions stated elsewhere in the writeup, a short blurb on how they relate
+% and where they are stated. Record such a relationship in BOTH boxes, so that it can be found
+% from either end. \bundles{...} ("Commonly bundled into:") is the older, separate note; it is
+% kept for relative_covariance_v1 only.
 \definecolor{assumptionframe}{RGB}{40,90,150}
 \definecolor{assumptionback}{RGB}{238,243,249}
 \newcommand{\assumptionid}[1]{{\bfseries\color{assumptionframe}[#1]}}
 \newcommand{\bundles}[1]{\par\smallskip{\small\textit{Commonly bundled into:} #1}}
+\newcommand{\related}[1]{\par\smallskip{\small\textit{Related:} #1}}
 \newenvironment{assumption}[2]{%
   \par\smallskip%
   \colorlet{shadecolor}{assumptionback}%

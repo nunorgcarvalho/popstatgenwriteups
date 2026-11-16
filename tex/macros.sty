@@ -24,6 +24,16 @@
 \newcommand{\diag}{\mathrm{diag}} % diagonal (of a matrix)
 \newcommand{\IBD}{\mathrm{IBD}} % identical-by-descent
 
+% Information categories: a calligraphic letter is the FULL information of one kind.
+\newcommand{\Yinfo}{\mathcal{Y}} % phenotypic information
+\newcommand{\Ginfo}{\mathcal{G}} % genetic information
+\newcommand{\Einfo}{\mathcal{E}} % environmental (non-genetic) information
+\newcommand{\Pinfo}{\mathcal{P}} % pedigree
+\newcommand{\Tinfo}{\mathcal{T}} % transmission
+\newcommand{\Binfo}{\mathcal{B}} % functional (biological) information of variants, \Binfo_k per variant
+\newcommand{\fbeta}{f_\beta^{(y)}} % trait-specific map from functional information to a squared effect size
+\newcommand{\Iinfo}{\mathcal{I}} % any information about a pair, \Iinfo_{ij}
+
 % Pedigree notation: set-valued operators, so calligraphic rather than upright. Capital mu has no
 % glyph of its own in TeX, so calligraphic M stands in for it -- which also keeps the mating
 % operator \Mu visibly distinct from the scalar co-path coefficient \mu.
