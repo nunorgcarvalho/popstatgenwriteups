@@ -1058,16 +1058,16 @@ def check_g_only_figure() -> int:
 # ----------------------------------------------------------------------------------------------
 # v2, fig:ibd-one-gen and tab:ibd-one-gen: founder alleles across one generation.
 #
-# The nodes are FOUNDER ALLELES (\mathring z in the text): the value of the founder allele each
-# allele descends from, with variance 1/2 and IBD alleles sharing a value. A covariance between two
-# of them given the pedigree is half their expected IBD state (eq:allele-kinship), so every
-# bidirected edge carries 1/2 times an expected IBD state and every check below doubles a
-# covariance to get one back.
+# The nodes are FOUNDER ALLELES (\mathring x in the text): the value of the founder allele each
+# allele descends from, IBD alleles sharing a value. The figure is in CORRELATION units -- every
+# allele has variance 1 -- because the correlation between two of them given the pedigree is their
+# expected IBD state (eq:allele-kinship), so every bidirected edge carries an expected IBD state
+# and every check below reads one straight off a covariance.
 # The parents are any two mates in the pedigree, NOT founders (Outbred-founders makes founders
 # non-inbred and unrelated): inbred (f_m, f_p = \widehat f_m, \widehat f_p) and related to each
 # other (one expected IBD state per cross-parent allele pair, k_uv = \widehat\Theta^{(uv)}_{mp}),
 # which summarizes their undrawn ancestry. Each offspring allele gets the residual variance of
-# eq:founder-resid-var as exogenous variance, which is what holds its variance at 1/2.
+# eq:founder-resid-var (divided by p_k(1-p_k)) as exogenous variance, which holds its variance at 1.
 # ----------------------------------------------------------------------------------------------
 
 _IBD_FROM = {"mat": "m", "pat": "p"}       # the parent an offspring allele is inherited from
@@ -1083,12 +1083,12 @@ def ibd_one_generation() -> pm.Model:
     lines = [
         "latent: " + ", ".join(founders + kids),
         "real: f_m, f_p, k_mm, k_mp, k_pm, k_pp",
-        *[f"label: {_zh(w, o)} = $\\mathring{{z}}^{{({o[0]})}}_{{{w}k}}$"
+        *[f"label: {_zh(w, o)} = $\\mathring{{x}}^{{({o[0]})}}_{{{w}k}}$"
           for w in "mpij" for o in ("mat", "pat")],
-        *[f"{n} ~~ 1/2*{n}" for n in founders],
-        f"{_zh('m', 'mat')} ~~ f_m/2*{_zh('m', 'pat')}",
-        f"{_zh('p', 'mat')} ~~ f_p/2*{_zh('p', 'pat')}",
-        *[f"{_zh('m', u)} ~~ k_{u[0]}{v[0]}/2*{_zh('p', v)}"
+        *[f"{n} ~~ 1*{n}" for n in founders],
+        f"{_zh('m', 'mat')} ~~ f_m*{_zh('m', 'pat')}",
+        f"{_zh('p', 'mat')} ~~ f_p*{_zh('p', 'pat')}",
+        *[f"{_zh('m', u)} ~~ k_{u[0]}{v[0]}*{_zh('p', v)}"
           for u in ("mat", "pat") for v in ("mat", "pat")],
     ]
     for k in "ij":
@@ -1096,7 +1096,7 @@ def ibd_one_generation() -> pm.Model:
             child = _zh(k, origin)
             # eq:founder-transmit and eq:founder-resid-var
             lines.append(f"{child} ~ 1/2*{_zh(par, 'mat')} + 1/2*{_zh(par, 'pat')}")
-            lines.append(f"{child} ~~ (1 - f_{par})/4*{child}")
+            lines.append(f"{child} ~~ (1 - f_{par})/2*{child}")
     return pm.from_text("\n".join(lines), name="founder alleles across one generation")
 
 
@@ -1117,16 +1117,16 @@ IBD_ONE_GEN_LAYOUT = Layout({
 def ibd_one_generation_style() -> DiagramStyle:
     """Labels in the document's own symbols. Three groups of edges are left unlabelled and named
     by the caption instead: the eight transmission edges (all 1/2), the four founder variances
-    (all 1/2), and the four cross-parent bidirected edges. Labelling those last four was tried:
+    (all 1), and the four cross-parent bidirected edges. Labelling those last four was tried:
     four arcs among four collinear nodes put labels over nodes and on the wrong arcs (3 ambiguous,
     3 label-edge collisions at best), and the caption states their values in one clause."""
     overrides = {
-        (_zh("m", "mat"), _zh("m", "pat")): r"\tfrac12 \widehat{f}_m",
-        (_zh("p", "mat"), _zh("p", "pat")): r"\tfrac12 \widehat{f}_p",
+        (_zh("m", "mat"), _zh("m", "pat")): r"\widehat{f}_m",
+        (_zh("p", "mat"), _zh("p", "pat")): r"\widehat{f}_p",
     }
     for k in "ij":
         for origin, par in _IBD_FROM.items():
-            overrides[(_zh(k, origin), _zh(k, origin))] = rf"\tfrac14(1-\widehat{{f}}_{par})"
+            overrides[(_zh(k, origin), _zh(k, origin))] = rf"\tfrac12(1-\widehat{{f}}_{par})"
     founders = [_zh(w, o) for w in "mp" for o in ("mat", "pat")]
     suppressed = (
         {(_zh(par, a), _zh(k, o)) for k in "ij" for o, par in _IBD_FROM.items()
@@ -1176,25 +1176,26 @@ def ibd_one_generation_tikz(model: pm.Model, style: DiagramStyle) -> str:
 
 def check_ibd_one_generation() -> int:
     """Assert every entry of tab:ibd-one-gen, eq:founder-resid-var, and the worked sibling chain
-    sum, against the diagram. IBD probability = 2 x covariance (eq:allele-kinship)."""
+    sum, against the diagram. IBD probability = correlation (eq:allele-kinship), and every allele
+    has variance 1, so it is the covariance itself."""
     model = ibd_one_generation()
     assert not [i for i in model.validate() if i.severity == "error"], model.validate()
     e = pm.RAMEngine(model)
     f_m, f_p = model.sym("f_m"), model.sym("f_p")
     theta_mp = sum(model.sym(f"k_{u}{v}") for u in "mp" for v in "mp") / 4   # eq:parents-kinship
     half, quarter, eighth = sp.Rational(1, 2), sp.Rational(1, 4), sp.Rational(1, 8)
-    ibd = lambda a, b: 2 * e.cov(a, b)
+    ibd = lambda a, b: e.cov(a, b)
     rand = lambda A, B: sum(ibd(a, b) for a in A for b in B) / (len(A) * len(B))
     M = [_zh("m", o) for o in ("mat", "pat")]
     I = [_zh("i", o) for o in ("mat", "pat")]
     J = [_zh("j", o) for o in ("mat", "pat")]
     checked = 0
 
-    # every allele, founder or not, has variance 1/2 (Section 1.2); for the offspring this is
-    # what the residual variance of eq:founder-resid-var is for
+    # every allele, founder or not, has variance 1 in correlation units; for the offspring this
+    # is what the residual variance of eq:founder-resid-var is for
     for k in "ij":
         for o in ("mat", "pat"):
-            assert sp.simplify(e.var(_zh(k, o)) - half) == 0, f"Var[{_zh(k, o)}]"
+            assert sp.simplify(e.var(_zh(k, o)) - 1) == 0, f"Var[{_zh(k, o)}]"
             checked += 1
 
     # tab:ibd-one-gen, General column, row by row
@@ -1228,6 +1229,62 @@ def check_ibd_one_generation() -> int:
 
 
 # ----------------------------------------------------------------------------------------------
+# v2 fig:path-diagram-example (path-analysis appendix): two mates and one offspring in the first
+# generation of assortative mating. It shows all three edge types: directed (g -> y, coefficient 1;
+# transmission, 1/2), bidirected self-loops (V_A, V_E, and the offspring's segregation residual
+# 1/2 V_A), and the co-path between the mates' phenotypes, labeled [rho_y]. The caption's worked
+# covariance, Cov[g_o, g_m] = 1/2 V_A + 1/2 rho_y V_A^2 / V_Y, is asserted below.
+# ----------------------------------------------------------------------------------------------
+
+def path_diagram_example() -> pm.Model:
+    who = ("m", "p", "o")
+    lines = [
+        "latent: g_m, g_p, g_o",
+        "positive: V_A, V_E",
+        "real: rho_y",
+        *[f"label: {v}_{w} = ${v}_{w}$" for w in who for v in "gy"],
+        "g_m ~~ V_A*g_m",
+        "g_p ~~ V_A*g_p",
+        "g_o ~ 1/2*g_m + 1/2*g_p",
+        "g_o ~~ V_A/2*g_o",
+        *[f"y_{w} ~ g_{w}" for w in who],
+        *[f"y_{w} ~~ V_E*y_{w}" for w in who],
+        "y_m -- [rho_y]*y_p",
+    ]
+    return pm.from_text("\n".join(lines), name="path diagram example")
+
+
+PATH_DIAGRAM_LAYOUT = Layout({
+    "y_m": (2.0, 5.2), "y_p": (8.0, 5.2),
+    "g_m": (2.0, 3.4), "g_p": (8.0, 3.4),
+    "g_o": (5.0, 1.6), "y_o": (5.0, 0.0),
+})
+
+
+def path_diagram_style(model: pm.Model) -> DiagramStyle:
+    V_A = model.sym("V_A")
+    return DiagramStyle(show_variances=True, show_unit_coefficients=False,
+                        latex_names={V_A / 2: r"\tfrac12 V_A"})
+
+
+def check_path_diagram_example() -> int:
+    model = path_diagram_example()
+    assert not [i for i in model.validate() if i.severity == "error"], model.validate()
+    e = pm.RAMEngine(model)
+    V_A, V_E, rho = (model.sym(x) for x in ("V_A", "V_E", "rho_y"))
+    V_Y = V_A + V_E
+    checks = [
+        (e.var("y_m"), V_Y),
+        (e.cov("y_m", "y_p"), rho * V_Y),                              # the co-path's correlation
+        (e.cov("g_m", "g_p"), rho * V_A**2 / V_Y),
+        (e.cov("g_o", "g_m"), V_A / 2 + rho * V_A**2 / (2 * V_Y)),     # the caption's example
+    ]
+    for got, want in checks:
+        assert sp.simplify(got - want) == 0, (got, want)
+    return len(checks)
+
+
+# ----------------------------------------------------------------------------------------------
 # v2 fig:ibd-cousins: full first cousins i and j in an outbred recent pedigree, drawn as
 # fig:ibd-one-gen two generations down. Their fathers p(i) and p(j) are full brothers, so the two
 # most recent common ancestors are the paternal grandparents, m(p(i)) = m(p(j)) and
@@ -1253,15 +1310,16 @@ def ibd_cousins() -> pm.Model:
         + [_zh("i", "mat"), _zh("j", "mat")]
     lines = [
         "latent: " + ", ".join(_zh(w, o) for w in _COUSIN_WHO for o in ("mat", "pat")),
-        *[f"label: {_zh(w, o)} = $\\mathring{{z}}^{{({o[0]})}}_{{{sub}}}$"
+        *[f"label: {_zh(w, o)} = $\\mathring{{x}}^{{({o[0]})}}_{{{sub}}}$"
           for w, (_, sub) in _COUSIN_WHO.items() for o in ("mat", "pat")],
-        *[f"{n} ~~ 1/2*{n}" for n in exogenous],
+        *[f"{n} ~~ 1*{n}" for n in exogenous],
     ]
     for (who, o), par in _COUSIN_FROM.items():
         child = _zh(who, o)
-        # eq:founder-transmit; every parent is non-inbred, so eq:founder-resid-var gives 1/4
+        # eq:founder-transmit; every parent is non-inbred, so eq:founder-resid-var gives 1/2 in
+        # correlation units
         lines.append(f"{child} ~ 1/2*{_zh(par, 'mat')} + 1/2*{_zh(par, 'pat')}")
-        lines.append(f"{child} ~~ 1/4*{child}")
+        lines.append(f"{child} ~~ 1/2*{child}")
     return pm.from_text("\n".join(lines), name="full first cousins")
 
 
@@ -1295,11 +1353,11 @@ def check_ibd_cousins() -> int:
     model = ibd_cousins()
     assert not [i for i in model.validate() if i.severity == "error"], model.validate()
     e = pm.RAMEngine(model)
-    ibd = lambda a, b: sp.simplify(2 * e.cov(a, b))
+    ibd = lambda a, b: sp.simplify(e.cov(a, b))          # correlation units: IBD = covariance
     checked = 0
     for w in _COUSIN_WHO:
         for o in ("mat", "pat"):
-            assert sp.simplify(e.var(_zh(w, o)) - sp.Rational(1, 2)) == 0, (w, o)
+            assert sp.simplify(e.var(_zh(w, o)) - 1) == 0, (w, o)
             checked += 1
     want = {("pat", "pat"): sp.Rational(1, 4)}            # 4 paths x 2^-4
     for u in ("mat", "pat"):
@@ -2416,10 +2474,13 @@ PATH_EX_DIGRAPH_V2_LABELS = {
 }
 
 
-def path_example_digraph(labels: dict[str, str] | None = None) -> str:
+def path_example_digraph(labels: dict[str, str] | None = None,
+                         note_subs: dict[str, str] | None = None) -> str:
     """The bare tikzpicture for the chain digraph of the example path. `labels` replaces the
-    label of the named nodes."""
+    label of the named nodes; `note_subs` rewrites macro names inside the notes (v2 writes the
+    distances as \\dmu, \\dlin where v1 has \\Nmu, \\Nlin)."""
     labels = labels or {}
+    note_subs = note_subs or {}
     x = {k: 2.15 * i for i, (k, _, _, _) in enumerate(PATH_EX_DIGRAPH)}
     out = [
         r"\definecolor{pmCPathB}{HTML}{1F77B4}",
@@ -2439,6 +2500,8 @@ def path_example_digraph(labels: dict[str, str] | None = None) -> str:
     style = {"proband": "cdProband", "lineal": "cdLineal", "mating": "cdMating"}
     for key, label, note, kind in PATH_EX_DIGRAPH:
         label = labels.get(key, label)
+        for old, new in note_subs.items():
+            note = note.replace(old, new)
         out.append(rf"  \node[{style[kind]}] ({key}) at ({x[key]:.3f},0.000) {{{label}}};")
         if note:
             out.append(rf"  \node[cdNote] at ({x[key]:.3f},-0.460) {{{note}}};")
@@ -3705,6 +3768,7 @@ def main() -> int:
     print(f"IBD one gen:   {check_ibd_one_generation()} results agree with pathMgr")
     print(f"IBD c-paths:   {check_ibd_cpaths()} results agree with pathMgr")
     print(f"IBD cousins:   {check_ibd_cousins()} results agree with pathMgr")
+    print(f"path diagram:  {check_path_diagram_example()} results agree with pathMgr")
     print(f"genetic degree: {check_genetic_degree()} results agree with the c-path sum")
     print(f"chain formulas: {check_chain_formulas()} results agree with pathMgr")
     print(f"pedigree sets: {check_pedigree_sets()} results agree with pathMgr")
@@ -3745,7 +3809,7 @@ def main() -> int:
     decomposition = pm.WrightTracer(model).trace(_z("m", "mat", 1), _z("p", "pat", 2))
     assert len(decomposition) == 1, f"expected a single chain, got {len(decomposition)}"
     style = DiagramStyle(show_variances=True, show_unit_coefficients=True, latex_names=names)
-    target = HERE / "mated_pair_2v.tikz"
+    target = HERE / "v1" / "mated_pair_2v.tikz"
     target.write_text(
         to_tikz(
             model,
@@ -3771,7 +3835,7 @@ def main() -> int:
         _z("o1", "mat", 1): (270.0, 6.0),
         _z("o2", "pat", 2): (270.0, 6.0),
     }
-    offspring = HERE / "pair_offspring_2v.tikz"
+    offspring = HERE / "v1" / "pair_offspring_2v.tikz"
     offspring.write_text(
         to_tikz(
             pair_offspring_2v(),
@@ -3810,7 +3874,7 @@ def main() -> int:
             # point in the text -- it is deferred to the equilibrium step -- so a label written
             # in alpha would name a symbol the reader has not met.
             overrides[(node, node)] = rf"\tfrac14 - \tfrac12 a^{{(1)}}_{{{k}{k}}}"
-    reduced = HERE / "reduced_pair_offspring.tikz"
+    reduced = HERE / "v1" / "reduced_pair_offspring.tikz"
     reduced.write_text(
         to_tikz(
             reduced_pair_offspring(),
@@ -3832,7 +3896,7 @@ def main() -> int:
     g_only = g_only_pair_offspring()
     V_A_s, V_E_s, rho_y_s = (g_only.sym(s) for s in ("V_A", "V_E", "rho_y"))
     seg = V_A_s * (1 - rho_y_s * V_A_s / (V_A_s + V_E_s)) / 2
-    target = HERE / "g_only_pair_offspring.tikz"
+    target = HERE / "v1" / "g_only_pair_offspring.tikz"
     target.write_text(
         to_tikz(
             g_only,
@@ -3857,7 +3921,7 @@ def main() -> int:
     ibd_model, ibd_style = ibd_one_generation(), ibd_one_generation_style()
     report = diagnose(ibd_model, IBD_ONE_GEN_LAYOUT, ibd_style, max_width=15.0)
     assert not report.collisions.collisions and not report.collisions.ambiguous, report
-    target = HERE / "ibd_one_generation.tikz"
+    target = HERE / "v2" / "ibd_one_generation.tikz"
     target.write_text(ibd_one_generation_tikz(ibd_model, ibd_style))
     print(f"wrote {target.relative_to(HERE.parent)}")
 
@@ -3865,8 +3929,17 @@ def main() -> int:
     cousins_model, cousins_style = ibd_cousins(), ibd_cousins_style()
     report = diagnose(cousins_model, IBD_COUSINS_LAYOUT, cousins_style, max_width=15.0)
     assert not report.collisions.collisions and not report.collisions.ambiguous, report
-    target = HERE / "ibd_cousins.tikz"
+    target = HERE / "v2" / "ibd_cousins.tikz"
     target.write_text(to_tikz(cousins_model, layout=IBD_COUSINS_LAYOUT, style=cousins_style))
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # v2 fig:path-diagram-example, held to diagnose() the same way
+    pd_model = path_diagram_example()
+    pd_style = path_diagram_style(pd_model)
+    report = diagnose(pd_model, PATH_DIAGRAM_LAYOUT, pd_style, max_width=15.0)
+    assert not report.collisions.collisions and not report.collisions.ambiguous, report
+    target = HERE / "v2" / "path_diagram_example.tikz"
+    target.write_text(to_tikz(pd_model, layout=PATH_DIAGRAM_LAYOUT, style=pd_style))
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 5: the step-sibling pedigree that the mating-count definition is read off. Same
@@ -3875,7 +3948,7 @@ def main() -> int:
     ss_model, _ = step_sib_pedigree()
     V_A_s, V_E_s, rho_y_s = (ss_model.sym(s) for s in ("V_A", "V_E", "rho_y"))
     ss_seg = V_A_s * (1 - rho_y_s * V_A_s / (V_A_s + V_E_s)) / 2
-    target = HERE / "step_sib_pedigree.tikz"
+    target = HERE / "v1" / "step_sib_pedigree.tikz"
     target.write_text(
         to_tikz(
             ss_model,
@@ -3904,26 +3977,27 @@ def main() -> int:
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # The same step-sibling pedigree, one node per person (v2). Hand-laid like Figure 6.
-    target = HERE / "step_sib_people.tikz"
+    target = HERE / "v2" / "step_sib_people.tikz"
     target.write_text(step_sib_people() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 6: the worked example path. Hand-laid rather than rendered from a model, because
     # the text needs one node per INDIVIDUAL where a path diagram carries one per variable; the
     # pedigree behind it is checked as a pathMgr model in check_path_example.
-    target = HERE / "path_example_pedigree.tikz"
+    target = HERE / "v1" / "path_example_pedigree.tikz"
     target.write_text(path_example_pedigree() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
-    target = HERE / "path_example_pedigree_v2.tikz"
+    target = HERE / "v2" / "path_example_pedigree.tikz"
     target.write_text(path_example_pedigree(PATH_EX_V2_NAMES) + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 7: the chain digraph of that same path. Hand-laid; see check_chain_digraph.
-    target = HERE / "path_example_digraph.tikz"
+    target = HERE / "v1" / "path_example_digraph.tikz"
     target.write_text(path_example_digraph() + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
-    target = HERE / "path_example_digraph_v2.tikz"
-    target.write_text(path_example_digraph(PATH_EX_DIGRAPH_V2_LABELS) + "\n")
+    target = HERE / "v2" / "path_example_digraph.tikz"
+    target.write_text(path_example_digraph(PATH_EX_DIGRAPH_V2_LABELS,
+                                           {r"\Nlin": r"\dlin", r"\Nmu": r"\dmu"}) + "\n")
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     stale = HERE / "mated_pair_2v_traced.tikz"

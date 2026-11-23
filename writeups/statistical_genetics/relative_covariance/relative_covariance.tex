@@ -13,169 +13,8 @@
 % display (1.5a, 1.5b) via the subequations environment.
 \numberwithin{equation}{section}
 
-% A mating chain carries a double-headed arrow, like a pedigree path, because it is symmetric in its
-% two ends: \Mu(i,j) is \Mu(j,i) read backwards. A lineal chain carries a single-headed arrow,
-% because it runs from an ancestor down to a descendant: \Lin(i,j) has source i and sink j.
-% Overridden here rather than in macros.sty because v1 and the generated .tikz figures share these
-% macro names, and v1 must keep its notation.
-\renewcommand{\Mu}{\overleftrightarrow{\mathcal{M}}}
-\renewcommand{\Lin}{\overrightarrow{\mathcal{L}}}
-
-% =================================================================================================
-% STYLE GUIDE -- for agents and collaborators editing this file. Not rendered; readers never see
-% it. Keep it up to date when a convention changes.
-% =================================================================================================
-%
-% INFORMATION
-%   A CALLIGRAPHIC letter is the FULL information of a kind; a BOLD letter is the concrete object
-%   we work with, typically a matrix. Write the calligraphic letters with their macros (\Yinfo,
-%   \Ginfo, \Einfo, \Pinfo, \Tinfo, \Binfo, \Iinfo in macros.sty), never as raw \mathcal{...}.
-%     \mathcal{Y}            all phenotypic information.
-%     \mathcal{G}            all true genetic data of the individuals in the study (not ancestors).
-%     \mathcal{B}            functional information of the variants, \mathcal{B}_k for variant k
-%                            (no asterisk). Effects are a function of it, \fbeta(\mathcal{B}_k).
-%     \mathcal{I}_{ij}       any information about the pair i, j (a placeholder, not a category).
-%     \mathbf{G}, G_{ik}     raw genotype matrix (allele counts); entries stay CAPITALIZED so that
-%                            lowercase g_i remains the genetic value.
-%     \mathbf{X}, x_{ik}     standardized genotype matrix.
-%     \mathcal{P}            the PEDIGREE: full history of descent and mating back to a fixed
-%                            depth, whose oldest members are the founders.
-%     \PedPath               a PEDIGREE PATH between two individuals (an ordered list of chains),
-%                            written with a double-headed arrow over a bold P.
-%     \mathcal{T}            TRANSMISSION, backward-looking: for every allele, the lineage it was
-%                            inherited along. IBD = two lineages coalescing within the pedigree.
-%     \mathcal{E}            all environmental information, including noise.
-%   Parameters (beta_k, rho_y, V_E, ...) are a separate category from information.
-%   Functions are f, subscripted by what they produce: f_y, f_g, f_e, and f_g^{(k)} per variant.
-%   \fbeta = f_\beta^{(y)} maps functional information to a squared effect size; its (y)
-%   superscript names the TRAIT, an exception to the superscript rule below.
-%   Hats are reserved for estimates. Coefficients given the pedigree alone (\widehat\Theta,
-%   \widehat f) are estimates of the realized ones and carry a hat.
-%   A RING marks the founding generation: \mathring{z} is a founder allele.
-%   A TILDE marks a NON-STANDARDIZED quantity (\tilde{g}_i, \tilde{\beta}_k); the main text works
-%   with standardized ones (g_i, \beta_k, x_{ik}, z_{ik}). Raw genotype counts G are the exception:
-%   the capital letter already marks them.
-%
-% SYMBOLS
-%   y, g, e         phenotype, genetic (breeding) value, environmental component; y = g + e.
-%   V_Y, V_A, V_E   their variances. Note V_Y, not V_P: the subscript names the VARIABLE whose
-%                   variance it is, and the phenotype is always y.
-%   h^2             heritability, V_A / V_Y.
-%   x_{ik}, z_{ik}  standardized genotype of individual i at variant k, and its two per-allele
-%                   halves; a (m) or (p) superscript says maternally or paternally inherited,
-%                   which requires transmission information.
-%   beta_k          the effect of variant k.
-%   b_k             the MARGINAL covariance between an allele and its carrier's phenotype
-%                   (formerly c_k); Cov[x_{ik}, g_i] = 2 b_k.
-%   rho_y, rho_g    the correlation between mates' phenotypes and between their genetic values.
-%                   rho_y is the model's input and is fixed across generations; rho_g is induced,
-%                   and at equilibrium rho_g = h^2 rho_y.
-%   mu              the RAW co-path coefficient, rho_y / V_Y. A co-path is labelled in figures
-%                   with the correlation it induces, [rho_y], and mu is left to be derived.
-%
-% SUPERSCRIPTS AND SUBSCRIPTS
-%   A PARENTHESIZED superscript is a generation or a step count: V_A^{(0)} is the base
-%     population, V_A^{(t)} generation t, V_A^{(eq)} equilibrium; \Mu^{(n)} was n mating steps.
-%     Macros exist for the common ones -- \VAo, \VYo, \VAt, \VYt, \VAeq, \VYeq, \hsqo, \hsqt.
-%   A BARE superscript is an iteration count, not a generation.
-%   From the covariance between relatives (Section 3) onward everything is at equilibrium and
-%     the (eq) superscript is DROPPED; that is stated once where it starts and then relied on.
-%   A \perp superscript marks a RESIDUAL -- the part of a quantity orthogonal to its expectation
-%     -- and the base symbol says what kind of thing it is. So z^{\perp(m)}_{ok} is the part of
-%     the maternally inherited allele not predicted by the mother's genotype, and g^{\perp}_o the
-%     part of the offspring's genetic value not predicted by the parental mean. Do NOT use
-%     \epsilon or \varepsilon for these; \epsilon is reserved for path-analysis DISTURBANCES.
-%
-% EQUATION NUMBERS
-%   Numbered within sections: 2.23 is the 23rd numbered display of Section 2. A display with
-%   several labelled steps or variants is a subequations block numbered 2.23a, 2.23b, ...; the
-%   letter is used only when more than one line of the display is labelled. Appendix equations,
-%   figures and tables are numbered A1, B5, ... (\appendixsections in config.sty).
-%   Label a display if it is boxed, if it DEFINES a quantity, or if it is referenced later. Other
-%   displays stay unnumbered ($$ ... $$).
-%
-% GRAPH OBJECTS
-%   One node set -- individuals -- carrying two edge sets. Undirected edges are matings and give
-%   the MATING GRAPH; directed parent-to-offspring edges are meioses and give the MEIOSIS GRAPH.
-%   Calligraphic letters name objects in them, with a matching N for the distance or count:
-%     \Mu  = \mathcal{M}   mating chain,      \Nmu  = N_\mathcal{M}   mating distance
-%     \Lin = \mathcal{L}   lineal chain,      \Nlin = N_\mathcal{L}   lineal distance
-%     \widehat{\mathcal{A}}_{ij}   the most recent common ancestors (MRCAs) of i and j, all of
-%                          generation \hat{t}_{ij}; each individual counts as their own ancestor
-%     d_{ij}               genetic degree, -log_2 \widehat\pi_{ij}; a whole number only under
-%                          Unrelated-mates and Max-MRCAs
-%     \PedPath             a pedigree path,   N_o                     out-degree in the chain digraph
-%   The allele-level versions live on the COALESCENCE GRAPH (one node per allele, one edge per
-%   transmission), with T for transmission:
-%     \Tchain^{(t)}(a)     transmission chain from a's ancestral allele in generation t down to a
-%     \Cpath(a,b)          coalescence path: two transmission chains, same source, sharing nothing else
-%     \Tset^{(t)}, \Cset^{(t)}, \Cset   the sets of POSSIBLE ones; \Cset with no superscript is the
-%                          union over the recent generations t_B <= t <= min(t_i, t_j)
-%     \Cset(i,j)           individual level: the DISJOINT union of \Cset over the four (u,v)
-%     (u_{\hat t_{ij}}, ..., u_{t_i})   a possible transmission chain as its transmission states,
-%                          oldest first; u_t is the parent of origin of the chain's allele in
-%                          generation t, so u_{t_i} is the (u) superscript of i's allele
-%   HATS mean two things, on purpose: an expectation given the pedigree (\widehat\Theta, \widehat f,
-%   \widehat\pi), and "most recent", where two lineages meet like a caret (\hat t_{ij},
-%   \widehat{\mathcal{A}}_{ij}). Context tells them apart; do not "fix" one into the other.
-%   CHAIN vs PATH: a chain is a run of single-generation steps of ONE kind (meioses for lineal and
-%   transmission chains, matings for mating chains); a path joins chains together (a pedigree
-%   path alternates lineal and mating chains, a coalescence path joins two transmission chains).
-%   Wright's tracing rules also speak of a valid chain through a path diagram; context tells
-%   them apart.
-%   ARROWS over a chain or path: single-headed when it runs from a source to a sink (\Lin and
-%   \Tchain, ancestor -> descendant, written source first); double-headed when its two ends play
-%   symmetric roles (\Mu, \PedPath, \Cpath). \Mu and \Lin are redefined with the arrow in this
-%   file's preamble only, because v1 shares the macro names.
-%   REALIZED vs POSSIBLE: a plain T is one realized object, which depends on transmission and so
-%   carries the variant index k; a blackboard \mathbb{T} is the set of possible ones, which
-%   depends on the pedigree alone and carries no k. A superscript (t) is the source generation.
-%   Appendix~\ref{app:vocabulary} is the reader-facing version of this block; keep the two in step.
-%   Distances are infinity, not undefined, when no connection exists -- that makes the
-%   dominant-path comparison work without a case split.
-%
-% MACROS
-%   All live in ../../../tex/macros.sty; boxes and markup in ../../../tex/config.sty. Prefer
-%   adding a macro to repeating a construction. Two traps:
-%     - NEVER write \mathbb{1}. msbm has no digit glyphs, so it silently renders an unrelated
-%       symbol with no warning. Use \mathbf{1} (there is an \IMu macro for the mating indicator).
-%     - Use \overline and \widehat, not \bar and \hat, over calligraphic letters; the short
-%       accents sit off-centre.
-%   \add / \remove and the added / removed environments are REVIEW SCAFFOLDING for showing a
-%   rewrite against what it replaces. Strip them once a revision is accepted.
-%
-% WRITING PREFERENCES
-%   - Cut fluff. Expand a derivation where the expansion earns its space, not by default.
-%   - Lean on a small number of variables. Do not introduce a symbol that is used briefly and
-%     then dropped; if a quantity appears once, write it out instead.
-%   - Define a technical term the first time it is used, in one clause, in plain words
-%     ("a graph with no cycles is a forest"). Do not prove standard properties of standard
-%     objects -- name the object and rely on it.
-%   - Avoid very compact terminology unless it is well explained.
-%   - "lineal", not "linear", for descent relationships.
-%   - Assumption boxes answer "what must I believe?"; approximation boxes answer "what am I
-%     neglecting?" and carry a \justification. Boxes end with one \related{...}: concepts with
-%     similar definitions or requirements (not a 1-to-1 mapping), and, for assumptions already
-%     stated here, a short blurb on how they relate. \bundles is v1-only. Every assumption
-%     gets a STABLE id, reused verbatim
-%     across writeups, and is cited with \assumptionid / \approximationid.
-%   - State assumptions as constraints on what an unknown function may depend on (its domain),
-%     kept separate from independence statements about its inputs.
-%
-% FIGURES AND CHECKS
-%   Every .tikz in figures/ is GENERATED by figures/make_figures.py, which also asserts every
-%   hand-typed table entry and boxed equation against pathMgr. Run
-%       python figures/make_figures.py            # regenerate the figures and run the checks
-%       python figures/make_figures.py --check    # checks only, write nothing
-%   before committing. A hand-typed result that is not asserted there is a result that will drift.
-%   Regenerating must leave the .tikz files byte-identical unless a figure actually changed.
-%   The checks still target relative_covariance_v1.tex until this file takes them over.
-%
-% RESTRUCTURE
-%   This is the v2 rewrite; the previous version is relative_covariance_v1.tex. The plan lives in
-%   RESTRUCTURE.md. The comments under each heading below list what the section is meant to hold
-%   and where in v1 the material comes from; delete them as the sections are filled.
-% =================================================================================================
+% Every highest-level section starts on a new page, except Section 0 (About this document), which follows the title directly. The section counter is -1 just before Section 0 is stepped.
+\AddToHook{cmd/section/before}{\ifnum\value{section}>-1 \clearpage\fi}
 
 \title{Relative Covariance}
 \date{\today}
@@ -184,31 +23,188 @@
 
 \maketitle
 
-\textit{\textbf{Note:}
-AI was heavily used as a tool for making this document.
-My general workflow is to discuss with AI the direction that I want to take the writeup in and then I ask it to write a first draft.
-I then read through the draft until I feel confident I understand it, and then typically I rewrite the document myself, borrowing certain derivations and a few sentences from the AI's initial draft.
-The final result is a hodgepodge of contributions from the AI and me.
-The AI has access to tools that can validate the theoretical findings.}
+\setcounter{section}{-1} % numbered 0
+\section{About this document}
+\subsection{AI disclosure}
+Artificial intelligence (AI) was extensively used as a tool when writing this document.
+My general workflow was: 1) think about the big-picture points I want to make and envision how to make them, 2) discuss and refine my proposed explanations with AI, 3) often times, have the AI write an initial draft of a particular section, 4) go through multiple rounds of back-and-forth drafting and editing of the relevant section(s) with AI until I deem that the text is correct and easy to understand.
+In practice, I found that current AI is quite bad at writing explanations, both at the low-level (e.g., individual sentences explaining a formula) and at the high-level (e.g., stitching together sections, definitions, and formulae in a particular order to reach the desired point).
+As a result, by the time a particular section was finalized, almost all of the prose was written by me.
+In contrast, almost all formulae were written in LaTeX by AI.
+Regardless, I accept responsibility for the quality of this entire document.
 
-The purpose of this document is to establish a unified framework for how genetic and trait data is generated in order to derive useful population and statistical genetics models.
-Particularly, a core goal is deriving the covariance in phenotypes between two individuals given some set of limited information about them.
-The first section of this document establishes the base framework we use for trait architecture and population structure.
-Subsequent sections iteratively add more complexity to these processes and explore the consequence on downstream parameters.
-Generally, we take the weaker form of an assumption needed to make some subsequent claim.
+\subsection{Motivation}
+The core goal of this document is to derive the covariance in phenotypic values between two individuals given some set of information about them in the context of specific trait architecture and population dynamics.
+Along the way, a lot of related population and statistical genetics theory is derived, and where relevant, concepts and notation are named and defined according to consensus in the literature.
+The reader is expected to understand relevant mathematics, statistics, and basic biology; beyond that, the document is meant to stand entirely on its own.
 
-% =================================================================================================
+None of the derivations here were explicitly copied from literature and were instead thought of by me (and AI).
+However, of course, I admit that my and AI's understanding of the field and how certain formulae can be arrived at was partly informed from reading literature. 
+
+\subsection{Assumptions and approximations}
+
+All formulae and statements follow directly from the text preceding them, which often means establishing assumptions and approximations regarding the relevant variables and processes at play.
+Typically, assumptions and approximations are introduced only at the point where they are needed to advance theory further and only in their weakest forms.
+Assumptions and approximations hold for all subsequent text except when explicitly withdrawn or replaced later in the document.
+
+An assumption establishes a claim that is treated as exactly true by subsequent text.
+In contrast, an approximation takes a claim that is known to be false (either empirically or from theory within the document) but argues that if it is assumed to be true, the error in downstream derivations is negligible.
+Equations that follow directly from approximations use the approximation symbol ($\approx$), rather than the equality symbol ($=$).
+Approximations are less frequent than assumptions in this document because they typically require empirical knowledge of the typical values of relevant parameters and more advanced derivations in order to assess the expected error.
+As a result, the ``Justification'' section of each approximation may rely on theory established later in the document or on outside literature.
+Both assumptions and approximations often include a ``Related'' section that lists concepts and terminology found in the literature and the document itself that partly or completely overlap with the claim it is making.
+
+\subsection{How to read this document}
+
+\toagent{STYLE GUIDE, part 1 of 2: writing and format. Part 2 (terminology and notation) is at the end of the next subsection. Keep both up to date when a convention changes.
+
+TEXT
+- Call this a document, never a writeup, essay, article or paper.
+- American English (modeling, labeled, center).
+- Write "we", never "I", except in this section (About this document).
+- Lists take commas; semicolons only when an item itself contains a comma. This applies to \related{...} too.
+- A comma follows i.e. and e.g.
+- No em dashes; put asides in commas or parentheses. En dashes in compounds (gene--environment) are fine.
+- Small whole numbers in prose are words ("two nodes"); values of variables stay numerals.
+- Do not box equations (for now).
+- Cut fluff. Expand a derivation where the expansion earns its space, not by default.
+
+EQUATIONS
+- Label a display if it defines a quantity or is referenced later. Every other display is written $$ ... $$, never equation*.
+- A subequations block letters its lines (2.23a, 2.23b) only when more than one line is labeled. Appendix equations, figures and tables are numbered A1, B5, ... (\appendixsections, config.sty).
+
+ASSUMPTION AND APPROXIMATION BOXES
+- An assumption answers "what must I believe?"; an approximation answers "what am I neglecting?" and carries a \justification.
+- State an assumption as a constraint on what an unknown function may depend on (its domain), kept separate from independence statements about its inputs.
+- A box ends with one \related{...}: concepts with similar definitions or requirements (not a one-to-one mapping) and, for assumptions stated in this document, a short note on how they relate.
+- Every assumption has a stable id, reused verbatim across documents. Cite it with \assumptionid or \approximationid, which link to the box.
+
+NOTES IN THE SOURCE (macros in config.sty)
+- \todo: work to be done; agents carry it out only when the author asks.
+- \question: agents answer it in chat, not by editing, whenever they work through the \todo notes.
+- \toself: the author's note to themself; needs no answer.
+- \toagent: for agents only, not rendered. The do-not-edit markers are \toagent notes; respect them.
+- Do not hard-wrap comments or \toagent notes for legibility: one point is one line, however long.
+- \add, \remove and the added and removed environments: only when the author asks; strip them once a revision is accepted. (\unsure and \comment are v1's names.)
+
+FIGURES AND CHECKS
+- Every .tikz in figures/v2 (v1's are in figures/v1) is generated by figures/make_figures.py, which also asserts hand-typed table entries and key equations against pathMgr. Run it (with --check to write nothing) before committing; unchanged figures must regenerate byte-identical. Most checks still target v1's equations.
+
+RESTRUCTURE
+- This is the v2 rewrite of relative_covariance_v1.tex; the plan is in RESTRUCTURE.md. The comments under later headings say what each section will hold and where in v1 it comes from; delete them as the sections are filled.
+}
+
+\subsubsection{Order}
+The main document is meant to be read in the order it is written, as all formulae and statements follow from what is written before them.
+When particularly relevant, we reference the assumptions and/or approximations needed to make some claim.
+The reader should assume all previously established assumptions and approximations hold, except when they are explicitly revoked or replaced more recently within the document. 
+
+The appendix (Appendices~\ref{app:vocabulary}--\ref{app:terminology}) contains additional information and may refer to content established after its original reference in the main document.
+
+\subsubsection{Terminology and notation}
+
+The guiding principles for naming terms and writing notation for this document were, in descending order of importance:
+\begin{enumerate}[nosep]
+\item minimize overlap in terminology and notation within the document
+\item reuse terminology and notation that is near-unanimously used throughout the literature
+\item reuse parts of terms and notation that make the similarities and differences between related terms apparent
+\item minimize density of terms and notation and increase clarity
+\end{enumerate}
+
+When an important concept largely uses the same name and definition throughout the literature, its term is \textbf{bolded}.
+In contrast, terms that are \emph{emphasized} may only appear or be defined within this document.
+
+Below is a non-exhaustive list of patterns in notation we try to abide by:
+\begin{itemize}
+\item Vectors, matrices, and tensors are bolded
+\item $i,j$ index individuals, $k,l$ index variants, and $u,v$ index parent-of-origin
+\item A term uses a subscript when it represents a quantity assigned to its indices
+\item A term uses function notation (i.e., it is followed by parentheses containing a list of its inputs) when it contains non-index inputs or it returns an object that is not a simple quantity
+\item Superscripts enclosed by parentheses denote the type of its respective term. Superscripts that are a variable or number without parentheses denote exponents.
+\item A term with a hat (e.g., $\widehat{x}$) often implies that it is estimating the quantity below the hat.
+\item Objects without an imposed form, such as types of information, use calligraphic font (e.g., $\Tinfo$). Calligraphic font is also sometimes used for sets.
+\end{itemize}
+
+Appendix~\ref{app:terminology} gives a full account of all terms defined throughout the document and their notation.
+
+\toagent{STYLE GUIDE, part 2 of 2: terminology and notation. Part 1 (writing and format) is at the start of this subsection.
+
+TERMS
+- \textbf / \emph as stated above, on first introduction only; a passing mention before then gets neither. \emph also stresses a variant of a term ("the \emph{unstandardized} genotype"). Do not change existing \textbf / \emph without asking the author.
+- Introduce a technical term the first time it is used, in one clause, in plain words. Do not prove standard properties of standard objects; name the object and rely on it. Avoid very compact terminology unless it is well explained.
+- Fixed wording: lineal (not linear) for descent; half-relatives, full-relatives, parent-of-origin (hyphenated); IBD state (not status); phenotypic value; beta_k is an effect size, never just an effect. Reserve "define" for the first introduction of a variable; elsewhere say introduce, express, derive, ...
+
+VARIABLES
+- Use := when defining a variable, and state its values on first in-line introduction ($x_{ik} \in \R$, $p_k \in (0,1)$, $M \in \mathbb{Z}_{>0}$).
+- Lean on few variables; a quantity that appears once is written out, not named.
+- Function notation for individuals must nest: x_{m(i),k}. Bold Greek uses \pmb via the macros (\bbeta, \bSigma).
+- y, g, e: phenotype, genetic value, environmental value, all defined centered (no raw version); y = g + e. V_Y, V_A, V_E are their variances (V_Y, not V_P: the subscript names the variable). h^2 = V_A / V_Y.
+- Genotypes: G_{ik} raw allele counts (capital, so lowercase g stays the genetic value); x_{ik} = G_{ik} - 2p_k centered; x^{(u)}_{ik} = G^{(u)}_{ik} - p_k the centered alleles. A tilde marks a standardized quantity (\tilde{x}_{ik}, \tilde\beta_k), used only to connect to results usually stated in standardized terms (e.g., the GRM). A ring marks a founder: \mathring{x}.
+- Exceptions to the parenthesized-superscript rule, written bare: \intercal (transpose) and \perp, which marks a residual (the part orthogonal to its expectation; the base symbol says what kind of thing it is, as in x^{\perp(m)}_{ik}, g^{\perp}_i). \epsilon is reserved for path-analysis disturbances, never residuals.
+- mu is the raw co-path coefficient; a figure labels a co-path with the correlation it induces, [rho], and mu is derived.
+
+INFORMATION
+- Calligraphic letters are the full information of a kind, always via their macros: \Yinfo, \Ginfo (true genotypes of the study's individuals, not ancestors), \Einfo (environment, including noise), \Pinfo (the pedigree, back to its founders), \Tinfo (transmission: the lineage of every allele), \Binfo (functional information, \Binfo_k per variant), \Iinfo_{ij} (any information about a pair; a placeholder). Bold letters are the concrete objects (\bG, \bX). Parameters (beta_k, rho_y, V_E) are not information.
+- Functions are f subscripted by what they produce: f_y, f_g, f_e, f_g^{(k)}; \fbeta maps functional information to a squared effect size, its (y) naming the trait.
+
+HATS
+- Hats mean two things on purpose: an expectation given the pedigree (\widehat\Theta, \widehat f, \widehat\pi, estimates of the realized values), and "most recent" (\hat t_{ij}, \widehat{\mathcal{A}}_{ij}). Do not "fix" one into the other.
+
+GRAPH OBJECTS (reader-facing version: Appendix app:vocabulary; keep the two in step)
+- One node set (individuals) with two edge sets: matings (mating graph) and meioses (meiosis graph). Allele-level objects live on the coalescence graph.
+- Distances are d with a parenthesized type (\dmu, \dlin, \ddeg); counts are N (N_e, N_o, M_T). Distances are infinity, not undefined, when no connection exists.
+- A chain is a run of one kind of step (meioses or matings); a path joins chains. Wright's tracing rules also say "chain"; context tells them apart.
+- Arrows: single-headed for source-to-sink objects, written source first (\Lin(j,i), \Tchain); double-headed for symmetric ones (\Mu, \PedPath, \Cpath).
+- A plain T is one realized object (depends on transmission, carries k); a blackboard \mathbb{T} is the set of possible ones (pedigree only, no k). A superscript (t) is the source generation.
+
+MACROS (macros.sty)
+- Prefer adding a macro to repeating a construction.
+- Never \mathbb{1}: msbm has no digit glyphs and silently renders another symbol. Use \mathbf{1}.
+- Use \overline and \widehat, not \bar and \hat, over calligraphic letters.
+}
+
+\subsection{State of this document}
+
+\subsubsection{Future changes to what is currently in the document}
+In the already-written sections, we plan to eventually:
+\begin{itemize}
+    \item Properly introduce recombination in Section~\ref{sec:transmission}, which induces dependence between transmission states in the same meiosis
+    \item Properly introduce mating models somewhere in Section~\ref{sec:base-model}, including random-mating, since it is so important
+    \item Settle on how to treat the fact that allele frequency is currently established as an expected value of a random variable, yet is sometimes treated as a derived quantity of the genotype matrix.
+    The latter is more of an estimate of the underlying quantity.
+    This is actually complicated because the allele frequency of an offspring generation depends on the realized allele frequency, not its expected value.
+    Probably the easiest way to handle this is to assume population size is so large such that the estimate from the finite population is equal to its latent parameter, and therefore allele frequency does not change (we already assume this elsewhere)
+    \item Include a figure that intuitively visualizes the different paths, chains, etc., that we've introduced
+    \item Expand out the Terminology and notation appendix stub (Appendix~\ref{app:terminology})
+    \item Revise the Appendix, since it's currently mostly in its AI-written draft form.
+    \item (Have AI) write a notebook/set of scripts that are parallel to the document and validate the theory using simulations
+    \item Reference papers that derive and arrive at the same formulas as the document 
+\end{itemize}
+
+\subsubsection{Future sections of the document}
+In not-yet-written sections of this document, we plan to eventually (largely written in order):
+\begin{itemize}
+    \item Include the rest of the Section~\ref{sec:random-mating} content found in v1 of this document
+    \item Include the Section~\ref{sec:am} content found in v1 of this document
+    \item Finalize Section~\ref{sec:am} by combining pedigree, IBD, and/or IBS information
+    \item Develop a unified theory of population structure and pedigrees
+    \item Develop a unified theory of population structure and assortative mating 
+    \item Derive core-goal theory in the presence of population structure
+    \item Develop a unified theory of population stratification and cultural transmission / IGEs
+    \item Derive core-goal theory in the presence of population stratification
+    \item Derive core-goal theory in the presence of cultural transmission / IGEs
+    \item Derive core-goal theory in the presence of indirect assortative mating
+    \item Derive core-goal theory in the context of pleiotropic multi-phenotype data
+\end{itemize}
+
 \section{Base model of genetic causality and transmission}\label{sec:base-model}
-% Framework that everything downstream refers to. A running example pedigree containing both a
-% full-sibling and a step-sibling pair carries through the whole section (extends v1
-% fig:step-sib).
 
 \subsection{Causal form of phenotypes}\label{sec:pheno-form}
 Suppose we are studying a population of individuals.
-We use $\Yinfo$ to represent all phenotypic information regarding our population, and $\tilde{y}$ denotes a particular \textbf{phenotype} we are studying.
-Phenotype $\tilde{y}$ is a function $f_y$ of genetic information $\Ginfo$ and non-genetic (i.e. environmental) information $\Einfo$, such that for individual $i$, we can write:
+We use $\Yinfo$ to represent all phenotypic information regarding our population, and $y$ denotes a specific \textbf{phenotype} we are studying, centered such that $\E[y] = 0$.
+Phenotype $y$ is a function $f_y$ of genetic information $\Ginfo$ and non-genetic (i.e., environmental) information $\Einfo$ of the population, such that for individual $i$, we can write:
 \begin{equation}\label{eq:pheno-function}
-    \tilde{y}_i \;:=\; f_y(\Ginfo_i, \Einfo_i)
+    y_i \;:=\; f_y(\Ginfo_i, \Einfo_i) - \E\big[f_y(\Ginfo_i, \Einfo_i)\big]
 \end{equation}
 We impose the following constraints on the form of $f_y$ and its components:
 
@@ -216,15 +212,15 @@ We impose the following constraints on the form of $f_y$ and its components:
 The phenotype is the sum of a \textbf{genetic value} and an \textbf{environmental value},
 \begin{subequations}\label{eq:additive-pheno}
 \begin{equation}\label{eq:additive-pheno-y}
-    \tilde{y}_i \;:=\; \tilde{g}_i + \tilde{e}_i
+    y_i \;:=\; g_i + e_i
 \end{equation}
-where $\tilde{g}$ is a function of genetic information only,
+where $g$ is a centered function of genetic information only,
 \begin{equation}\label{eq:additive-pheno-g}
-    \tilde{g}_i \;:=\; f_g(\Ginfo_i)
+    g_i \;:=\; f_g(\Ginfo_i) - \E\big[f_g(\Ginfo_i)\big]
 \end{equation}
-and $\tilde{e}$ is a function of environmental information only:
+and $e$ is a centered function of environmental information only:
 \begin{equation}\label{eq:additive-pheno-e}
-    \tilde{e}_i \;:=\; f_e(\Einfo_i)
+    e_i \;:=\; f_e(\Einfo_i) - \E\big[f_e(\Einfo_i)\big]
 \end{equation}
 \end{subequations}
 \related{no gene--environment interaction (GxE).}
@@ -232,33 +228,34 @@ and $\tilde{e}$ is a function of environmental information only:
 
 \begin{assumption}{GE-indep}{Gene--environment independence}
 An individual's environmental value is independent of their own genetic value:
-$$ \tilde{g}_i \perp \tilde{e}_i $$
-\related{no gene--environment correlation within an individual, no population stratification under strong population structure; implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
+$$ g_i \perp e_i $$
+\related{no gene--environment correlation within an individual, no population stratification under strong population structure, implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
 \end{assumption}
 
 \begin{assumption}{No-IGE}{No indirect genetic effects}
 One individual's genetic value is independent of another individual's environmental value:
-$$ \tilde{g}_i \perp \tilde{e}_j \ \ (i \neq j) . $$
-\related{no indirect (e.g.\ parental) genetic effects; implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
+$$ g_i \perp e_j \ \ (i \neq j) . $$
+\related{no indirect (e.g., parental) genetic effects, implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
 \end{assumption}
 
 \begin{assumption}{Env-indep}{Independent environments}
 The environmental value is independent across individuals, including relatives:
-$$ \tilde{e}_i \perp \tilde{e}_j \ \ (i \neq j). $$
-\related{no shared environment (e.g. household effects, population stratification), no IGEs.}
+$$ e_i \perp e_j \ \ (i \neq j). $$
+\related{no shared environment (e.g., household effects, population stratification), no cultural transmission, no IGEs.}
 \end{assumption}
 
 From all possible genetic information about an individual, we focus solely on biallelic genetic variants, called just \textbf{variants} from now on.
 For a given variant, each individual possesses two alleles, each inherited from a different parent $u \in \{m,p\}$ (maternal or paternal, respectively) denoted by a superscript.
+Later, we also use the index $v \in \{m,p\}$ to denote parent-of-origin.
 Each allele is either the reference allele (coded as a $0$) or the alternate allele ($1$).
 We can thus define haploid alternate allele counts $G_{ik}^{(m)}, G_{ik}^{(p)} \in \{0,1\}$.
 \begin{assumption}{Biallelic}{Biallelic variants only}
-The genetic value depends on an individual's genetic information only through their alleles at $M$ biallelic variants:
+The genetic value depends on an individual's genetic information only through their alleles at $M \in \mathbb{Z}_{>0}$ biallelic variants:
 $$ f_g(\Ginfo_i) \;=\; f_g\Big(\big\{G_{ik}^{(m)}, G_{ik}^{(p)}\big\}_{k=1}^{M}\Big) . $$
-\related{no contribution from multiallelic variants, e.g. structural variants or copy-number variation.}
+\related{no contribution from multiallelic variants (e.g., structural variants or copy-number variation).}
 \end{assumption}
 
-In practice, this assumption is violated as non-biallelic markers (e.g. copy-number variants) causally influence traits.
+In practice, this assumption is violated as non-biallelic markers (e.g., copy-number variants) causally influence traits.
 Later, we will model scenarios where we have only genotyped a subset of biallelic variants and derive quantities that depend on genotyped biallelic variants vs all genetic variants.
 We will make the approximation that the contribution of non-genotyped non-biallelic variants is similar in form to that of non-genotyped biallelic variants. 
 
@@ -266,69 +263,66 @@ Each variant's effect on the genetic value is additive across $M$ variants:
 \begin{assumption}{Additivity}{Additive genetic value}
     An individual's genetic value is the sum of each variant's effect, $f_g^{(k)}$:
     \begin{equation}\label{eq:additivity}
-        \tilde{g}_i \;:=\; \sum_{k=1}^{M} f_g^{(k)}(G_{ik}^{(m)},G_{ik}^{(p)})
+        f_g(\Ginfo_i) \;=\; \sum_{k=1}^{M} f_g^{(k)}(G_{ik}^{(m)},G_{ik}^{(p)})
     \end{equation}
-    \related{no gene-gene interactions (e.g. epistasis).}
+    \related{no gene-gene interactions (e.g., epistasis).}
 \end{assumption}
 
 Summing haploid alternate allele counts yields an individual's \textbf{genotype} at a variant $G_{ik} \in \{0,1,2\}$:
 \begin{equation}\label{eq:genotype}
     G_{ik} \;:=\; G_{ik}^{(m)} + G_{ik}^{(p)}
 \end{equation}
-We assume that a variant's effect can be described by a linear function with \textbf{causal effect size} $\tilde{\beta}_k \in \R$:
+We assume that a variant's effect can be described by a linear function whose slope is the variant's causal \textbf{effect size} $\beta_k \in \R$:
 
 \begin{assumption}{Linearity}{Linear variant effects}
 Each variant's contribution to the genetic value is a linear function of the individual's genotype at that variant:
 \begin{equation}\label{eq:linearity}
-    f_g^{(k)}\big(G_{ik}^{(m)}, G_{ik}^{(p)}\big) \;=\; \tilde{\beta}_k\, G_{ik} .
+    f_g^{(k)}\big(G_{ik}^{(m)}, G_{ik}^{(p)}\big) \;=\; \beta_k\, G_{ik} .
 \end{equation}
-\related{no dominance; no parent-of-origin effects, since the contribution depends on the two alleles only through their sum.}
+\related{no dominance, no parent-of-origin effects, no cis-vs-trans GxG distinction.}
 \end{assumption}
 
-A variant is causal if and only if $\tilde{\beta}_k \neq 0$.
+A variant is causal if and only if $\beta_k \neq 0$.
 Because we assume a linear and additive model, the genetic value can also be called a \emph{breeding value}, although we stick to the former term.
 
 \subsection{Variables}
 
-\subsubsection{Standardization}\label{sec:standardization}
+\subsubsection{Centering and standardization}\label{sec:standardization}
 We define the \textbf{allele frequency} of a variant $p_k \in (0,1)$ to be the expected allele of an individual:
 \begin{equation}\label{eq:allele-freq}
-    \E[G_{ik}^{(u)}] \;=\; p_k \qquad \text{for } u \in \{m, p\}
+    p_k \;:=\; \E[G_{ik}^{(u)}] \qquad \text{for } u \in \{m, p\}
 \end{equation}
 It follows that $\Var[G_{ik}^{(u)}] = p_k (1 - p_k)$ and $\E[G_{ik}] = 2 p_k$.
-From now on, we only work with \textbf{standardized} versions of alleles and genotypes, $z_{ik}^{(u)}, x_{ik} \in \R$, defined as:
-\begin{subequations}\label{eq:standardized}
+From now on, we only work with \emph{centered} versions of alleles, $x_{ik}^{(u)} \in (-1,1)$, and genotypes, $x_{ik} \in (-2,2)$, defined as:
+\begin{subequations}\label{eq:centered}
 \begin{align}
-    z_{ik}^{(u)} \;&:=\; \frac{G_{ik}^{(u)} - p_k }{\sqrt{2 p_k (1 - p_k)}} \label{eq:standardized-allele} \\
-    x_{ik} \;&:=\; z_{ik}^{(m)} + z_{ik}^{(p)} \;=\; \frac{G_{ik} - 2 p_k }{\sqrt{2 p_k (1 - p_k)}} \label{eq:standardized-genotype}
+    x_{ik}^{(u)} \;&:=\; G_{ik}^{(u)} - p_k \label{eq:centered-allele} \\
+    x_{ik} \;&:=\; x_{ik}^{(m)} + x_{ik}^{(p)} \;=\; G_{ik} - 2 p_k \label{eq:centered-genotype}
 \end{align}
 \end{subequations}
-This results in $\E[z_{ik}^{(u)}] = \E[x_{ik}] = 0$ and $\Var[z_{ik}^{(u)}] = \tfrac12$.
-Note that it does not yet follow that $\Var[x_{ik}] = 1$, which requires $\Cov[z_{ik}^{(m)}, z_{ik}^{(p)}] = 0$, something we have not shown.
-We later demonstrate (Equation~\eqref{eq:var-x-unit}) that this is approximately the case under \emph{random mating}, motivating our use of the $2 p_k (1 - p_k)$ standardization factor, which we maintain even when random mating does not hold.
-
-We also define \emph{standardized effects}:
-\begin{equation}\label{eq:standardized-effect}
-    \beta_k \;:=\; \tilde{\beta}_k \sqrt{2 p_k (1 - p_k)}
+This results in $\E[x_{ik}^{(u)}] = \E[x_{ik}] = 0$ and an unchanged variance, $\Var[x_{ik}^{(u)}] = p_k (1 - p_k)$.
+Note that it does not follow that $\Var[x_{ik}] = 2 p_k (1 - p_k)$, which requires $\Cov[x_{ik}^{(m)}, x_{ik}^{(p)}] = 0$, something we have not yet shown.
+We later demonstrate (Equation~\eqref{eq:var-x}) that this is approximately the case under random mating, motivating the \emph{standardized} versions of alleles and genotypes, $\tilde{x}_{ik}^{(u)}, \tilde{x}_{ik} \in \R$:
+\begin{equation}\label{eq:standardized}
+    \tilde{x}_{ik}^{(u)} \;:=\; \frac{x_{ik}^{(u)}}{\sqrt{2 p_k (1 - p_k)}} , \qquad
+    \tilde{x}_{ik} \;:=\; \frac{x_{ik}}{\sqrt{2 p_k (1 - p_k)}}
 \end{equation}
 
-This lets us define the centered genetic value $g_i$:
+Standardized alleles always have a variance of $\Var[\tilde{x}_{ik}^{(u)}] = \tfrac12$.
+We also define \emph{standardized effect sizes}:
+\begin{equation}\label{eq:standardized-effect}
+    \tilde{\beta}_k \;:=\; \beta_k \sqrt{2 p_k (1 - p_k)}
+\end{equation}
+
+ Under \assumptionid{Linearity}, the genetic value is the linear combination of genotypes with effect size coefficients, using either the standardized or unstandardized versions of both:
 \begin{equation}\label{eq:genetic-value}
 \begin{aligned}
-    g_i \;:=\; \tilde{g}_i - \E[\tilde{g}_i]
-    \;&=\; \sum_{k=1}^{M} \tilde{\beta}_k \big(G_{ik} - 2p_k\big) \\
-    \;&=\; \sum_{k=1}^{M} \tilde{\beta}_k \sqrt{2 p_k (1 - p_k)}\; x_{ik} \\
-    \;&=\; \sum_{k=1}^{M} \beta_k\, x_{ik}
+    g_i \;=\; f_g(\Ginfo_i) - \E\big[f_g(\Ginfo_i)\big]
+    \;&=\; \sum_{k=1}^{M} \beta_k \big(G_{ik} - 2p_k\big) \\
+    \;&=\; \sum_{k=1}^{M} \beta_k\, x_{ik} \\
+    \;&=\; \sum_{k=1}^{M} \tilde{\beta}_k\, \tilde{x}_{ik}
 \end{aligned}
 \end{equation}
-
-It follows that $\E[g_i] = 0$.
-We center the environmental value in the same way, $e_i := \tilde{e}_i - \E[\tilde{e}_i]$, and with it the phenotype:
-\begin{equation}\label{eq:centered-pheno}
-    y_i \;:=\; \tilde{y}_i - \E[\tilde{y}_i] \;=\; \big(\tilde{g}_i - \E[\tilde{g}_i]\big) + \big(\tilde{e}_i - \E[\tilde{e}_i]\big) \;=\; g_i + e_i
-\end{equation}
-so that $\E[y_i] = \E[e_i] = 0$.
-From now on, we largely only refer to the centered and/or standardized version of variables.
 
 \subsubsection{Effect sizes and functional information}\label{sec:effect-sizes}
 A main goal of statistical genetics is to quantify the effect size of variants, $\bbeta$.
@@ -338,22 +332,22 @@ A slightly-philosophical complication is that effect sizes are clearly always de
 A trivial but outlandish example is suppose that there is some variant that influences the expression of some gene, which then influences downstream traits.
 For some reason, the population's society injects every newborn with a molecule that completely blocks the expression of that gene.
 In this society, the variant ceases to have an effect on the gene's downstream traits.
-So, a truly principled discussion of ``biological'' effects requires grounding out the environment that the population exists in, which we encode in $\tilde{\mathbf{e}}$.
+So, a truly principled discussion of ``biological'' effects requires grounding out the environment that the population exists in, which we encode in $\mathbf{e}$.
 We will make the following implicit assumption explicit:
 
 \begin{assumption}{Effects-env-constant}{Effect sizes are constant across environment}
-The effect size of a variant, $\tilde{\beta}_k$ is constant across all environmental values, $\tilde{e}_i$, in a population.
+The effect size of a variant, $\beta_k$, is constant across all environmental values, $e_i$, in a population.
 We do not impose this constraint on environments not found in the population.
 \related{no gene--environment interaction (GxE).}
 \end{assumption}
 
-We define a variant's \textbf{functional information}, $\Binfo_k$, to be the biological and trait-relevant properties of the variant that inform its effect size.
-For example, variants in coding regions tend to be more biologically impactful than variants in non-coding regions, so this \emph{functional} property can causally influence effect sizes.
+We define a variant $k$'s \emph{functional information}, $\Binfo_k$, to be the biological and trait-relevant properties of the variant that inform its effect size.
+For example, variants in coding regions tend to be more biologically impactful than variants in non-coding regions, so this functional property can causally influence effect sizes.
 
-We define a variant $k$'s effect size as being a deterministic and trait-specific function, $\fbeta$, of its functional information, $\Binfo_k$, and a sign indicator $\delta_k \in \{-1, 1\}$ that depends on how its alleles are encoded:
+We model a variant $k$'s effect size as being a deterministic and trait-specific function, $\fbeta$, of its functional information, $\Binfo_k$, and a sign indicator $\delta_k \in \{-1, 1\}$ that depends on how its alleles are encoded:
 
 \begin{equation}\label{eq:effect-size-function}
-    \tilde{\beta}_k \;:=\; \delta_k \sqrt{\fbeta(\Binfo_k)}
+    \beta_k \;:=\; \delta_k \sqrt{\fbeta(\Binfo_k)}
 \end{equation}
 
 Note that our usage of $y$ as a superscript for $f_\beta$ conveys that the mapping of functional information (which is trait-invariant) onto effect sizes is trait-specific.
@@ -362,37 +356,34 @@ We assume that alleles are assigned randomly such that:
 
 \begin{assumption}{Effects-first-moment-zero}{Effect sizes are mean-zero}
 The expected effect size of each variant is zero:
-$$ \E[\tilde{\beta}_k] \;=\; 0 . $$
+$$ \E[\beta_k] \;=\; 0 . $$
 This follows from assuming that trait-increasing alleles are randomly chosen to be the alternate vs reference allele, thus resulting in $\E[\delta_k]=0$, which is independent of $\Binfo_k$.
-\related{the infinitesimal / random-effects model; symmetric effects.}
+\related{the infinitesimal / random-effects model, symmetric effects.}
 \end{assumption}
 
 It then follows that:
-$$ \tilde{\beta}^2_k \;=\; \fbeta(\Binfo_k) $$
+$$ \beta^2_k \;=\; \fbeta(\Binfo_k) $$
 
-\unsure{Is this paragraph good?}
 We note here that while effect sizes and functional properties are fixed, they will often be treated as if they are random variables.
-The randomness we're modelling is driven by our uncertainty in distinguishing individual variants.
-Conditioning on $\tilde{\bbeta}$ simply means the effect sizes are known, while not conditioning on $\tilde{\bbeta}$ is akin to averaging across all variants.
+The randomness we're modeling is driven by our uncertainty in distinguishing individual variants.
+Conditioning on $\bbeta$ simply means the effect sizes are known, while not conditioning on $\bbeta$ is akin to averaging across all variants.
 We can also condition on other variant-specific information, like allele frequency $p_k$ or individual genotypes $\mathbf{G}_{k}$, thus averaging across variants that share that information.
 
 \subsubsection{Variance components}
-We'll also define commonly used terms here.
-The \textbf{additive (genetic) variance} of a trait, $V_A$, is the variance of the genetic value $g_i$ of a random individual $i$ from the population.
-It is conditioned on the genotypic information of the population, $\Ginfo$, as well known effect sizes, $\tilde{\bbeta}$:
+The \textbf{additive (genetic) variance} of a trait, $V_A \in \R_{\geq 0}$, is the variance of the genetic value $g_i$ of a random individual $i$ from the population.
+It is conditioned on the genotypic information of the population, $\Ginfo$, as well known effect sizes, $\bbeta$:
 \begin{equation}\label{eq:additive-variance}
-    V_A \;:=\; \Var\big[g_i \mid \Ginfo, \tilde{\bbeta}\big]
+    V_A \;:=\; \Var\big[g_i \mid \Ginfo, \bbeta\big]
 \end{equation}
-In later sections, we take the expected value of $V_A$ across genotypes, which removes the cross-genotype correlations arising from sampling noise.
-Similarly, the \emph{environmental variance} of the trait, $V_E$, is the variance of the environmental value:
+Similarly, the \textbf{environmental variance} of the trait, $V_E \in \R_{\geq 0}$, is the variance of the environmental value:
 \begin{equation}\label{eq:environmental-variance}
     V_E \;:=\; \Var[e_i \mid \Einfo]
 \end{equation}
-Finally, the \emph{phenotypic variance} of the trait, $V_Y$, is the variance of the phenotype value itself:
+Finally, the \textbf{phenotypic variance} of the trait, $V_Y \in \R_{\geq 0}$, is the variance of the phenotypic value itself:
 \begin{equation}\label{eq:phenotypic-variance}
-    V_Y \;:=\; \Var[y_i \mid \Ginfo, \tilde{\bbeta}, \Einfo]
+    V_Y \;:=\; \Var[y_i \mid \Ginfo, \bbeta, \Einfo]
 \end{equation}
-We define the \textbf{heritability} of the trait to be:
+We define the \textbf{heritability} of the trait, $h^2 \in [0,1]$, to be:
 \begin{equation}\label{eq:heritability}
     h^2 \;:=\; \frac{V_A}{V_Y}
 \end{equation}
@@ -400,8 +391,8 @@ It is common practice to also standardize the phenotype such that $\Var[y] = 1$,
 However, our derivations will not assume that phenotypes are standardized, only centered.
 
 Different kinds of heritabilities exist.
-Many are primarily a reflection of the estimator used, like \emph{SNP heritability} and \emph{GWAS heritability}, while others are better understood as different types of estimands, like \emph{broad-sense} and \emph{narrow-sense heritability}.
-Given our trait architecture assumptions (\assumptionid{Additivity} and \assumptionid{Linearity}), the formula above reflects \textbf{narrow-sense heritability}, which is the proportion of trait variance attributable to additive genetic effects.
+Many are primarily a reflection of the estimator used, like SNP heritability and GWAS heritability, while others are better understood as different types of estimands, like broad-sense and narrow-sense heritability.
+Given our trait architecture assumptions (\assumptionid{Additivity} and \assumptionid{Linearity}), the formula above best reflects \textbf{narrow-sense heritability}, which is the proportion of trait variance attributable to additive genetic effects.
 Other kinds of heritabilities will be discussed when relevant.
 
 \subsection{Pedigrees and paths}\label{sec:pedpath}
@@ -415,10 +406,8 @@ To understand which paths are useful to us, we need to establish the different t
 
 \paragraph{Mating}
 Individuals in a population may form pairs, such as to produce offspring, which we call \textbf{mate} pairs.
-Note that if the pair-formation process is the same for non-offspring-producing pairs (e.g. homosexual couples), then we still model and refer to them as mates.
-We do not make any assumptions about monogamy, i.e. an individual can be part of multiple mate pairs.
-\textbf{Random mating} refers to when for a given individual, the probability of mating with any other individual in the population's mating pool is uniform across individuals.
-A large amount of theory later in this document is dedicated to modelling and understanding the consequences of \textbf{non-random mating}.
+Note that if the pair-formation process is the same for non-offspring-producing pairs (e.g., homosexual couples), then we still model and refer to them as mates.
+We do not make any assumptions about monogamy, i.e., an individual can be part of multiple mate pairs.
 Mating pairs are represented by an undirected edge between them in the pedigree.
 The pedigree constrained to just nodes and mating edges is called a \emph{mating graph}.
 
@@ -431,12 +420,12 @@ The pedigree constrained to just nodes and meiotic edges is called a \emph{meios
 \paragraph{Other building blocks}
 It is possible to come up with any other type of edge that connects nodes and constrains the joint distribution of information across individuals.
 For example, adopted children do not follow the same laws of meiosis as biological offspring, but may still be influenced by non-genetic transmission shared with biological offspring.
-We only define these additional types of edges when needed.
+We only introduce these additional types of edges when needed.
 
 All subsequent analysis of pedigrees is greatly simplified with the following assumption:
 
 \begin{assumption}{Discrete-generations}{Discrete, non-overlapping generations}
-The population is partitioned into generations indexed by $t$, and every individual mates within their own generation.
+The population is partitioned into generations indexed by $t \in \mathbb{Z}$, and every individual mates within their own generation.
 Offspring produced from such a mating are of generation $t+1$.
 \related{no overlapping generations, no mating across generations, sequential generations between parent-offspring pairs.}
 \end{assumption}
@@ -453,53 +442,53 @@ In order to describe the mating graph in terms of runs, we'll need the following
     As a consequence, two nodes in the same tree are joined by exactly one run of edges that visits no node twice, and two nodes in different trees are joined by none.
 \end{assumption}
 
-For $i \neq j$ in the same tree, the \textbf{mating chain} $\Mu(i,j)$ is that unique run of edges connecting them, read as the ordered list of individuals it passes through, from $i$ to $j$.
-The \textbf{mating distance} $\Nmu(i,j)$ is the number of edges on that chain, i.e. the number of matings crossed in getting from $i$ to $j$, and is one fewer than the size of it:
+For $i \neq j$ in the same tree, the \emph{mating chain} $\Mu(i,j)$ is that unique run of edges connecting them, read as the ordered list of individuals it passes through, from $i$ to $j$.
+The \emph{mating distance} $\dmu_{ij} \in \mathbb{Z}_{\geq 0} \cup \{\infty\}$ is the number of edges on that chain, i.e., the number of matings crossed in getting from $i$ to $j$, and is one fewer than the size of it:
 \begin{equation}\label{eq:mating-dist}
-    \boxed{\ \Nmu(i,j) \;=\; \big|\Mu(i,j)\big| - 1 \ }
+    \dmu_{ij} \;:=\; \big|\Mu(i,j)\big| - 1
 \end{equation}
-We additionally set $\Nmu(i,i) = 0$, and $\Nmu(i,j) = \infty$ when $i$ and $j$ lie in different trees, meaning no sequence of matings connects them at all.
+We additionally set $\dmu_{ii} = 0$, and $\dmu_{ij} = \infty$ when $i$ and $j$ lie in different trees, meaning no sequence of matings connects them at all.
 
-The figure below shows a pedigree structure where $\Nmu = 0, 1, 2, 3, \infty$ can be observed:
+The figure below shows a pedigree structure where $\dmu = 0, 1, 2, 3, \infty$ can be observed:
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/step_sib_people.tikz}
+        \input{figures/v2/step_sib_people.tikz}
         \caption{%
             A pedigree of four parents joined by three matings, with one child per mating.
             Meioses are black directed edges and matings are red undirected edges.
             Reading left to right, $A$ and $B$ are the parents of $E$, $B$ and $C$ of $F$, and $C$ and $D$ of $G$.
-            Each parent is $\Nmu = 0$ to themselves.
-            Each parent is $\Nmu = 1$ to their own mate, e.g.\ $(A,B)$; $\Nmu = 2$ to their mate's other mate, e.g.\ $(A,C)$ and $(B,D)$; and $\Nmu = 3$ across the whole chain, $(A,D)$.
-            In the offspring generation, by contrast, every pair is $\Nmu = \infty$: none of $E$, $F$, $G$ has mated, so no chain of matings connects any two of them.%
+            Each parent is $\dmu = 0$ to themselves.
+            Each parent is $\dmu = 1$ to their own mate, e.g., $(A,B)$; $\dmu = 2$ to their mate's other mate, e.g., $(A,C)$ and $(B,D)$; and $\dmu = 3$ across the whole chain, $(A,D)$.
+            In the offspring generation, by contrast, every pair is $\dmu = \infty$: none of $E$, $F$, $G$ has mated, so no chain of matings connects any two of them.%
         }
         \label{fig:step-sib}
     \end{floatcard}
 \end{figure}
 
 \subsubsection{Lineal chains}\label{sec:lineal-chains}
-The \emph{meiosis graph} consists only of the directed edges (parent-to-offspring meioses) between nodes.
+The meiosis graph consists only of the directed edges (parent-to-offspring meioses) between nodes.
 Every individual has two edges coming in, one from each parent.
 A \emph{directed run} is a sequence of alternating nodes and edges that always follows the direction of the edges.
-A directed run can be traced from a node onto itself (i.e. is zero-length).
+A directed run can be traced from a node onto itself (i.e., is zero-length).
 Under \assumptionid{Discrete-generations} every edge steps from one generation to the next, so following edges forward always moves forward in time.
 Therefore, the meiosis graph is guaranteed to be a \emph{directed acyclic graph}.
 
-Let $t_i$ denote the generation that an individual $i$ belongs to, according to \assumptionid{Discrete-generations}.
-Let $m(i)$ and $p(i)$ denote the two parents, mother and father, of an individual $i$, i.e. the two nodes with an edge into $i$.
-If a directed run leads from $i$ to $j$, then $i$ is an \textbf{ancestor} of $j$, $j$ is a \textbf{descendant} of $i$, and the two are \textbf{lineal relatives} to each other.
+Let $t_i \in \mathbb{Z}$ denote the generation that an individual $i$ belongs to, according to \assumptionid{Discrete-generations}.
+Let $m(i)$ and $p(i)$ denote the two parents, mother and father, of an individual $i$, i.e., the two nodes with an edge into $i$.
+If a directed run leads from $j$ to $i$, then $j$ is an \textbf{ancestor} of $i$, $i$ is a \textbf{descendant} of $j$, and the two are \textbf{lineal relatives} to each other.
 
-For an ancestor $i$ of $j$, the \textbf{lineal chain} $\Lin(i,j)$ is a directed run from $i$ (the source) to $j$ (the sink), read as the ordered list of individuals it passes through.
-The \textbf{lineal distance} $\Nlin(i,j)$ is the number of edges on that chain, i.e. the number of meioses separating the two, and is symmetric, $\Nlin(i,j) = \Nlin(j,i)$.
+For an ancestor $j$ of $i$, the \emph{lineal chain} $\Lin(j,i)$ is a directed run from $j$ (the source) to $i$ (the sink), read as the ordered list of individuals it passes through.
+The \emph{lineal distance} $\dlin_{ij} \in \mathbb{Z}_{\geq 0} \cup \{\infty\}$ is the number of edges on that chain, i.e., the number of meioses separating the two, and is symmetric, $\dlin_{ij} = \dlin_{ji}$.
 Under \assumptionid{Discrete-generations}, it is just the number of generations between them:
-\begin{equation*}
-    \boxed{\ \Nlin(i,j) \;=\; \big|\Lin(i,j)\big| - 1 \;=\; \big|\, t_i - t_j \,\big| \ }
-\end{equation*}
-We additionally set $\Nlin(i,i) = 0$, and $\Nlin(i,j) = \infty$ if $i$ and $j$ are not lineal relatives.
+\begin{equation}\label{eq:lineal-dist}
+    \dlin_{ij} \;:=\; \big|\Lin(j,i)\big| - 1 \;=\; \big|\, t_i - t_j \,\big|
+\end{equation}
+We additionally set $\dlin_{ii} = 0$, and $\dlin_{ij} = \infty$ if $i$ and $j$ are not lineal relatives.
 
 \subsubsection{Pedigree paths}\label{sec:pedigree-paths}
 
-A \textbf{pedigree path} $\PedPath(i,j)$ between probands $i$ and $j$ is a sequence of chains, alternating between lineal and mating, in which each chain shares an end individual with the next.
+A \emph{pedigree path} $\PedPath(i,j)$ between \textbf{probands} $i$ and $j$ is a sequence of chains, alternating between lineal and mating, in which each chain shares an end individual with the next.
 The first chain has an end at $i$, the last has an end at $j$, and no individual is visited twice across the entire pedigree path.
 Note that lineal chains in a pedigree path can be traversed in either direction (up or down the chain).
 The double-headed arrow marks that the two ends play symmetric roles: $\PedPath(j,i)$ is $\PedPath(i,j)$ read backwards (the same holds for mating chains).
@@ -510,18 +499,17 @@ Non-terminal lineal chains will always have an out-degree of 1 and an in-degree 
 
 Furthermore, we require that whenever a mating chain has an out-edge, the mating chain must contain both the parents of the second-oldest individual in the lineal chain it points to.
 In other words, the terminal individual node of two connected lineal and mating chains must be the ``outer'' parent.
-One can think of an out-edge from a mating chain as representing a mate pair, rather than an individual.
 
-Below is a pedigree where the pedigree path between $i$ and $j$ is traced, which spans 2 mating chains and 3 lineal chains, followed by its equivalent digraph.
+Below is a pedigree where the pedigree path between $i$ and $j$ is traced, which spans two mating chains and three lineal chains, followed by its equivalent digraph.
 
 \begin{figure}[H]
     \begin{floatcard}
         \makebox[\linewidth][l]{\textbf{(A)}}
-        \input{figures/path_example_pedigree_v2.tikz}
+        \input{figures/v2/path_example_pedigree.tikz}
 
         \vspace{1.0em}
         \makebox[\linewidth][l]{\textbf{(B)}}
-        \input{figures/path_example_digraph_v2.tikz}
+        \input{figures/v2/path_example_digraph.tikz}
         \caption{%
             (A) A pedigree shown as a graph containing a highlighted pedigree path connecting $i$ and $j$.
             Meioses are denoted by black directed edges while matings are denoted by red undirected edges.
@@ -539,7 +527,7 @@ Below is a pedigree where the pedigree path between $i$ and $j$ is traced, which
 \paragraph{Dominant path} In a full pedigree, any two individuals will have at least one pedigree path connecting them, since everyone shares a common ancestor.
 In fact, arbitrarily many pedigree paths can be drawn, since all ancestors across individuals also share their own common ancestors.
 The \emph{dominant path} is the single best pedigree path at condensing the information of the pedigree regarding two individuals.
-The exact definition of ``best'' depends on the specific applications discussed later, but can be broadly thought as the pedigree path that most closely approximates the statistical consequences of the full pedigree.
+The exact meaning of ``best'' depends on the specific applications discussed later, but can be broadly thought as the pedigree path that most closely approximates the statistical consequences of the full pedigree.
 
 \subsection{Transmission}\label{sec:transmission}
 A sixth category of information is transmission, $\Tinfo$, which catalogs which parental alleles were inherited by each individual in the population.
@@ -548,7 +536,7 @@ We make the following explicit assumption about the dynamics of allele frequenci
 \begin{assumption}{Constant-freq}{Constant allele frequencies}
 The allele frequency $p_k$ of each variant is the same in every generation:
 $$ \E\big[G_{ik}^{(u)}\big] \;=\; p_k \qquad \text{for every individual } i \text{ of every generation} . $$
-\related{no selection, no mutations, no migration, no drift (i.e. infinite population size).}
+\related{no selection, no mutations, no migration, no drift (i.e., infinite population size).}
 \end{assumption}
 
 \paragraph{Alleles}\label{par:alleles}
@@ -556,7 +544,7 @@ While already implicitly covered in \assumptionid{Constant-freq}, we make the fo
 
 \begin{approximation}{No-mutation}{No mutations}
 Every transmitted allele is an exact copy of the parental allele it was inherited from; 
-i.e. no de-novo mutations occur.
+i.e., no de novo mutations occur.
 \justification{Empirically, mutation rates are very low: on the order of $10^{-8}$ per base pair per generation in humans.}
 \end{approximation}
 
@@ -565,53 +553,53 @@ An offspring's allele is a function of the transmitting parent's two alleles.
 \begin{assumption}{Segregation}{Segregation}
     Individual $i$'s allele inherited from parent $u(i)$ is one of the two alleles of $u(i)$:
     \begin{equation}\label{eq:segregation}
-        z^{(u)}_{ik} \;:=\; T^{(u)}_{ik}\, z^{(m)}_{u(i),k} \;+\; \big(1 - T^{(u)}_{ik}\big)\, z^{(p)}_{u(i),k}
+        x^{(u)}_{ik} \;:=\; T^{(u)}_{ik}\, x^{(m)}_{u(i),k} \;+\; \big(1 - T^{(u)}_{ik}\big)\, x^{(p)}_{u(i),k}
     \end{equation}
     where $T^{(u)}_{ik} \in \{0,1\}$ is an indicator variable for whether the maternally-inherited ($1$) or paternally-inherited ($0$) allele of parent $u(i)$ was transmitted to $i$.
     \related{Mendel's law of segregation.}
 \end{assumption}
 
-\unsure{Note to self: at some point I want to develop this more carefully to account for linkage}
+\toself{At some point I want to develop this more carefully to account for linkage.}
 
 \begin{assumption}{Independent-assortment}{Independent assortment}
     Every transmission indicator is an independent uniform Bernoulli trial:
     $$ T^{(u)}_{ik} \sim \mathrm{Bernoulli}(\tfrac12), $$
     independently across variants $k$, parents $u$ and offspring $i$, and independently of every allele except those it passes on (the offspring's, and their descendants').
-    \related{Mendel's law of independent assortment; no physical linkage (every pair of variants recombines with probability $\tfrac12$); independent meioses across offspring; no meiotic drive.}
+    \related{Mendel's law of independent assortment, no physical linkage (every pair of variants recombines with probability $\tfrac12$), independent meioses across offspring, no meiotic drive.}
 \end{assumption}
 
 It follows that the expected offspring allele given the transmitting parent's alleles is given by:
-$$ \E[z^{(u)}_{ik} \mid z^{(m)}_{u(i),k}, z^{(p)}_{u(i),k}] \;=\;
-\tfrac12 (z^{(m)}_{u(i),k} + z^{(p)}_{u(i),k}) \;=\; 
+$$ \E[x^{(u)}_{ik} \mid x^{(m)}_{u(i),k}, x^{(p)}_{u(i),k}] \;=\;
+\tfrac12 (x^{(m)}_{u(i),k} + x^{(p)}_{u(i),k}) \;=\; 
 \tfrac12 x_{u(i),k} \;=\; 
-\E[z^{(u)}_{ik} \mid x_{u(i),k} ] $$
-We can alternatively define the offspring allele as the sum of its expected value plus an uncorrelated segregation residual:
+\E[x^{(u)}_{ik} \mid x_{u(i),k} ] $$
+We can alternatively express the offspring allele as the sum of its expected value plus an uncorrelated segregation residual:
 \begin{subequations}\label{eq:allele-transmit}
 \begin{equation}\label{eq:allele-transmit-resid}
-    z^{(u)}_{ik} \;=\; \tfrac12 x_{u(i),k} + z^{\perp(u)}_{ik}
+    x^{(u)}_{ik} \;=\; \tfrac12 x_{u(i),k} + x^{\perp(u)}_{ik}
 \end{equation}
-Note that there is some abuse of notation here, as while the residual is uncorrelated with parental alleles, it is not independent of them.
+Note that our use $\perp$ here is misleading because while the residual is uncorrelated with the parental genotype, it is not independent of it.
 An alternative parameterization of the segregation residual is:
 \begin{equation}\label{eq:allele-transmit-T}
-    z^{\perp(u)}_{ik} \;=\; \big(T^{(u)}_{ik} - \tfrac12\big)\big(z^{(m)}_{u(i),k} - z^{(p)}_{u(i),k}\big)
+    x^{\perp(u)}_{ik} \;=\; \big(T^{(u)}_{ik} - \tfrac12\big)\big(x^{(m)}_{u(i),k} - x^{(p)}_{u(i),k}\big)
 \end{equation}
 \end{subequations}
 
 \paragraph{Genotypes}
-We can define genotype transmission the same way:
+We can express genotype transmission the same way:
 \begin{equation}\label{eq:genotype-transmit}
 \begin{aligned}
-    x_{ik} \;&=\; z^{(m)}_{ik} + z^{(p)}_{ik} \\
-    \;&=\; \tfrac12 x_{m(i),k} + z^{\perp(m)}_{ik} \;+\; \tfrac12 x_{p(i),k} + z^{\perp(p)}_{ik} \\
+    x_{ik} \;&=\; x^{(m)}_{ik} + x^{(p)}_{ik} \\
+    \;&=\; \tfrac12 x_{m(i),k} + x^{\perp(m)}_{ik} \;+\; \tfrac12 x_{p(i),k} + x^{\perp(p)}_{ik} \\
     \;&=\; \tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} + x^{\perp}_{ik}
 \end{aligned}
 \end{equation}
-where $x^{\perp}_{ik} \;:=\; z^{\perp(m)}_{ik} + z^{\perp(p)}_{ik}$.
+where $x^{\perp}_{ik} \;:=\; x^{\perp(m)}_{ik} + x^{\perp(p)}_{ik}$.
 Each allele residual has mean zero given its parent's alleles, so the genotype residual has mean zero given both parents' alleles, and
 $$ \E\big[x_{ik} \mid x_{m(i),k},\, x_{p(i),k}\big] \;=\; \tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} . $$
 
 \paragraph{Genetic values}
-Finally, we can also define genetic value transmission:
+Finally, we can also express genetic value transmission:
 \begin{equation}\label{eq:g-transmit}
 \begin{aligned}
     g_i \;&=\; \sum_{k=1}^{M} \beta_k\, x_{ik} \\
@@ -628,7 +616,7 @@ $$ \E\big[g_i \mid g_{m(i)},\, g_{p(i)}\big] \;=\; \tfrac12 g_{m(i)} + \tfrac12 
 Two alleles of the same variant are said to be \textbf{identical-by-state (IBS)} if they have the same allelic state:
 \begin{equation}\label{eq:ibs}
 \begin{aligned}
-    \mathrm{IBS}\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big)
+    \IBS\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big)
     \;&:=\; \begin{cases}
         1 & G^{(u)}_{ik} = G^{(v)}_{jk} \\
         0 & G^{(u)}_{ik} \neq G^{(v)}_{jk}
@@ -639,69 +627,69 @@ Two alleles of the same variant are said to be \textbf{identical-by-state (IBS)}
 The second step follows from each allele count being either $0$ or $1$, so that their squared difference is $1$ exactly when the two differ and $0$ when they are equal.
 The average IBS value across all same-variant allele pairs between two individuals is their \textbf{IBS proportion}:
 \begin{equation}\label{eq:ibs-proportion}
-    \overline{\mathrm{IBS}}_{ij} \;:=\; \frac{1}{4M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \mathrm{IBS}\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big)
+    \overline{\IBS}_{ij} \;:=\; \frac{1}{4M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \IBS\big(G^{(u)}_{ik}, G^{(v)}_{jk}\big)
 \end{equation}
 
 Cross-products have clean statistical properties and genotype data is often not phased.
-Therefore, we define \textbf{genotypic similarity}, $A_{ij} \in \R$, to be an IBS-based measure of relatedness equivalent to the average standardized genotype cross-product across all same-variant pairs:
+Therefore, we define \emph{genotypic similarity}, $A_{ij} \in \R$, to be an IBS-based measure of relatedness equivalent to the average \emph{standardized} genotype cross-product across all same-variant pairs:
 \begin{equation}\label{eq:grm}
-    A_{ij} \;:=\; \frac{1}{M} \sum_{k=1}^{M} x_{ik} x_{jk}
+    A_{ij} \;:=\; \frac{1}{M} \sum_{k=1}^{M} \tilde{x}_{ik} \tilde{x}_{jk}
 \end{equation}
-
-Note that since we define $A_{ij}$ in terms of standardized genotypes, rarer variants contribute relatively more.
-The form of this property is not motivated by theory but empirically is often useful for downstream tasks.
+With unstandardized genotypes (Equation~\eqref{eq:centered}), this is $A_{ij} = \frac{1}{M} \sum_{k=1}^{M} \frac{x_{ik} x_{jk}}{2 p_k (1 - p_k)}$.
+Note that since we define $A_{ij}$ in terms of standardized genotypes, rarer variants contribute relatively more, a choice motivated by the distribution of effect sizes, discussed more in Section~\ref{sec:effect-size-dist}.
 Genotypic similarity can be parameterized in terms of allele cross-products by expanding each genotype into its two alleles:
 $$
 \begin{aligned}
-    A_{ij} \;&=\; \frac{1}{M} \sum_{k=1}^{M} \big(z^{(m)}_{ik} + z^{(p)}_{ik}\big)\big(z^{(m)}_{jk} + z^{(p)}_{jk}\big) \\[4pt]
-    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} z^{(u)}_{ik}\, z^{(v)}_{jk}
+    A_{ij} \;&=\; \frac{1}{M} \sum_{k=1}^{M} \big(\tilde{x}^{(m)}_{ik} + \tilde{x}^{(p)}_{ik}\big)\big(\tilde{x}^{(m)}_{jk} + \tilde{x}^{(p)}_{jk}\big) \\[4pt]
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \tilde{x}^{(u)}_{ik}\, \tilde{x}^{(v)}_{jk}
 \end{aligned}
 $$
 
-The matrix $A$ defined for all $i,j$ pairs is called the (IBS-based) \textbf{genetic relationship matrix (GRM)}.
-Observe that IBS-based measures of relatedness only depend on genetic information $\Ginfo$ in the form of allele or genotype states.
+The matrix $\bA$ defined for all $i,j$ pairs is called the \textbf{genetic relationship matrix (GRM)}.
+Observe that IBS-based measures of relatedness only depend on genetic information $\Ginfo$ in the form of allelic or genotypic states.
 Often, not all relevant variants are genotyped.
 Suppose we order variants such that $k \in \{1 , ... , M_T\}$ index all the genotyped variants, where $M_T \leq M$, while the remaining variants are ungenotyped.
 We can consider genotypic similarity computed from genotyped variants to be an estimate of the true genotypic similarity:
 \begin{equation}\label{eq:grm-hat}
-    \widehat{A}_{ij} \;:=\; \frac{1}{M_T} \sum_{k=1}^{M_T} x_{ik} x_{jk}
+    \widehat{A}_{ij} \;:=\; \frac{1}{M_T} \sum_{k=1}^{M_T} \tilde{x}_{ik} \tilde{x}_{jk}
 \end{equation}
 
 Later, we will explore how the two differ in their relationship to useful estimands.
+\toself{i may wanna hold off on this preceding paragraph until later when I'm actually deriving ungenotyped variants}
 
 \subsection{Identity-by-descent (IBD)}\label{sec:ibd}
 
 \subsubsection{Coalescence}\label{sec:coalescence}
 
 In Section~\ref{sec:lineal-chains}, parent-offspring pairs define the meiosis graph.
-For each variant, the \textbf{coalescence graph} is the allele-level version of the meiosis graph, where each allele is a node and directed edges represent parent-to-offspring transmission.
-Each individual has two alleles and is therefore represented by 2 nodes in a coalescence graph, and like a meiosis graph, a coalescence graph is a \emph{directed acyclic graph}.
+For each variant, the \emph{coalescence graph} is the allele-level version of the meiosis graph, where each allele is a node and directed edges represent parent-to-offspring transmission.
+Each individual has two alleles and is therefore represented by two nodes in a coalescence graph, and like a meiosis graph, a coalescence graph is a directed acyclic graph.
 
-Similarly, a \textbf{transmission chain} is the allele-level version of a lineal chain: it is a directed run in the coalescence graph, starting from an ancestral allele (the source) and ending at a descendant allele (the sink).
+Similarly, a \emph{transmission chain} is the allele-level version of a lineal chain: it is a directed run in the coalescence graph, starting from an ancestral allele (the source) and ending at a descendant allele (the sink).
 We write $\Tchain^{(t)}(a)$ the denote the unique transmission chain whose sink is allele $a$ and whose source is $a$'s ancestral allele in generation $t$, where $t \leq t_a$.
 Note that this allows for transmission chains with zero-length if $t = t_a$.
 Section~\ref{sec:ibd-pedigree} develops transmission chains in more detail.
 
 Consider two alleles $a$ and $b$ of the same variant.
-A \textbf{coalescence path} $\Cpath(a,b)$ is a pair of transmission chains, one with sink $a$ and one with sink $b$, that have the same source and share no other allele (i.e., it is the most recent allele that can act as a source to both $a$ and $b$).
-When one allele is itself the ancestor of the other, e.g. a parent's allele and the copy their offspring inherited, then one of the two chains will have length zero.
+A \emph{coalescence path} $\Cpath(a,b)$ is a pair of transmission chains, one with sink $a$ and one with sink $b$, that have the same source and share no other allele (i.e., it is the most recent allele that can act as a source to both $a$ and $b$).
+When one allele is itself the ancestor of the other, e.g., a parent's allele and the copy their offspring inherited, then one of the two chains will have length zero.
 The common source is the \emph{coalescence point} of $a$ and $b$, and the length of the path, $|\Cpath(a,b)|$, is the total number of meioses on its two chains.
 The coalescence point is unique and guaranteed to exist in a finite population, since all individuals share a common ancestor.
-Appendix~\ref{app:vocabulary} aggregates the different types of graphs, paths, and chains discussed throughout this article.
+Appendix~\ref{app:vocabulary} aggregates the different types of graphs, paths, and chains discussed throughout this document.
 
 A contradiction emerges from our assumptions and approximations so far.
 Specifically, only two of the following statements can be true at once: (1) all alleles eventually coalesce, (2) variation in allelic state exists, and (3) mutations do not occur.
 Yet, the first claim is true, as just explained.
-The second claim is true because we restrict our analyses to polymorphic sites (implied by $p_k \in (0,1)$ in Section~\ref{sec:standardization}).
+The second claim is true because we restrict our analyses to \textbf{polymorphic} sites (implied by $p_k \in (0,1)$ in Section~\ref{sec:standardization}).
 And the third claim is true if we take the \approximationid{No-mutation} approximation to be exactly true.
 
 Clearly, the easiest way to resolve this is to admit that \approximationid{No-mutation} is not true, something we already know from biology.
 Allowing for mutations resolves the contradiction because two alleles with different states are the result of a mutation occurring at some point in their coalescence path.
 
-However, modelling mutations complicates analysis with little gain when studying small time frames.
-So instead, we define the \emph{recent coalescence graph} to be the coalescence graph restricted to alleles that are not older than some baseline generation, $t \geq t_B$.
+However, modeling mutations complicates analysis with little gain when studying small time frames.
+So instead, we work with the \emph{recent coalescence graph}: the coalescence graph restricted to alleles that are not older than some \emph{baseline generation}, $t_B \in \mathbb{Z}$ (i.e., $t \geq t_B$).
 As a consequence, two alleles are no longer guaranteed to have a \emph{recent coalescence path}, since they can coalesce prior to the baseline generation.
-This lets us replace \approximationid{No-mutation} with a much weaker form that resolves the contradiction, ensures the previous derivations still hold, and leads to practically useful definitions:
+This lets us replace \approximationid{No-mutation} with a much weaker form that resolves the contradiction, ensures the previous derivations still hold, and leads to practically useful measures:
 
 \begin{assumption}{No-recent-mutation}{No mutations since the baseline generation}
 Every transmission into a generation $t \geq t_B$ copies the parental allele exactly.
@@ -712,16 +700,16 @@ I.e., no de novo mutation occurs on any path of the recent coalescence graph.
 Two alleles are said to be \textbf{identical-by-descent (IBD)} if they \emph{recently coalesce}.
 Non-IBS allele pairs are guaranteed to be non-IBD, and, equivalently, IBD pairs are necessarily IBS.
 Alleles are considered to be IBD with themselves.
-This definition of IBD implicitly makes the following assumption, which we explicitly restate:
+This notion of IBD implicitly makes the following assumption, which we explicitly restate:
 
 \begin{assumption}{Outbred-founders}{Founder alleles are not IBD with each other}
-No two distinct alleles of the baseline generation $t_B$ (called \emph{founder alleles}) are IBD, whether they belong to the same individual or to different individuals.
+No two distinct alleles of the baseline generation $t_B$ (called founder alleles) are IBD, whether they belong to the same individual or to different individuals.
 \related{non-inbred founders; founders unrelated to each other; together with \assumptionid{Unrelated-mates} (Section~\ref{sec:ibd-well-behaved}), makes a pedigree outbred.}
 \end{assumption}
 
 \subsubsection{Measures of relatedness}\label{sec:measures-relatedness}
 
-We can use genome-wide IBD state to define measures of relatedness.
+We can use genome-wide IBD state to construct measures of relatedness.
 IBD is a form of transmission information $\Tinfo$ because it constrains the distribution of the transmission indicators $T$ across the pedigree to guarantee the existence of the coalescence path.
 
 The \textbf{coefficient of kinship}, $\Theta_{ij} \in [0,1]$, between two individuals is the proportion of allele pairs between the two that are IBD.
@@ -752,45 +740,46 @@ The \textbf{coefficient of inbreeding} of an individual, $f_i \in [0,1]$, is the
     \;&=\; \frac{1}{M} \sum_{k=1}^{M} \Theta^{(mp)}_{iik}
 \end{aligned}
 \end{equation}
-We can also define the variant-specific version of the inbreeding coefficient to be the IBD state of an individual genotype's two alleles, $f_{ik} := \Theta^{(mp)}_{iik}$.
-It follows that the coefficient of inbreeding is the genome-wide average of its variant-specific coefficient, $f_i = \tfrac{1}{M} f_{ik}$.
+We can also define the variant-specific version of the inbreeding coefficient to be the IBD state of an individual genotype's two alleles, $f_{ik} := \Theta^{(mp)}_{iik} \in \{0,1\}$.
+It follows that the coefficient of inbreeding is the genome-wide average of its variant-specific coefficient, $f_i = \frac{1}{M} \sum_{k=1}^{M} f_{ik}$.
 
 The term \textbf{outbred}, used earlier in \assumptionid{Outbred-founders}, refers to lack of inbreeding and can be applied at different levels.
 A genotype is outbred if its two alleles are not IBD, an individual is outbred if all of its genotypes are outbred, and a pedigree is outbred if all of its individuals are outbred.
 
 \subsubsection{Transmission of IBD states}\label{sec:ibd-transmission}
 Our next goal is to establish a framework for deriving the expected coefficient of relatedness between two individuals given their relationship in a pedigree.
-As defined in Section~\ref{sec:transmission}, parents pass on alleles to their offspring, who then pass it onto their offspring, and so on.
+As described in Section~\ref{sec:transmission}, parents pass on alleles to their offspring, who then pass it onto their offspring, and so on.
 Therefore, IBD properties for a single generation of transmission are the building blocks for generalizing to other relatives.
 
 \textbf{Path analysis} is a powerful tool for determining the covariance between variables given a causal model, represented by a directed graph called a \textbf{path diagram}.
 Appendix~\ref{app:path-analysis} contains an overview of how path analysis works and how path diagrams visualize relationships between variables.
-To make IBD compatible with the path analysis framework, we define \emph{founder alleles}, $\mathring{z}$, to be the alleles possessed by the baseline generation (i.e. \emph{founders}) that are transmitted down the pedigree.
-Subsequently, $\mathring{z}_{ik}^{(u)}$ references the specific founder allele that individual $i$'s $u$-sided allele at variant $k$ is ultimately inherited from.
-To establish the equivalence between probability (IBD) and covariance (path analysis), we use standardized alleles, $z$, and treat each founder allele as having its own independent effect that is completely uncorrelated with every other founder allele (\assumptionid{Outbred-founders}).
+To make IBD compatible with the path analysis framework, we define \textbf{founder alleles}, $\mathring{x}$, to be the alleles possessed by the baseline generation (i.e., \textbf{founders}) that are transmitted down the pedigree.
+Subsequently, $\mathring{x}_{ik}^{(u)}$ references the specific founder allele that individual $i$'s $u$-sided allele at variant $k$ is ultimately inherited from.
+To establish the equivalence between probability (IBD) and correlation (path analysis), we use centered alleles, $x$, and treat each founder allele as having its own independent effect that is completely uncorrelated with every other founder allele (\assumptionid{Outbred-founders}).
 Alleles inherited from founder alleles keep their statistical properties.
-
 Note that transmission information requires the scaffold of a pedigree to determine whose alleles can ultimately be passed onto whom, so conditioning on $\Tinfo$ already implicitly conditions on $\Pinfo$.
 
 Continuing from the \hyperref[par:alleles]{Alleles} paragraph of Section~\ref{sec:transmission}, the structural equation for an individual's allele in terms of founder alleles is:
 \begin{equation}\label{eq:founder-transmit}
 \begin{aligned}
-    \mathring{z}^{(u)}_{ik}
-    \;&=\; T^{(u)}_{ik}\, \mathring{z}^{(m)}_{u(i),k} \;+\; \big(1 - T^{(u)}_{ik}\big)\, \mathring{z}^{(p)}_{u(i),k} \\
-    \;&=\; \tfrac12 \mathring{z}^{(m)}_{u(i),k} + \tfrac12 \mathring{z}^{(p)}_{u(i),k} + \mathring{z}^{\perp(u)}_{ik} ,
-    \qquad \mathring{z}^{\perp(u)}_{ik} \;:=\; \big(T^{(u)}_{ik} - \tfrac12\big)\big(\mathring{z}^{(m)}_{u(i),k} - \mathring{z}^{(p)}_{u(i),k}\big)
+    \mathring{x}^{(u)}_{ik}
+    \;&=\; T^{(u)}_{ik}\, \mathring{x}^{(m)}_{u(i),k} \;+\; \big(1 - T^{(u)}_{ik}\big)\, \mathring{x}^{(p)}_{u(i),k} \\
+    \;&=\; \tfrac12 \mathring{x}^{(m)}_{u(i),k} + \tfrac12 \mathring{x}^{(p)}_{u(i),k} + \mathring{x}^{\perp(u)}_{ik}
 \end{aligned}
 \end{equation}
-where $\mathring{z}^{\perp(u)}_{ik}$, the founder-allele version of Equation~\eqref{eq:allele-transmit-T}, is an uncorrelated residual such that the variance of each allele in the graph is fixed to $\tfrac12$, as required by Section~\ref{sec:standardization}.
-IBD status and implied covariance between two alleles is therefore tracked based on whether the alleles they inherit from are identical:
+where $\mathring{x}^{\perp(u)}_{ik}$, the founder-allele version of Equation~\eqref{eq:allele-transmit-T}, is an uncorrelated residual such that the variance of each allele in the graph is fixed to $p_k(1-p_k)$, as required by Section~\ref{sec:standardization}.
+IBD state and implied correlation between two alleles is therefore tracked based on whether the alleles they inherit from are identical:
 \begin{equation}\label{eq:ibd-founder}
+\begin{aligned}
     \Theta^{(uv)}_{ijk} \;=\;
-    \IBD\big(z_{ik}^{(u)}, z_{jk}^{(v)}\big)
-    \;=\; \begin{cases}
-        1 & \mathring{z}_{ik}^{(u)} = \mathring{z}_{jk}^{(v)} \\
-        0 & \mathring{z}_{ik}^{(u)} \neq \mathring{z}_{jk}^{(v)}
-    \end{cases}
-    \;=\; 2\Cov\Big[\mathring{z}_{ik}^{(u)}, \mathring{z}_{jk}^{(v)} \;\Big|\; \Tinfo \Big]
+    \IBD\big(x_{ik}^{(u)}, x_{jk}^{(v)}\big)
+    \;&=\; \begin{cases}
+        1 & \mathring{x}_{ik}^{(u)} = \mathring{x}_{jk}^{(v)} \\
+        0 & \mathring{x}_{ik}^{(u)} \neq \mathring{x}_{jk}^{(v)}
+    \end{cases} \\
+    \;&=\; \frac{\Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big]}{\sqrt{\Var\big[\mathring{x}_{ik}^{(u)} \;\big|\; \Tinfo\big]\, \Var\big[\mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big]}} \\
+    \;&=\; \Corr\Big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\Big|\; \Tinfo \Big]
+\end{aligned}
 \end{equation}
 
 \subsubsection{Expected IBD within a nuclear family}
@@ -804,20 +793,22 @@ Converting from conditioning on transmission information to conditioning on pedi
 \begin{aligned}
     \widehat\Theta^{(uv)}_{ij}
     \;&:=\; \E\big[\Theta^{(uv)}_{ijk} \;\big|\; \Pinfo\big] \\
-    \;&=\; \E\Big[\, 2\Cov\big[\mathring{z}_{ik}^{(u)}, \mathring{z}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
-    \;&=\; 2\Cov\big[\mathring{z}_{ik}^{(u)}, \mathring{z}_{jk}^{(v)} \;\big|\; \Pinfo\big]
-    \;-\; 2\Cov\Big[\, \E\big[\mathring{z}_{ik}^{(u)} \;\big|\; \Tinfo\big],\, \E\big[\mathring{z}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
-    \;&=\; 2\Cov\big[\mathring{z}_{ik}^{(u)}, \mathring{z}_{jk}^{(v)} \;\big|\; \Pinfo\big] .
+    \;&=\; \E\Big[\, \Corr\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
+    \;&=\; \frac{1}{p_k(1-p_k)}\, \E\Big[\, \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
+    \;&=\; \frac{1}{p_k(1-p_k)} \Big( \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big] \\
+    &\qquad\qquad\quad -\; \Cov\Big[\, \E\big[\mathring{x}_{ik}^{(u)} \mid \Tinfo\big],\, \E\big[\mathring{x}_{jk}^{(v)} \mid \Tinfo\big] \;\Big|\; \Pinfo \Big] \Big) \\
+    \;&=\; \frac{\Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big]}{\sqrt{\Var\big[\mathring{x}_{ik}^{(u)} \;\big|\; \Pinfo\big]\, \Var\big[\mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big]}} \\
+    \;&=\; \Corr\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big] .
 \end{aligned}
 \end{equation}
-The second line substitutes Equation~\eqref{eq:ibd-founder}.
-The third uses the law of total covariance, which holds because conditioning on $\Tinfo$ implicitly conditions on $\Pinfo$;
-the second term disappears founder alleles are independent of their downstream transmissions, so $\E\big[\mathring{z}_{ik}^{(u)} \mid \Tinfo\big] = \E\big[\mathring{z}_{ik}^{(u)}\big] = 0$.
+The second line substitutes Equation~\eqref{eq:ibd-founder}, and the third uses $\Var[\mathring{x}^{(u)}_{ik} \mid \Tinfo] = p_k(1-p_k)$.
+The fourth uses the law of total covariance, which holds because conditioning on $\Tinfo$ implicitly conditions on $\Pinfo$;
+its second term disappears as founder alleles are independent of their downstream transmissions, so $\E\big[\mathring{x}_{ik}^{(u)} \mid \Tinfo\big] = \E\big[\mathring{x}_{ik}^{(u)}\big] = 0$.
 Note that unlike Equation~\eqref{eq:ibd-founder}, where $\Theta^{(uv)}_{ijk}$ could only take on values of 0 or 1 because the founder alleles were either identical or not, $\widehat\Theta^{(uv)}_{ij}$ can take on intermediate values because it is effectively averaging across the possible combinations of founder alleles each focal allele could have inherited from based on the pedigree.
 It follows that expectations of the genome-wide Equations~\eqref{eq:kinship} and~\eqref{eq:inbreeding} given the pedigree are:
 \begin{subequations}\label{eq:pedigree-coefs}
 \begin{align}
-    \widehat\Theta_{ij} \;&=\; \E[\Theta_{ij} \mid \Pinfo] \;=\; \tfrac14 \sum_{u,v} \widehat\Theta^{(uv)}_{ij} \label{eq:kinship-hat} \\
+    \widehat\Theta_{ij} \;&=\; \E[\Theta_{ij} \mid \Pinfo] \;=\; \frac14 \sum_{u,v} \widehat\Theta^{(uv)}_{ij} \label{eq:kinship-hat} \\
     \widehat{f}_i \;&=\; \E[f_i \mid \Pinfo] \;=\; \widehat\Theta^{(mp)}_{ii} \;=\; \widehat\Theta_{m(i)p(i)} \label{eq:inbreeding-hat}
 \end{align}
 \end{subequations}
@@ -827,31 +818,31 @@ Figure~\ref{fig:ibd-one-gen} shows how allelic transmission across one generatio
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/ibd_one_generation.tikz}
+        \input{figures/v2/ibd_one_generation.tikz}
         \caption{%
-            Covariance properties of founder alleles across one generation.
-            The parents $m$ and $p$ are any two mates in the pedigree, possibly inbred and related to each other, and $i$ and $j$ are two of their offspring, i.e. $m = m(i) = m(j)$ and $p = p(i) = p(j)$.
+            Correlations between founder alleles across one generation.
+            The parents $m$ and $p$ are any two mates in the pedigree, possibly inbred and related to each other, and $i$ and $j$ are two of their offspring, i.e., $m = m(i) = m(j)$ and $p = p(i) = p(j)$.
             Each individual is represented by their two alleles.
-            Unlabelled single-headed arrows and self-loops have a value of $\tfrac12$.
-            Double-headed arrows between the parents' alleles convey inbreeding information: $\tfrac12 \widehat{f}_m$ and $\tfrac12 \widehat{f}_p$ within a parent, and $\tfrac12\widehat\Theta^{(uv)}_{mp}$ between the mother's $u$-allele and the father's $v$-allele (unlabelled due to space constraints).
-            Each offspring allele's exogenous residual variance comes from Equation~\eqref{eq:founder-resid-var}.%
+            Unlabeled single-headed arrows have a value of $\tfrac12$, and unlabeled self-loops a value of $1$.
+            Double-headed arrows between the parents' alleles convey inbreeding information: $\widehat{f}_m$ and $\widehat{f}_p$ within a parent, and $\widehat\Theta^{(uv)}_{mp}$ between the mother's $u$-allele and the father's $v$-allele (unlabeled due to space constraints).
+            Each offspring allele's exogenous residual variance comes from Equation~\eqref{eq:founder-resid-var}, divided by $p_k(1-p_k)$.%
         }
         \label{fig:ibd-one-gen}
     \end{floatcard}
 \end{figure}
 
-The residual's variance follows from the transmission indicator being independent of the parent's alleles, together with Equation~\eqref{eq:allele-kinship}, which makes the covariance between the parent's two founder alleles $\tfrac12\widehat\Theta^{(mp)}_{u(i)u(i)} = \tfrac12\widehat{f}_{u(i)}$:
+The residual's variance follows from the transmission indicator being independent of the parent's alleles, together with Equation~\eqref{eq:allele-kinship}, which makes the covariance between the parent's two founder alleles $p_k(1-p_k)\,\widehat\Theta^{(mp)}_{u(i)u(i)} = p_k(1-p_k)\,\widehat{f}_{u(i)}$:
 \begin{equation}\label{eq:founder-resid-var}
 \begin{aligned}
-    \Var\big[\mathring{z}^{\perp(u)}_{ik} \;\big|\; \Pinfo\big]
-    \;&=\; \E\Big[\big(T^{(u)}_{ik} - \tfrac12\big)^2\Big]\; \E\Big[\big(\mathring{z}^{(m)}_{u(i),k} - \mathring{z}^{(p)}_{u(i),k}\big)^2 \;\Big|\; \Pinfo\Big] \\
-    \;&=\; \tfrac14 \Big(\tfrac12 + \tfrac12 - 2\cdot\tfrac12 \widehat{f}_{u(i)}\Big) \\
-    \;&=\; \tfrac14 \big(1 - \widehat{f}_{u(i)}\big) .
+    \Var\big[\mathring{x}^{\perp(u)}_{ik} \;\big|\; \Pinfo\big]
+    \;&=\; \E\Big[\big(T^{(u)}_{ik} - \tfrac12\big)^2\Big]\; \E\Big[\big(\mathring{x}^{(m)}_{u(i),k} - \mathring{x}^{(p)}_{u(i),k}\big)^2 \;\Big|\; \Pinfo\Big] \\
+    \;&=\; \tfrac14 \Big(p_k(1-p_k) + p_k(1-p_k) - 2\, p_k(1-p_k)\, \widehat{f}_{u(i)}\Big) \\
+    \;&=\; \tfrac12 p_k(1-p_k) \big(1 - \widehat{f}_{u(i)}\big) .
 \end{aligned}
 \end{equation}
 Inbreeding leads to less variance attributable to random transmission of alleles.
 We can apply the path tracing rules to obtain the expected IBD probability between alleles of different individuals.
-Table~\ref{tab:ibd-one-gen} summarizes the covariance between different allele pairs shown in Figure~\ref{fig:ibd-one-gen} under different inbreeding assumptions.
+Table~\ref{tab:ibd-one-gen} summarizes the correlation between different allele pairs shown in Figure~\ref{fig:ibd-one-gen} under different inbreeding assumptions.
 Note that, a \emph{random} allele of an individual means averaging over their two alleles:
 
 \begin{table}[H]
@@ -884,56 +875,53 @@ Note that, a \emph{random} allele of an individual means averaging over their tw
             & $\tfrac14 + \tfrac18(\widehat{f}_m+\widehat{f}_p) + \tfrac12\widehat\Theta_{mp}$ & $\tfrac14 + \tfrac12\widehat\Theta_{mp}$ & $\tfrac14 + \tfrac18(\widehat{f}_m+\widehat{f}_p)$ & $\tfrac14$ \\
     \end{tabular}
     \caption{%
-        Expected IBD states given the pedigree across one generation, read off Figure~\ref{fig:ibd-one-gen} with Equation~\eqref{eq:allele-kinship}.
-        The mother is $m$, the father $p$, and $i$ and $j$ are full siblings.
+        Expected IBD states given the pedigree across one generation, derived from Figure~\ref{fig:ibd-one-gen} with Equation~\eqref{eq:allele-kinship}.
+        The mother is $m$, the father is $p$, and $i$ and $j$ are full siblings.
         Each column after the first imposes a constraint on the parents: no inbreeding, no relatedness to each other, or both.%
     }
     \label{tab:ibd-one-gen}
     \end{floatcard}
 \end{table}
 
-The coefficient of relatedness is obtained simply by doubling the coefficient of kinship, $\widehat\pi_{ij} = 2\widehat\Theta_{ij}$.
-Note that under strong inbreeding, coefficients of relatedness can exceed 1, particularly with oneself.
-
 \subsubsection{Expected IBD given recent pedigree}\label{sec:ibd-pedigree}
 
 Now we apply the single-generation building block we just derived to any arbitrary recent pedigree.
 The notation and terminology here is admittedly dense because we are not yet assuming a ``well-behaved'' pedigree;
-the next section does define and assume it, resulting in much simpler formulas.
+the next section introduces and assumes it, resulting in much simpler formulae.
 
 
-Recall from Section~\ref{sec:coalescence} that the (realized) transmission chain $\Tchain^{(t)}(\mathring{z}_{ik}^{(u)})$ starts from the ancestral allele of generation $t$ down to the \emph{focal allele} $\mathring{z}_{ik}^{(u)}$.
-We can represent it by a vector enumerating the transmission states ($m$ or $p$) of its meioses, counting up from the focal allele.
-For some ancestral generation $t$, the \textbf{possible transmission chains} $\Tset^{(t)}$ of a focal allele are, as the name implies, all the transmission chains that would be valid given some set of transmission states.
+Recall from Section~\ref{sec:coalescence} that the (realized) transmission chain $\Tchain^{(t)}(\mathring{x}_{ik}^{(u)})$ starts from the ancestral allele of generation $t$ down to the \emph{focal allele} $\mathring{x}_{ik}^{(u)}$.
+We can represent it by a vector enumerating the transmission states ($m$ or $p$) of its meioses.
+For some ancestral generation $t$, the \emph{possible transmission chains} $\Tset^{(t)}$ of a focal allele are, as the name implies, all the transmission chains that would be valid given some set of transmission states.
 As a result, they are a property of pedigree information, not transmission information, and are the same for every variant, so we drop the variant index $k$:
 \begin{equation}\label{eq:possible-tchains}
-    \Tset^{(t)}\big(\mathring{z}_i^{(u)}\big) \;:=\; \{m,p\}^{t_i - t} ,
+    \Tset^{(t)}\big(\mathring{x}_i^{(u)}\big) \;:=\; \{m,p\}^{t_i - t} ,
     \qquad
-    \Tchain^{(t)}\big(\mathring{z}_{ik}^{(u)}\big) \in \Tset^{(t)}\big(\mathring{z}_i^{(u)}\big)
+    \Tchain^{(t)}\big(\mathring{x}_{ik}^{(u)}\big) \in \Tset^{(t)}\big(\mathring{x}_i^{(u)}\big)
 \end{equation}
 There are $2^{t_i - t}$ possible transmission chains connecting a focal allele of generation $t_i$ to the ancestral alleles of generation $t$, regardless of how inbred the pedigree is (under \assumptionid{Discrete-generations}).
 However, inbreeding causes different transmission chains to coalesce onto the same allele, meaning the number of unique possible allele sources at generation $t$ is less than $2^{t_i - t}$.
 Under \assumptionid{Independent-assortment}, each meiosis on a possible transmission chain transmits that allele with probability $\tfrac12$, so the probability of a possible transmission chain being realized is $2^{-(t_i - t)}$.
 
-Likewise, the \textbf{possible coalescence paths} of two focal alleles with a source in generation $t$, $\Cset^{(t)}$, are the pairs of their possible transmission chains that have the same source and share no other allele.
+Likewise, the \emph{possible coalescence paths} of two focal alleles with a source in generation $t$, $\Cset^{(t)}$, are the pairs of their possible transmission chains that have the same source and share no other allele.
 The set of all possible coalescence paths is just the union across all recent generations, $t \geq t_B$:
 \begin{equation}\label{eq:possible-cpaths}
 \begin{aligned}
-    \Cset^{(t)}\big(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)}\big)
+    \Cset^{(t)}\big(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)}\big)
     \;&:=\; \Big\{\, \Cpath = \big\{\Tchain_1, \Tchain_2\big\} \;:\;
-    \Tchain_1 \in \Tset^{(t)}\big(\mathring{z}_i^{(u)}\big),\ \
-    \Tchain_2 \in \Tset^{(t)}\big(\mathring{z}_j^{(v)}\big), \\
+    \Tchain_1 \in \Tset^{(t)}\big(\mathring{x}_i^{(u)}\big),\ \
+    \Tchain_2 \in \Tset^{(t)}\big(\mathring{x}_j^{(v)}\big), \\
     &\quad \Tchain_1 \text{ and } \Tchain_2 \text{ share a source and no other allele} \,\Big\} \\[4pt]
-    \Cset\big(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)}\big)
-    \;&:=\; \bigcup_{t_B \,\leq\, t \,\leq\, \min(t_i, t_j)} \Cset^{(t)}\big(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)}\big)
+    \Cset\big(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)}\big)
+    \;&:=\; \bigcup_{t_B \,\leq\, t \,\leq\, \min(t_i, t_j)} \Cset^{(t)}\big(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)}\big)
 \end{aligned}
 \end{equation}
 A possible coalescence path with a source in generation $t$ has $|\Cpath| = (t_i - t) + (t_j - t)$ meioses.
 Furthermore, we make the notation flexible by allowing the $(u)$ and $(v)$ superscripts to be omitted, thus defining possible coalescence paths at the level of the individuals possessing the sink alleles:
 \begin{equation}\label{eq:possible-cpaths-ind}
-    \Cset(i,j) \;:=\; \biguplus_{u,v \in \{m,p\}} \Cset\big(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)}\big)
+    \Cset(i,j) \;:=\; \bigsqcup_{u,v \in \{m,p\}} \Cset\big(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)}\big)
 \end{equation}
-The union is disjoint ($\uplus$), keeping a path once for every pair $(u,v)$ it belongs to.
+The union is disjoint ($\sqcup$), keeping a path once for every pair $(u,v)$ it belongs to.
 This only matters when $i = j$, where each path between $i$'s two alleles belongs to both $(u,v) = (m,p)$ and $(p,m)$.
 
 Under \assumptionid{Outbred-founders}, two alleles are IBD exactly when their realized transmission chains are such that one of the possible coalescence paths is realized.
@@ -941,15 +929,15 @@ Because the set of meioses in each of the two transmission chains of a coalescen
 \begin{equation}\label{eq:ibd-cpaths}
 \begin{aligned}
     \widehat\Theta^{(uv)}_{ij}
-    \;&=\; \sum_{\Cpath \,\in\, \Cset(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})} \Pr\big[\Cpath \text{ is realized} \;\big|\; \Pinfo\big] \\
-    \;&=\; \sum_{\Cpath \,\in\, \Cset(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})} 2^{-|\Cpath|} .
+    \;&=\; \sum_{\Cpath \,\in\, \Cset(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})} \Pr\big[\Cpath \text{ is realized} \;\big|\; \Pinfo\big] \\
+    \;&=\; \sum_{\Cpath \,\in\, \Cset(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})} 2^{-|\Cpath|} .
 \end{aligned}
 \end{equation}
 
 The expected coefficient of kinship between two individuals in a pedigree is therefore a sum over the possible coalescence paths between their alleles, each weighted by its length:
 \begin{equation}\label{eq:kinship-cpaths}
 \begin{aligned}
-    \widehat\Theta_{ij} \;&=\; \boxed{\ \frac14 \sum_{u,v \in \{m,p\}}\ \ \sum_{\Cpath \,\in\, \Cset(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})} 2^{-|\Cpath|} \ } \\
+    \widehat\Theta_{ij} \;&=\; \frac14 \sum_{u,v \in \{m,p\}}\ \ \sum_{\Cpath \,\in\, \Cset(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})} 2^{-|\Cpath|} \\
     \;&=\; \frac14 \sum_{\Cpath \,\in\, \Cset(i,j)} 2^{-|\Cpath|}
 \end{aligned}
 \end{equation}
@@ -957,16 +945,15 @@ The expected coefficient of kinship between two individuals in a pedigree is the
 \subsubsection{Expected IBD given well-behaved pedigree}\label{sec:ibd-well-behaved}
 
 The previous section derived the expected relatedness of two individuals in a recent pedigree by enumerating all the possible ways that the two individuals could have inherited the same alleles.
-
 When the recent pedigree of two individuals is ``well-behaved'', this set of possible coalescence paths typically becomes constrained, and we can derive a simpler formula.
-The term \emph{well-behaved pedigree} is somewhat arbitrary and follows from wanting simpler formulas to begin with.
+The term \emph{well-behaved pedigree} is somewhat arbitrary and follows from wanting simpler formulae to begin with.
 The first of the next two assumptions (in conjunction with \assumptionid{Outbred-founders}) is sufficient for a pedigree to be outbred, but the second assumption is also needed to make a pedigree well-behaved.
-Appendix~\ref{app:badly-behaved} gives examples of outbred pedigrees that are nonetheless badly-behaved, justifying the need for the second assumption.
+Appendix~\ref{app:badly-behaved} gives examples of pedigrees that are outbred but nonetheless badly-behaved, justifying the need for the second assumption.
 \begin{assumption}{Unrelated-mates}{Unrelated mates}
-    No mates in the pedigree share a recent common ancestor.
-\related{no inbreeding, outbred pedigree; together with \assumptionid{Outbred-founders} (Section~\ref{sec:coalescence}), makes a pedigree outbred.}
+    No mate pairs in the pedigree share a recent common ancestor.
+\related{no inbreeding; outbred pedigree; together with \assumptionid{Outbred-founders} (Section~\ref{sec:coalescence}), makes a pedigree outbred.}
 \end{assumption}
-We use $\hat{t}_{ij}$ to denote the most recent generation for which there is a recent common ancestor of $i$ and $j$.
+We use $\hat{t}_{ij} \in \mathbb{Z}$ to denote the most recent generation for which there is a recent common ancestor of $i$ and $j$.
 Then, we define the \textbf{most recent common ancestors (MRCAs)} of $i$ and $j$, denoted by $\widehat{\mathcal{A}}_{ij}$, to be the set of generation-$\hat{t}_{ij}$ common ancestors of $i$ and $j$.
 For our purposes, if $j$ is an ancestor of $i$, then $\widehat{\mathcal{A}}_{ij} = \{j \}$, meaning if $i=j$ (a special case of ``lineal relatives''), then $\widehat{\mathcal{A}}_{ii} = \{i \}$.
 \begin{assumption}{Max-MRCAs}{At most two most recent common ancestors}
@@ -975,11 +962,11 @@ For our purposes, if $j$ is an ancestor of $i$, then $\widehat{\mathcal{A}}_{ij}
     The number of MRCAs, $|\widehat{\mathcal{A}}_{ij}|$, is therefore:
     \begin{itemize}
         \item 0 if $i$ and $j$ are unrelated;
-        \item 1 if they are half-relatives or lineal relatives;
-        \item 2 if they are full relatives.
+        \item 1 if they are \textbf{half-relatives} or lineal relatives;
+        \item 2 if they are \textbf{full-relatives}.
     \end{itemize}
     Every other recent common ancestor of $i$ and $j$ must be an ancestor of one of their MRCAs.
-    \related{no double relatives, e.g. double first cousins.}
+    \related{no double relatives (e.g., double first cousins).}
 \end{assumption}
 
 These assumptions heavily simplify computing expected IBD between two probands because they constrain the form of possible recent coalescence paths between them.
@@ -987,9 +974,9 @@ Specifically, all possible recent coalescence paths can only differ in 1) which 
 For completeness, we express this constraint using set notation.
 
 We write a possible transmission chain from its source in generation $\hat{t}_{ij}$ down to its sink (one of $i$'s alleles) as a vector of transmission states ordered from oldest to youngest, $(u_{\hat{t}_{ij}}, u_{\hat{t}_{ij}+1}, \dots, u_{t_i}) \in \{m,p\}^{t_i - \hat{t}_{ij} + 1}$.
-Each entry $u_t$ is the transmission state of the meiosis inherited by the generation-$t$ individual on the chain, i.e. which of their parents they received the chain's allele from.
-This usage of $u$ (and $v$ when discussing $j$'s transmission chain) matches its use as a superscript denoting the parent-of-origin of an allele, e.g. $z^{(u)}_{i,k}$, and as a shorthand to denote the parent of someone, which can be used recursively, e.g. $u_{t_i - 1}(u_{t_i}(i))$ where $u_{t_i - 1} = m$ and $u_{t_i} = p$ denotes individual $i$'s paternal grandmother.
-Under this notation, we can define the possible coalescence paths $\Cset(i,j)$ as the pairs of transmission chains following two constraints:
+Each entry $u_t$ is the transmission state of the meiosis inherited by the generation-$t$ individual on the chain, i.e., which of their parents they received the chain's allele from.
+This usage of $u$ (and $v$ when discussing $j$'s transmission chain) matches its use as a superscript denoting the parent-of-origin of an allele, e.g., $x^{(u)}_{i,k}$, and as a shorthand to denote the parent of someone, which can be used recursively, e.g., $u_{t_i - 1}(u_{t_i}(i))$ where $u_{t_i - 1} = m$ and $u_{t_i} = p$ denotes individual $i$'s paternal grandmother.
+Under this notation, we can express the possible coalescence paths $\Cset(i,j)$ as the pairs of transmission chains following two constraints:
 \begin{equation}\label{eq:well-behaved-cpaths}
 \begin{aligned}
     \Cset(i,j) \;=\; \Big\{\, & \big\{ (u_{\hat{t}_{ij}}, \dots, u_{t_i}),\ (v_{\hat{t}_{ij}}, \dots, v_{t_j}) \big\} \;: \\
@@ -999,40 +986,42 @@ Under this notation, we can define the possible coalescence paths $\Cset(i,j)$ a
 \end{equation}
 That is, all possible coalescence paths of a pair must coalesce at an MRCA of the two (constraint 1) and the allele they transmitted down must be from the same side of their family (constraint 2).
 An additional consequence of the first constraint is that the second-oldest allele of each chain (defined when $t_i > \hat{t}_{ij}$ and $t_j > \hat{t}_{ij}$) must also have the same parent-of-origin (the sex of the MRCA):
-\begin{equation*}
+$$
     u_{\hat{t}_{ij}+1} \;=\; v_{\hat{t}_{ij}+1} \;\in\;
     \begin{cases}
-        \{m, p\} & \text{full relatives} \\
+        \{m, p\} & \text{full-relatives} \\
         \{m\} & \text{maternal half-relatives} \\
         \{p\} & \text{paternal half-relatives}
     \end{cases}
-\end{equation*}
-All other transmission states in the coalescence path ($t > \hat{t}_{ij} + 1$) are fixed by the pedigree, since under \assumptionid{Unrelated-mates} each proband descends from each MRCA along a single lineal chain.
+$$
+All other transmission states in the coalescence path ($t > \hat{t}_{ij} + 1$) are fixed by the pedigree, since under \assumptionid{Unrelated-mates}, each proband descends from each MRCA along a single lineal chain.
 Therefore, transmission information beyond what the pedigree captures only informs us of which of the possible coalescence paths are realized (if any).
 
-Below, we walk through an example of full first cousins.
+Figure~\ref{fig:ibd-cousins} below shows the possible coalescence paths of full first cousins, identified by tracing the arrows up and then down the graph between the two cousins' alleles.
+Four such possible coalescence paths exist, each of length 4.
+The possible coalescence paths between any pair of descendants of each cousin (assuming a well-behaved pedigree) simply extend the beginning and end of a possible coalescence path listed here, with transmission states that are fixed by the pedigree.
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/ibd_cousins.tikz}
+        \input{figures/v2/ibd_cousins.tikz}
         \caption{%
             Founder alleles of full first cousins $i$ and $j$ in an outbred recent pedigree.
             Their fathers $p(i)$ and $p(j)$ are full brothers, so the cousins' MRCAs are their paternal grandparents, $m(p(i)) = m(p(j))$ and $p(p(i)) = p(p(j))$.
             Each cousin's maternal allele is inherited from a mother outside the drawn pedigree, so it has no parent in the figure.
-            Every single-headed arrow has a value of $\tfrac12$; variances are not shown.%
+            Every single-headed arrow has a value of $\tfrac12$; variances are not shown.
         }
         \label{fig:ibd-cousins}
     \end{floatcard}
 \end{figure}
 
 
-We now return to the generalized coefficient of kinship formula we defined in Section~\ref{sec:ibd-pedigree} (Equation~\eqref{eq:kinship-cpaths}), which our constraints simplify.
-Following from \assumptionid{Max-MRCAs}, the number of possible coalescence paths is either zero, $|\Cset(i,j)| = 0$, if $i$ and $j$ are unrelated, $|\Cset(i,j)| = 2$ if $i$ and $j$ are half-relatives or lineal relatives, and $|\Cset(i,j)| = 4$ if $i$ and $j$ are full-relatives.
-Furthermore, each possible coalescence path of a related pair is of the same length, since every MRCA belongs to generation $\hat{t}_{ij}$, which we'll denote by:
-\begin{equation*}
-    |\Cpath(i,j)| \;=\; (t_i - \hat{t}_{ij}) + (t_j - \hat{t}_{ij})
+We now return to the generalized coefficient of kinship formula we derived in Section~\ref{sec:ibd-pedigree} (Equation~\eqref{eq:kinship-cpaths}), which our constraints simplify.
+Following from \assumptionid{Max-MRCAs}, the number of possible coalescence paths is either zero, $|\Cset(i,j)| = 0$, if $i$ and $j$ are unrelated, $|\Cset(i,j)| = 2$ if $i$ and $j$ are half-relatives or lineal relatives, or $|\Cset(i,j)| = 4$ if $i$ and $j$ are full-relatives.
+Furthermore, each possible coalescence path of a pair is of the same length, since every MRCA belongs to generation $\hat{t}_{ij}$, which we'll denote by:
+\begin{equation}\label{eq:cpath-length}
+    |\Cpath(i,j)| \;:=\; (t_i - \hat{t}_{ij}) + (t_j - \hat{t}_{ij})
     \qquad \text{for all } \Cpath(i,j) \in \Cset(i,j)
-\end{equation*}
+\end{equation}
 Under these constraints:
 \begin{equation}\label{eq:kinship-well-behaved}
 \begin{aligned}
@@ -1041,22 +1030,22 @@ Under these constraints:
 \end{aligned}
 \end{equation}
 
-We define the \textbf{genetic degree} between individuals $i$ and $j$, $d_{ij}$, to be the length of their possible coalescence paths, minus one if $i$ and $j$ are full relatives:
-\begin{equation*}
-    d_{ij} \;=\;
+We define the \textbf{genetic degree} between individuals $i$ and $j$, $\ddeg_{ij} \in \R_{\geq 0} \cup \{\infty\}$, to be the length of their possible coalescence paths, minus one if $i$ and $j$ are full-relatives:
+\begin{equation}\label{eq:genetic-degree}
+    \ddeg_{ij} \;:=\;
     \begin{cases}
-        |\Cpath(i,j)| - 1 & \text{full relatives} \\
+        |\Cpath(i,j)| - 1 & \text{full-relatives} \\
         |\Cpath(i,j)| & \text{half-relatives or lineal relatives} \\
         \infty & \text{unrelated}
     \end{cases}
-\end{equation*}
-This definition is useful because it lets us express the expected coefficient of kinship between two individuals in a well-behaved pedigree as simply:
-\begin{equation}\label{eq:kinship-degree}
-    \boxed{\ \widehat\Theta_{ij} \;=\; \tfrac12\, 2^{-d_{ij}} \ }
 \end{equation}
-Equivalently, we can define the genetic degree as a function of the coefficient of kinship (or relatedness, $\widehat\pi_{ij} = 2\widehat\Theta_{ij}$):
+This quantity is useful because it lets us express the expected coefficient of kinship between two individuals in a well-behaved pedigree as simply:
+\begin{equation}\label{eq:kinship-degree}
+    \widehat\Theta_{ij} \;=\; \tfrac12\, 2^{-\ddeg_{ij}}
+\end{equation}
+Equivalently, we can express the genetic degree as a function of the coefficient of kinship (or relatedness, $\widehat\pi_{ij} = 2\widehat\Theta_{ij}$):
 \begin{equation}\label{eq:degree-kinship}
-    d_{ij} \;=\; -\log_2\!\big(\widehat\Theta_{ij}\big) - 1 \;=\; -\log_2 (\widehat\pi_{ij})
+    \ddeg_{ij} \;=\; -\log_2\!\big(\widehat\Theta_{ij}\big) - 1 \;=\; -\log_2 (\widehat\pi_{ij})
 \end{equation}
 with $-\log_2 0 = \infty$ for unrelated pairs.
 
@@ -1075,8 +1064,8 @@ We summarize here the six categories of information we've discussed:
         Genetic & $\Ginfo$ & All genetic information & Genotyped biallelic variants, allele frequencies \\
         Environmental & $\Einfo$ & All non-genetic information & Shared and unique environment, ``random'' noise \\
         Biological & $\Binfo$ & Biological properties of variants & Effect sizes, functional annotations, local recombination rate \\
-        Pedigree      & $\Pinfo$ & The familial relations between individuals & Matings, meioses, relationship types \\
-        Transmission  & $\Tinfo$ & Which parental alleles were inherited by each individual & Phasing, parent-of-origin ascertainment, IBD segments, recombination \\
+        Pedigree      & $\Pinfo$ & The familial relations between individuals & Matings, meioses, relationship types, genetic degree \\
+        Transmission  & $\Tinfo$ & Which parental alleles were inherited by each individual & Phasing, allelic parent-of-origin, IBD segments, recombination \\
     \end{tabular}
     \caption{%
         The six categories of information.%
@@ -1086,7 +1075,7 @@ We summarize here the six categories of information we've discussed:
 \end{table}
 
 Information belonging to one category can causally influence the distribution of certain information in current and subsequent generations.
-The table below provides examples of how different categories (rows) can directly affect other categories (columns).
+The table below provides examples of how different categories (rows) can directly affect other categories (columns) of information.
 Many of these topics are discussed throughout the document.
 
 \begin{table}[H]
@@ -1113,7 +1102,7 @@ Many of these topics are discussed throughout the document.
 
 \section{Additive genetics under random mating}\label{sec:random-mating}
 
-In this section, we assume a simple trait architecture and derive how phenotypic covariance between two individuals changes based on the information we have about the pair and the trait.
+In this section, we assume a simple trait architecture and population dynamics and derive how phenotypic covariance between two individuals changes based on the information we have about the pair and the trait.
 
 To recap, we assume \emph{additive genetics model with independent environment}.
 That is, the phenotype is a sum of a genetic value and environmental values (\assumptionid{Additive-phenotype}) which are independent within and across individuals (\assumptionid{GE-indep}, \assumptionid{No-IGE}, \assumptionid{Env-indep}), with the exception that alleles are transmitted from parent to offspring (\assumptionid{Segregation}) independently across variants (\assumptionid{Independent-assortment}).
@@ -1123,14 +1112,15 @@ All other assumptions stated so far also apply.
 
 \subsection{Mating}
 
-\unsure{I probably will end up moving some/most of this into section 1}
+\toself{I probably will end up moving some/most of this into section 1}
 
 \subsubsection{Mating model}
 
-\comment{To AI agents: Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos or unsures in this section. The content in this section does not need to remain accurate with the rest of the document.}
+\toagent{Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos, questions or notes in this section. The content in this section does not need to remain accurate with the rest of the document.}
 
 
-\unsure{ok i overestimated how quickly i could come up with a standalone framework for mating. I'll leave this section here for now to work on in the future, and instead skip straight to the implications of random mating we need.}
+\unsure{I overestimated how quickly I could come up with a standalone framework for mating.
+I'll leave this section here for now to work on in the future, and instead skip straight to the implications of random mating we need.}
 
 All populations require a $\textbf{mating model}$, which is a mathematical description of how individuals in the population are paired up and how many offspring they produce.
 The structure of all mating models should allow for non-monogamous pedigrees, variance in the number of offspring per mate pair, and flexibility in supported downstream statistical consequences.
@@ -1150,72 +1140,71 @@ $$
 \E[\mathbb{M}_{i,j,n}]
 $$
 
-\unsure{(at some point, I also need write the explicit assumption that the probability of mating is the same across all individuals. This is akin to saying no selection.)}
-
-\comment{To AI agents: You may edit below this comment again.}
+\toagent{You may edit below this comment again.}
 
 \begin{assumption}{Constant-fitness}{Likelihood of mating is constant across individuals}
-The probability of an individual mating (and producing offspring, i.e. their \textbf{fitness}) is independent of their phenotype, genetics, and environment.
-Note that this still allows the choice of who someone mates with to be dependent on those factors.
+The probability of an individual mating (and producing offspring, i.e., their \textbf{fitness}) is independent of their phenotype, genetics, and environment.
+Note that this still allows the choice of whom someone mates with to be dependent on those factors.
 \related{no selection, randomly selected mating pool.}
 \end{assumption}
 
 \subsubsection{Random mating}\label{sec:rm-random-mating}
 
-In this section, we use the simplest mating model: $\textbf{random mating}$
+In this section, we use the simplest mating model: \textbf{random mating}.
 
 \begin{assumption}{Random-mating}{Random mating}
 The probability of two individuals mating with each other is constant across all pairs of mating individuals.
 Using $\mathcal{M}$ to denote the set of all individuals in a generation that mate:
 
-$$ \Pr\big[\Nmu(i,j) = 1 \;\big|\; i, j \in \mathcal{M}\big] \ \text{ is the same for every pair } i \neq j . $$
+$$ \Pr\big[\dmu_{ij} = 1 \;\big|\; i, j \in \mathcal{M}\big] \ \text{ is the same for every pair } i \neq j . $$
 Under monogamy, this probability is $(|\mathcal{M}| - 1)^{-1}$.
 We also assume the distribution of the number of offspring per mate pair is identical for all mate pairs.
-\related{no population structure, no assortative mating, no migration, no modelling of sex.}
+\related{no population structure, no assortative mating, no migration, no modeling of sex.}
 \end{assumption}
 
-Previously, we defined the variance of individual standardized alleles to be $\Var[z^{(u)}_{ik}] = \tfrac12$.
-However, computing the variance of (standardized) genotypes, $x_{ik} = z^{(m)}_{ik} + z^{(p)}_{ik}$ requires knowledge of $\Cov[z^{(m)}_{ik},z^{(p)}_{ik}]$. \unsure{ensure the proper scaling factor is used here}.
-Extending from Section~\ref{sec:ibd-transmission} (Equation~\eqref{eq:ibd-founder}), we know that if two alleles are IBD, then they are perfectly correlated (covariance of $\tfrac12$).
+Previously, we showed that individual centered alleles have variance $\Var[x^{(u)}_{ik}] = p_k(1-p_k)$.
+However, computing the variance of (centered) genotypes, $x_{ik} = x^{(m)}_{ik} + x^{(p)}_{ik}$ requires knowledge of $\Cov[x^{(m)}_{ik},x^{(p)}_{ik}]$.
+Extending from Section~\ref{sec:ibd-transmission} (Equation~\eqref{eq:ibd-founder}), we know that if two alleles are IBD, then they are perfectly correlated (covariance of $p_k(1-p_k)$).
 If the two alleles are not IBD, then they derive from independent founder alleles and are therefore uncorrelated (covariance of $0$).
-We can simplify the covariance to equal half the probability of the two alleles being IBD:
+We can simplify the covariance to equal $p_k(1-p_k)$ times the probability of the two alleles being IBD:
 $$
-\Cov[z^{(m)}_{ik},z^{(p)}_{ik}] = \tfrac12
-\E[ \IBD(z^{(m)}_{ik},z^{(p)}_{ik}) ]
+\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k(1-p_k) \;
+\E[ \IBD(x^{(m)}_{ik},x^{(p)}_{ik}) ]
 $$
-Since $\IBD(z^{(m)}_{ik},z^{(p)}_{ik}) = f_{ik}$, we can also write this in terms of the inbreeding coefficient (Equation~\eqref{eq:inbreeding}):
+Since $\IBD(x^{(m)}_{ik},x^{(p)}_{ik}) = f_{ik}$, we can also write this in terms of the inbreeding coefficient (Equation~\eqref{eq:inbreeding}):
 $$
-\Cov[z^{(m)}_{ik},z^{(p)}_{ik}] = \tfrac12 \E[ f_{ik}]
+\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k(1-p_k) \; \E[ f_{ik}]
 $$
-We could simply assume \assumptionid{Unrelated-mates}, which would mean that mates are unrelated, therefore meaning that $\E[ f_{ik}] = \Cov[z^{(m)}_{ik},z^{(p)}_{ik}] = 0$.
-However, we'll instead establish that random mating approximately results in \assumptionid{Unrelated-mates}:
+We could simply assume \assumptionid{Unrelated-mates}, which would mean that mates are unrelated, therefore meaning that $\E[ f_{ik}] = \Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = 0$.
+However, we'll be more thorough and instead establish that random mating approximately results in \assumptionid{Unrelated-mates} given a safer new assumption:
 
 \begin{assumption}{Large-Ne}{Large effective population size}
-Define the \emph{effective population size}, $N_e$, as half the inverse of the probability of two alleles chosen at random from different individuals of the same generation being IBD, such that:
-$$ \E\big[\IBD(z^{(u)}_{ik}, z^{(v)}_{jk})\big] \;=\; \frac{1}{2 N_e} \qquad (i \neq j) . $$
+Define the \textbf{effective population size}, $N_e \in \R_{>0}$, as half the inverse of the probability of two alleles chosen at random from different individuals of the same generation being IBD, such that:
+$$ \E\big[\IBD(x^{(u)}_{ik}, x^{(v)}_{jk})\big] \;=\; \frac{1}{2 N_e} \qquad (i \neq j) . $$
 We assume $N_e$ is large for the purposes of downstream approximations.
 \related{no population bottleneck.}
 \end{assumption}
 
 \begin{approximation}{Random-mates-unrelated}{Random mates are approximately unrelated}
 Random mating results in roughly unrelated mates and therefore outbred offspring:
-$$ \Cov[z^{(m)}_{ik}, z^{(p)}_{ik}] \;=\; \tfrac12 \E[ f_{ik}] \;=\; \frac{1}{4 N_e} \;\approx\; 0 . $$
+$$ \Cov[x^{(m)}_{ik}, x^{(p)}_{ik}] \;=\; p_k(1-p_k) \E[ f_{ik}] \;=\; \frac{p_k(1-p_k)}{2 N_e} \;\approx\; 0 . $$
 \justification{Two alleles chosen at random from different individuals have a $\frac{1}{2 N_e}$ probability of being IBD.
 The offspring of a randomly-mated pair (\assumptionid{Random-mating}) effectively inherits two such alleles from the preceding generation, so $\E[ f_{ik}] = \frac{1}{2 N_e}$, which is small given a large enough $N_e$ (\assumptionid{Large-Ne}).}
 \end{approximation}
 
 Note that we can also make the reverse argument: random mating with the additional constraint of forcing parents to be unrelated still approximately looks like true random mating. 
-We can now confidently state that standardized genotypes have unit variance under random mating:
+We can now confidently state the variance of genotypes under random mating as being double that of alleles:
 
-\begin{equation}\label{eq:var-x-unit}
+\begin{equation}\label{eq:var-x}
 \begin{aligned}
     \Var[x_{ik}]
-    \;&=\; \Var\big[z^{(m)}_{ik}\big] + \Var\big[z^{(p)}_{ik}\big] + 2\Cov\big[z^{(m)}_{ik}, z^{(p)}_{ik}\big] \\
-    \;&=\; \tfrac12 + \tfrac12 + \E[ f_{ik}] \\
-    \;&=\; 1 + \frac{1}{2 N_e} \\
-    \;&\approx\; 1
+    \;&=\; \Var\big[x^{(m)}_{ik}\big] + \Var\big[x^{(p)}_{ik}\big] + 2\Cov\big[x^{(m)}_{ik}, x^{(p)}_{ik}\big] \\
+    \;&=\; 2 p_k(1-p_k) + 2 p_k(1-p_k)\, \E[f_{ik}] \\
+    \;&=\; 2 p_k(1-p_k) \Big(1 + \frac{1}{2 N_e}\Big) \\
+    \;&\approx\; 2 p_k(1-p_k)
 \end{aligned}
 \end{equation}
+Equivalently, standardized genotypes (Equation~\eqref{eq:standardized}) have approximately unit variance, $\Var[\tilde{x}_{ik}] \approx 1$.
 
 \subsubsection{Cross-products}
 
@@ -1231,17 +1220,17 @@ When $i = j$, $\E[y_i^2] = \Var[y_i] = V_Y$.
 \subsection{Covariance given genotypes and effect sizes}\label{sec:rm-cov-geno-effects}
 
 Suppose we have genotypic information about a pair, $\Ginfo$.
-Specifically, we have their genotype matrices, $\mathbf{G}$ and $\bX$, for $M$ genotyped variants, which include all causal variants for the trait of interest.
-Suppose we also know the effect sizes of all the genotyped variants, $\tilde{\bbeta}$, (which with knowledge of $\mathbf{G}$ also implies knowledge of $\bbeta$).
+Specifically, we have their genotype matrix, $\mathbf{G}$ (non-centered) and $\bX$ (centered), for $M$ genotyped variants, which include all causal variants for the trait of interest.
+Suppose we also know the effect sizes of all the genotyped variants, $\bbeta$.
 Furthermore, we adopt stronger versions of the \assumptionid{GE-indep} and \assumptionid{No-IGE} assumptions, assuming independence between environmental values and jointly-distributed genotypes and effect sizes.
 
 \begin{assumption}{Geno-env-indep}{Genotype--environment independence, within and across individuals}
-Environmental values are jointly independent of the genotypes of individuals and realized effect sizes:
-$$ \big(\mathbf{G}, \tilde{\bbeta}\big) \;\perp\; \tilde{\mathbf{e}} . $$
-\related{no gene--environment correlation within or across individuals, no indirect (e.g.\ parental) genetic effects, no population stratification; implies \assumptionid{GE-indep} and \assumptionid{No-IGE} (Section~\ref{sec:pheno-form}).}
+Environmental values are jointly independent of the genotypes of individuals and effect sizes:
+$$ \big(\mathbf{G}, \bbeta\big) \;\perp\; \mathbf{e} . $$
+\related{no gene--environment correlation within or across individuals, no indirect (e.g., parental) genetic effects, no population stratification, implies \assumptionid{GE-indep} and \assumptionid{No-IGE} (Section~\ref{sec:pheno-form}).}
 \end{assumption}
 Note that this assumption is a much stronger constraint on population stratification compared to the weaker constraint imposed in \assumptionid{GE-indep}, which requires strong enough population structure, migration, and/or differential selection to cause large differences in mean genetic values across subpopulations.
-A more thorough discussion is reserved for the population structure and stratification sections of this writeup.
+A more thorough discussion is reserved for the population structure and stratification sections of this document.
 
 It is now trivial to derive the expected phenotypic cross-product conditional on this information ($i \neq j$):
 \begin{equation}\label{eq:cov-geno-effects}
@@ -1256,64 +1245,73 @@ The first step follows from \assumptionid{Geno-env-indep}, which lets us drop th
 
 \subsection{Covariance given genotypes}\label{sec:rm-cov-geno}
 
-\subsubsection{Effect size distribution assumptions}
+\subsubsection{Effect size distribution assumptions}\label{sec:effect-size-dist}
 
 In practice, we often do not know the effect sizes of variants.
 We avoid making unnecessary assumptions about these effect size distributions and instead only list the assumptions needed to make the immediate downstream claims we're interested in.
 
 We have already constrained the first moment of effect sizes to be zero (\assumptionid{Effects-first-moment-zero}), but we must also constrain the second moment:
 
-\begin{assumption}{Effects-second-moment-var-constant}{Standardized effect sizes have the same variance}
-Averaged over variants with the same allele frequency, the squared unstandardized effect size is a constant, $\sigma_\beta^2$, inversely scaled by the same allele-frequency term used to standardize genotypes, $2p_k(1-p_k)$:
-$$ \E\big[\tilde{\beta}_k^2 \mid p_k\big] \;=\; \E\big[\fbeta(\Binfo_k) \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k(1-p_k)\big]^{-1} . $$
-Equivalently, every variant has the same expected squared \emph{standardized} effect size (Equation~\eqref{eq:standardized-effect}), $\E[\beta_k^2 \mid p_k] = \sigma_\beta^2$.
-\related{the infinitesimal / random-effects model; equal per-standardized-allele effect variance across variants.}
+\begin{assumption}{Effects-second-moment-var-constant}{Squared effect sizes scale with allele frequency}
+Averaged over variants with the same allele frequency, the squared effect size is a constant, $\sigma_\beta^2 \in \R_{>0}$, scaled by a power, $\alpha \in \R$, of the allele-frequency term used to standardize genotypes, $2p_k(1-p_k)$:
+$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \E\big[\fbeta(\Binfo_k) \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k(1-p_k)\big]^{\alpha} . $$
+\related{the infinitesimal / random-effects model.}
 \end{assumption}
 
-The $[2p_k(1-p_k)]^{-1}$ term implies that rarer variants will tend to have larger squared effect sizes than common variants. 
-This term is commonly written with a generalized $\alpha$ parameter in place of the $-1$ exponent, i.e., $(2p_k(1-p_k))^\alpha$, which can be empirically fit under some estimators;
-here we fix $\alpha=-1$.
-\assumptionid{Effects-second-moment-var-constant} makes the strong assumption that the relationship between effect size and allele frequency (which is typically driven by selection, a functional property) is completely accounted by the above form.
+ For $\alpha < 0$, the allele-frequency term implies that rarer variants will tend to have larger squared effect sizes than common variants.
+
+\assumptionid{Effects-second-moment-var-constant} makes the strong assumption that the relationship between effect size and allele frequency (which is primarily driven by selection, a functional property) is completely accounted for by the above form.
 
 \begin{assumption}{Effects-second-moment-covar}{Effect sizes are uncorrelated across variants}
 In conjunction with \assumptionid{Effects-first-moment-zero}, the effect sizes of two different variants have zero expected cross-product:
-$$ \E[\tilde{\beta}_k \tilde{\beta}_{k'}] \;=\; 0 \qquad (k \neq k') . $$
+$$ \E[\beta_k \beta_{k'} \mid p_k, p_{k'}] \;=\; 0 \qquad (k \neq k') . $$
 \related{the infinitesimal / random-effects model, whose effects are drawn independently across variants.}
 \end{assumption}
 
-With these three assumptions, the variants are \emph{second-order exchangeable} with regards to their standardized effects, meaning their pairwise joint distributions are identical up to the second moment.
+
 
 Next, we need to assume that individual genotype information is not predictive of variant effect sizes up to the second moment.
-Any form of non-random mating or selection that is downstream of realized effect sizes violates this assumption;
-later sections of this writeup explicitly try to model this relationship.
+Any form of non-random mating or selection that is downstream of effect sizes violates this assumption;
+later sections of this document explicitly try to model this relationship.
 
 \begin{assumption}{Effects-genotype-independence}{Effect sizes are independent of genotypes}
-Conditioning on the genotypes leaves the first and second moments of standardized effect sizes unchanged:
-$$ \E[\beta_k \mid \bX] \;=\; \E[\beta_k], \qquad \E[\beta_k \beta_{k'} \mid \bX] \;=\; \E[\beta_k \beta_{k'}] $$
-Note that this assumption holds only if effect sizes and genotypes are standardized, since $\mathbf{G}$ contains information about the allele frequency, $p_k$, which $\E[\tilde{\beta}_k^2]$ depends on (\assumptionid{Effects-second-moment-var-constant}).
+Conditioning on the genotypes leaves the first and second moments of effect sizes unchanged, beyond the allele frequencies the genotypes reveal:
+$$ \E[\beta_k \mid \bX] \;=\; \E[\beta_k \mid p_k], \qquad \E[\beta_k \beta_{k'} \mid \bX] \;=\; \E[\beta_k \beta_{k'} \mid p_k, p_{k'}] $$
 \related{no assortative mating, no selection, no population stratification.}
 \end{assumption}
 
 \subsubsection{Covariance given genotypes and exchangeable variants}
 
-With these assumptions, we can now take the expectation of Equation~\eqref{eq:cov-geno-effects} over the effects, using the law of total expectation and then \assumptionid{Effects-genotype-independence}:
+With these assumptions, we can now take the expectation of Equation~\eqref{eq:cov-geno-effects} over the effect sizes, using the law of total expectation and then \assumptionid{Effects-genotype-independence}:
 \begin{equation}\label{eq:cov-geno-sum}
 \begin{aligned}
     \E\big[g_i g_j \mid \bX\big]
     \;&=\; \E\Big[\, \E\big[g_i g_j \mid \bX, \bbeta\big] \;\Big|\; \bX \Big] \\
     \;&=\; \sum_{k=1}^{M} \sum_{k'=1}^{M} \E\big[\beta_k \beta_{k'} \mid \bX\big]\, x_{ik}\, x_{jk'} \\
-    \;&=\; \sum_{k=1}^{M} \sum_{k'=1}^{M} \E\big[\beta_k \beta_{k'}\big]\, x_{ik}\, x_{jk'}
+    \;&=\; \sum_{k=1}^{M} \sum_{k'=1}^{M} \E\big[\beta_k \beta_{k'} \mid p_k, p_{k'}\big]\, x_{ik}\, x_{jk'}
 \end{aligned}
 \end{equation}
 By \assumptionid{Effects-second-moment-covar}, all off-diagonal terms ($k\neq k'$) have an expected cross-product of 0, even if the genotypes themselves are correlated with each other.
-Subsequently, only main diagonal terms ($k = k'$) remain, weighted by each variant's squared effect size, which by \assumptionid{Effects-second-moment-var-constant} is the same for every variant:
+Subsequently, only main diagonal terms ($k = k'$) remain, weighted by each variant's squared effect size, which by \assumptionid{Effects-second-moment-var-constant} depends only on its allele frequency:
 \begin{equation}\label{eq:cov-geno-diag}
-    \E\big[g_i g_j \mid \bX\big] \;=\; \sum_{k=1}^{M} \E\big[\beta_k^2\big]\, x_{ik}\, x_{jk}
+    \E\big[g_i g_j \mid \bX\big] \;=\; \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, x_{ik}\, x_{jk}
+    \;=\; \sigma_\beta^2 \sum_{k=1}^{M} \big[2p_k(1-p_k)\big]^{\alpha}\, x_{ik}\, x_{jk}
 \end{equation}
+To relate this to genotypic similarity (Equation~\eqref{eq:grm}), we now fix $\alpha$:
 
-Previously in Equation~\eqref{eq:additive-variance}, we defined the additive genetic variance as the variance of genetic values in the population, $V_A := \Var[g_i \mid \Ginfo, \tilde{\bbeta}]$. 
+\begin{assumption}{Effects-alpha-minus-one}{Standardized effect sizes have the same variance}
+The allele-frequency exponent of \assumptionid{Effects-second-moment-var-constant} is $\alpha = -1$:
+$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k(1-p_k)\big]^{-1} . $$
+Equivalently, every variant has the same expected squared \emph{standardized} effect size (Equation~\eqref{eq:standardized-effect}), $\E[\tilde{\beta}_k^2 \mid p_k] = \sigma_\beta^2$.
+\related{equal per-standardized-allele effect variance across variants.}
+\end{assumption}
+
+With these assumptions, the variants are \emph{second-order exchangeable} with regards to their standardized effect sizes, meaning their pairwise joint distributions are identical up to the second moment.
+The choice of $\alpha = -1$ is primarily driven by its wide adoption in the literature for developing theory, despite specific empirical studies clearly showing $\alpha \neq -1$ \citep{Schoech2019NatComm}.
+
+Previously in Equation~\eqref{eq:additive-variance}, we introduced the additive genetic variance as the variance of genetic values in the population, $V_A := \Var[g_i \mid \Ginfo, \bbeta]$. 
 If we don't condition on effect sizes nor genotypes and instead average over them, we can derive the expected additive variance under random mating.
-Furthermore, previously in Equation~\eqref{eq:var-x-unit}, we derived that $\Var[x_{ik}] \approx 1$, and in Equation~\eqref{eq:cov-geno-diag} that the off-diagonal terms go to zero:
+Furthermore, previously in Equation~\eqref{eq:var-x}, we derived that $\Var[x_{ik}] \approx 2p_k(1-p_k)$, and in Equation~\eqref{eq:cov-geno-diag} that the off-diagonal terms go to zero:
 \begin{equation}\label{eq:additive-variance-effects}
 \begin{aligned}
     \E[V_A]
@@ -1321,27 +1319,27 @@ Furthermore, previously in Equation~\eqref{eq:var-x-unit}, we derived that $\Var
     \;&=\; \Var[g_i] \;-\; \Var\Big[\E\big[g_i \mid \bX, \bbeta\big]\Big] \\
     \;&\approx\; \Var[g_i] \;=\; \E\big[g_i^2\big] \\
     \;&=\; \E\Big[\, \E\big[g_i g_i \mid \bX\big] \Big] \\
-    \;&=\; \E\bigg[\, \sum_{k=1}^{M} \E\big[\beta_k^2\big]\, x_{ik}^2 \bigg] \\
-    \;&=\; \sum_{k=1}^{M} \E\big[\beta_k^2\big]\, \E\big[x_{ik}^2\big] \\
-    \;&\approx\; \sum_{k=1}^{M} \E\big[\beta_k^2\big] \;=\; M \sigma_\beta^2
+    \;&=\; \E\bigg[\, \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, x_{ik}^2 \bigg] \\
+    \;&=\; \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, \E\big[x_{ik}^2\big] \\
+    \;&\approx\; \sum_{k=1}^{M} \sigma_\beta^2 \big[2p_k(1-p_k)\big]^{-1}\, 2p_k(1-p_k) \;=\; M \sigma_\beta^2
 \end{aligned}
 \end{equation}
 The second line is the law of total variance, and the following approximation assumes that the population's mean genetic value, $\E[g_i \mid \bX, \bbeta]$, is approximately zero.
 Because we assume \assumptionid{Large-Ne}, realized allele frequencies are close enough to their expectation, $p_k$, such that this is a safe approximation.
-The last approximation follows from Equation~\eqref{eq:var-x-unit}.
+The last approximation follows from Equation~\eqref{eq:var-x} and \assumptionid{Effects-alpha-minus-one}.
 
-Under \assumptionid{Effects-second-moment-var-constant} and \assumptionid{Random-mating}, the expected additive variance is therefore distributed uniformly across all second-order exchangeable variants.
+Under \assumptionid{Effects-second-moment-var-constant}, \assumptionid{Effects-alpha-minus-one}, and \assumptionid{Random-mating}, the expected additive variance is therefore distributed uniformly across all second-order exchangeable variants.
 Note that the realized $V_A$ is not itself equal to $M\sigma_\beta^2$ because covariance between genotypes (such as arising from random chance) prevents the off-diagonal terms from being dropped from the above equation.
 However, under random mating and with many variants, the two are approximately equal:
 
 \begin{approximation}{Many-variants}{The additive variance is close to its expectation}
 With many causal variants, the additive variance is close to its expectation:
 $$ V_A \;\approx\; \E[V_A] \;\approx\; M\sigma_\beta^2 , \qquad \text{so that} \qquad \sigma_\beta^2 \;\approx\; \frac{V_A}{M} . $$
-\justification{Given the population's genotypes, $V_A = \sum_{k}\sum_{k'} \beta_k \beta_{k'} \Cov[x_{ik}, x_{ik'} \mid \bX]$, a sum over the covariance between every pair of variants' standardized genotypes, whose diagonal terms are $\Var[x_{ik} \mid \bX] \approx 1$ (Equation~\eqref{eq:var-x-unit}).
-Averaging over variants removes the off-diagonal terms and keeps the $M$ diagonal terms, each with expectation $\sigma_\beta^2 \Var[x_{ik} \mid \bX] \approx \sigma_\beta^2$.
-If effect sizes are distributed with a kurtosis $\kappa := \E[\beta_k^4]/\sigma_\beta^4$, then variance around this expectation itself is:
-$$ \frac{\Var\big[V_A \mid \bX\big]}{\E\big[V_A \mid \bX\big]^2} \;\approx\; \frac{\kappa - 3 + 2\bar{\ell}}{M}, \qquad \bar{\ell} \;:=\; \frac{1}{M}\sum_{k}\sum_{k'} \Cov[x_{ik}, x_{ik'} \mid \bX]^2, $$
-where $\bar{\ell}$ is the average variant's summed squared genotype correlations with every variant (i.e. the mean linkage disequilibrium (LD) score, discussed more later).
+\justification{Given the population's genotypes, $V_A = \sum_{k}\sum_{k'} \beta_k \beta_{k'} \Cov[x_{ik}, x_{ik'} \mid \bX]$.
+Averaging over variants removes the off-diagonal terms and keeps the $M$ diagonal terms, each with expectation $\E[\beta_k^2 \mid p_k] \Var[x_{ik} \mid \bX] \approx \sigma_\beta^2$.
+If standardized effect sizes are distributed with a kurtosis $\kappa := \E[\tilde{\beta}_k^4]/\sigma_\beta^4$, then variance around this expectation itself is:
+$$ \frac{\Var\big[V_A \mid \bX\big]}{\E\big[V_A \mid \bX\big]^2} \;\approx\; \frac{\kappa - 3 + 2\bar{\ell}}{M}, \qquad \bar{\ell} \;:=\; \frac{1}{M}\sum_{k}\sum_{k'} \Corr[x_{ik}, x_{ik'} \mid \bX]^2 , $$
+where $\bar{\ell}$ is the average, across variants, of a variant's summed squared genotype correlations with every variant (i.e., the mean linkage disequilibrium (LD) score, discussed more later).
 As the number of variants, $M$, grows relative to their average LD ($\bar{\ell}$) and to the kurtosis of effect sizes ($\kappa$), this variance goes to zero, making the approximation $V_A \approx \E[V_A \mid \bX]$ more accurate.
 For reference, normally distributed effect sizes have a kurtosis of $\kappa = 3$.
 }
@@ -1350,17 +1348,17 @@ For reference, normally distributed effect sizes have a kurtosis of $\kappa = 3$
 
 Therefore:
 \begin{equation}\label{eq:cov-geno-va}
-    \E\big[y_i y_j \mid \bX\big] \;\approx\; V_A \cdot \frac{1}{M}\sum_{k=1}^{M} x_{ik}\, x_{jk} .
+    \E\big[y_i y_j \mid \bX\big] \;\approx\; V_A \cdot \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k(1-p_k)} .
 \end{equation}
-In this equation, we also observe genotypic similarity, i.e., an element of the genetic relationship matrix, $A_{ij} = \frac{1}{M}\sum_{k=1}^{M} x_{ik}\, x_{jk}$, which we derived earlier in Equation~\eqref{eq:grm}.
+In this equation, we also observe genotypic similarity, i.e., an element of the genetic relationship matrix, $A_{ij} = \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k(1-p_k)}$, which we derived earlier in Equation~\eqref{eq:grm}.
 Therefore, we can further simplify:
 \begin{equation}\label{eq:cov-grm}
-    \boxed{ \E\big[y_i y_j \mid A_{ij}\big] \;\approx\; V_A\, A_{ij} }
+    \E\big[y_i y_j \mid A_{ij}\big] \;\approx\; V_A\, A_{ij}
 \end{equation}
 
-\comment{To AI agents: Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos or unsures in this section. The content in this section does not need to remain accurate with the rest of the document.}
+\toagent{Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos, questions or notes in this section. The content in this section does not need to remain accurate with the rest of the document.}
 
-\comment{To AI agents: You may edit below this comment again.}
+\toagent{You may edit below this comment again.}
 
 \subsection{Transmission}\label{sec:rm-transmission}
 % v1: Level 2, conditioning on pi_ij.
@@ -1426,9 +1424,9 @@ Therefore, we can further simplify:
 \clearpage
 \appendixsections
 
-\section{Graphs, chains and paths}\label{app:vocabulary}
+\section{Graphs, chains, and paths}\label{app:vocabulary}
 
-\unsure{Note-to-self: Mostly Claude-written, need to revise}
+\toself{Mostly Claude-written, need to revise}
 
 This appendix collects the objects used to describe descent, together with their notation.
 They come in three groups.
@@ -1460,19 +1458,19 @@ The terms of path diagrams, Appendix~\ref{app:path-analysis}, are a separate voc
     meiosis graph & & the pedigree restricted to parent-to-offspring edges; a directed acyclic graph \\
     run, directed run & & a sequence of edges, each beginning where the previous one ends; a directed run also follows the edges' direction. Used at both levels \\
     mating chain & $\Mu(i,j)$ & the unique run of matings between $i$ and $j$ \\
-    mating distance & $\Nmu(i,j)$ & the number of matings on a mating chain \\
-    lineal chain & $\Lin(i,j)$ & a directed run in the meiosis graph from an ancestor $i$ down to a descendant $j$ \\
-    lineal distance & $\Nlin(i,j)$ & the number of meioses on a lineal chain, $|t_i - t_j|$ \\
+    mating distance & $\dmu_{ij}$ & the number of matings on a mating chain \\
+    lineal chain & $\Lin(j,i)$ & a directed run in the meiosis graph from an ancestor $j$ down to a descendant $i$ \\
+    lineal distance & $\dlin_{ij}$ & the number of meioses on a lineal chain, $|t_i - t_j|$ \\
     pedigree path & $\PedPath(i,j)$ & alternating lineal and mating chains joining two probands \\
     chain digraph & & a pedigree path drawn with its chains as nodes, each edge running from the older chain to the younger \\
     dominant path & & the pedigree path that best condenses the pedigree for a pair \\
     most recent common ancestors (MRCAs) & $\widehat{\mathcal{A}}_{ij}$ & the common ancestors of $i$ and $j$ in $\hat{t}_{ij}$, the most recent generation that has one; each individual counts as their own ancestor, so $\widehat{\mathcal{A}}_{ij} = \{i\}$ if $i$ is an ancestor of $j$ \\
-    genetic degree & $d_{ij}$ & $-\log_2 \widehat\pi_{ij}$, Equation~\eqref{eq:degree-kinship}; under \assumptionid{Unrelated-mates} and \assumptionid{Max-MRCAs}, the length of the pair's possible coalescence paths, minus one for full relatives \\
+    genetic degree & $\ddeg_{ij}$ & $-\log_2 \widehat\pi_{ij}$, Equation~\eqref{eq:degree-kinship}; under \assumptionid{Unrelated-mates} and \assumptionid{Max-MRCAs}, the length of the pair's possible coalescence paths, minus one for full-relatives \\
 \end{longtable}
 \endgroup
 
 \paragraph{Allele level, realized} Nodes are alleles of one variant; everything depends on $\Tinfo$.
-Here $a$ and $b$ are two alleles of the same variant, such as $\mathring{z}_{ik}^{(u)}$ and $\mathring{z}_{jk}^{(v)}$.
+Here $a$ and $b$ are two alleles of the same variant, such as $\mathring{x}_{ik}^{(u)}$ and $\mathring{x}_{jk}^{(v)}$.
 \begingroup
 \footnotesize
 \renewcommand{\arraystretch}{1.15}
@@ -1497,11 +1495,11 @@ Here $a$ and $b$ are two alleles of the same variant, such as $\mathring{z}_{ik}
     \textbf{Term} & \textbf{Notation} & \textbf{Meaning} \\
     \hline
     \endhead
-    possible transmission chains & $\Tset^{(t)}(\mathring{z}_i^{(u)})$ & $\{m,p\}^{t_i - t}$: every source-to-sink route the pedigree allows back to generation $t$; there are $2^{t_i - t}$ of them \\
-    possible coalescence paths, by generation & $\Cset^{(t)}(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})$ & pairs of possible transmission chains with the same source in generation $t$ that share no other allele \\
-    possible coalescence paths & $\Cset(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})$ & the union of $\Cset^{(t)}$ over the recent generations, $t_B \leq t \leq \min(t_i, t_j)$ \\
-    possible coalescence paths of two individuals & $\Cset(i,j)$ & the disjoint union of $\Cset(\mathring{z}_i^{(u)}, \mathring{z}_j^{(v)})$ over the four $(u,v)$, Equation~\eqref{eq:possible-cpaths-ind} \\
-    transmission-state vector & $(u_{\hat{t}_{ij}}, \dots, u_{t_i})$ & a possible transmission chain written oldest first, where $u_t$ is the parent of origin of the chain's allele in its generation-$t$ carrier; $u_{t_i}$ is the side of $i$'s allele \\
+    possible transmission chains & $\Tset^{(t)}(\mathring{x}_i^{(u)})$ & $\{m,p\}^{t_i - t}$: every source-to-sink route the pedigree allows back to generation $t$; there are $2^{t_i - t}$ of them \\
+    possible coalescence paths, by generation & $\Cset^{(t)}(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})$ & pairs of possible transmission chains with the same source in generation $t$ that share no other allele \\
+    possible coalescence paths & $\Cset(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})$ & the union of $\Cset^{(t)}$ over the recent generations, $t_B \leq t \leq \min(t_i, t_j)$ \\
+    possible coalescence paths of two individuals & $\Cset(i,j)$ & the disjoint union of $\Cset(\mathring{x}_i^{(u)}, \mathring{x}_j^{(v)})$ over the four $(u,v)$, Equation~\eqref{eq:possible-cpaths-ind} \\
+    transmission-state vector & $(u_{\hat{t}_{ij}}, \dots, u_{t_i})$ & a possible transmission chain written oldest first, where $u_t$ is the parent-of-origin of the chain's allele in its generation-$t$ carrier; $u_{t_i}$ is the side of $i$'s allele \\
     expected IBD state & $\widehat\Theta^{(uv)}_{ij}$ & $\sum_{\Cpath \in \Cset} 2^{-|\Cpath|}$, Equation~\eqref{eq:ibd-cpaths} \\
     expected kinship & $\widehat\Theta_{ij}$ & $\tfrac14 \sum_{\Cpath \in \Cset(i,j)} 2^{-|\Cpath|}$, Equation~\eqref{eq:kinship-cpaths} \\
 \end{longtable}
@@ -1524,36 +1522,49 @@ Here $a$ and $b$ are two alleles of the same variant, such as $\mathring{z}_{ik}
 \paragraph{How they relate}
 \begin{itemize}
     \item The coalescence graph is the allele-level version of the meiosis graph, and a transmission chain is the allele-level version of a lineal chain.
-    \item Dropping the alleles from a possible transmission chain of $\mathring{z}_i^{(u)}$ leaves a lineal chain from an ancestor in generation $t$ down to $i$, whose last meiosis is from $u(i)$.
+    \item Dropping the alleles from a possible transmission chain of $\mathring{x}_i^{(u)}$ leaves a lineal chain from an ancestor in generation $t$ down to $i$, whose last meiosis is from $u(i)$.
     Each such lineal chain gives two possible transmission chains, one for each of the ancestor's alleles, which is another way to count them: $2^{t_i - t - 1}$ lineal chains times two alleles is $2^{t_i - t}$.
     \item Dropping the alleles from a possible coalescence path leaves two lineal chains from a common ancestor, which is a pedigree path with no mating chain whenever the two lineal chains share no other individual.
     They can share more: if an ancestor between them is inbred, the two transmission chains can pass through that ancestor's two different alleles.
     This is why ``share no other allele'' is a rule about alleles rather than individuals, and why the allele vocabulary is kept separate from the pedigree one.
-    \item Every realized object is one of the possible ones: $\Tchain^{(t)}(\mathring{z}_{ik}^{(u)}) \in \Tset^{(t)}(\mathring{z}_i^{(u)})$, and every recent coalescence path is an element of $\Cset$.
+    \item Every realized object is one of the possible ones: $\Tchain^{(t)}(\mathring{x}_{ik}^{(u)}) \in \Tset^{(t)}(\mathring{x}_i^{(u)})$, and every recent coalescence path is an element of $\Cset$.
     \item Under \assumptionid{Unrelated-mates} and \assumptionid{Max-MRCAs}, the possible coalescence paths of $i$ and $j$ correspond one-to-one to the alleles of their MRCAs: $|\Cset(i,j)| = 2|\widehat{\mathcal{A}}_{ij}|$, each of length $(t_i - \hat{t}_{ij}) + (t_j - \hat{t}_{ij})$, Equation~\eqref{eq:well-behaved-cpaths}.
 \end{itemize}
 
 \section{Path analysis}\label{app:path-analysis}
 
-\unsure{This appendix should have figures}
-
-Path analysis is a tool for modelling the covariance between variables in a causal system, such as genetic inheritance and assortative mating.
+Path analysis is a tool for modeling the covariance between variables in a causal system, such as genetic inheritance and assortative mating.
 Path analysis was introduced by Sewall Wright \citep{Wright1921JAgricRes}, as a way of decomposing an observed correlation between variables into the contributions of a hypothesized causal structure, and set out systematically thirteen years later as the method of path coefficients \citep{Wright1934AnnMathStat}.
 Wright applied it to mating systems in the same period \citep{Wright1921GeneticsMatingI, Wright1921GeneticsMatingIII}; together with Fisher's treatment of the same problem \citep{Fisher1918TransRoySocEdin}, that work is the origin of the classical results on how assortment changes the correlation between relatives.
 The explanations below are adapted from the Supplementary Note of \citet{Sunde2025NatComm}, which introduced the co-path edge type (described below).
 Unlike \citet{Sunde2025NatComm}, we do not assume that the variables are standardized, so we keep track of variances explicitly.
 
-A \emph{path diagram} is a graphical representation of a generative model.
-Each variable is a node --- drawn as a rectangle if it is observed and an ellipse if it is latent --- and the nodes are joined by three kinds of edges:
+A path diagram is a graphical representation of a generative model.
+Each variable is a node (drawn as a rectangle if it is observed and an ellipse if it is latent), and the nodes are joined by three kinds of edges:
 
 \begin{itemize}
-    \item A \textbf{directed} edge $a \rightarrow b$ labelled with a coefficient $c$ says that $a$ is a cause of $b$, contributing $c\,a$ to $b$'s structural equation.
+    \item A \textbf{directed} edge $a \rightarrow b$ labeled with a coefficient $c$ says that $a$ is a cause of $b$, contributing $c\,a$ to $b$'s structural equation.
     Collecting the arrows that point \emph{into} a node recovers that node's equation, so the diagram and the model equations carry the same content.
     \item A \textbf{bidirected} edge $a \leftrightarrow b$ carries covariance between the \emph{disturbances} of $a$ and $b$.
     A variable's disturbance is what remains of it once its causes in the diagram are accounted for: if the arrows into $b$ give $b = c_1 a_1 + \cdots + c_k a_k + \epsilon_b$, then $\epsilon_b$ is $b$'s disturbance, and for a variable with no incoming arrows the disturbance is the variable itself.
     The self-loop $a \leftrightarrow a$ is the case $b=a$: it is $\Var[\epsilon_a]$, the part of $\Var[a]$ not supplied by $a$'s causes, so a variable with no incoming arrows carries its entire variance on such a loop.
     \item A \textbf{co-path} $a \;\text{---}\; b$, drawn as a plain line with no arrowheads, is covariance attributable to \emph{matching}: $a$ and $b$ came to be associated because they were paired on their values, not because they share a cause.
 \end{itemize}
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \input{figures/v2/path_diagram_example.tikz}
+        \caption{%
+            A path diagram of two mates, $m$ and $p$, and their offspring $o$, in the first generation of assortative mating.
+            Genetic values (ellipses) are latent and phenotypes (rectangles) are observed.
+            Each directed edge from a genetic value to its phenotype has a coefficient of $1$ (unlabeled), and each transmission edge a coefficient of $\tfrac12$.
+            Self-loops carry the disturbance variances: $V_A$ for the parents' genetic values, $\tfrac12 V_A$ for the offspring's segregation residual, and $V_E$ for each environmental value.
+            The co-path between the mates' phenotypes is labeled with the correlation it induces, $[\rho_y]$.
+            By Wright's tracing rules, $\Cov[g_o, g_m] = \tfrac12 V_A + \tfrac12 \rho_y V_A^2 / V_Y$, where $V_Y = V_A + V_E$: the first term is the valid chain $g_o \leftarrow g_m \leftrightarrow g_m$, and the second joins the valid chains $g_o \leftarrow g_p \leftrightarrow g_p \rightarrow y_p$ and $y_m \leftarrow g_m \leftrightarrow g_m$ through the co-path, multiplying by $\mu = \rho_y / V_Y$.%
+        }
+        \label{fig:path-diagram-example}
+    \end{floatcard}
+\end{figure}
 
 The covariance between \emph{any} two variables in the diagram, latent or observed, can be calculated quickly by following Wright's tracing rules.
 Enumerate every \emph{valid chain} joining the two variables; their covariance is the sum over chains of the product of the coefficients each chain passes through.
@@ -1579,27 +1590,27 @@ A co-path is a statement about the matched variables themselves, so a chain cont
 
 The quantity multiplied along a chain when it crosses a co-path between $a'$ and $b'$ is not their correlation $\rho$ itself, but
 \begin{equation}\label{eq:copath-mu}
-    \mu \;=\; \frac{\rho}{\sqrt{\Var[a']\,\Var[b']}} ,
+    \mu \;:=\; \frac{\rho}{\sqrt{\Var[a']\,\Var[b']}} ,
 \end{equation}
 because a co-path with coefficient $\mu$ contributes $\Cov[a',b'] = \mu\,\Var[a']\,\Var[b']$ \citep{Sunde2025NatComm}.
 The two coincide only when the matched variables have unit variance.
 If the variances of the matched variables change, for example from one generation to the next, a value of $\mu$ carried over unchanged is therefore wrong, which is the practical reason we label a co-path with its correlation in brackets, as $[\rho]$, and leave $\mu$ to be derived from the diagram's own variances.
 
 Tracing chains by hand is instructive for a single pair and hopeless for a pedigree, since the number of chains grows multiplicatively with depth.
-The diagrams and covariances in this writeup were produced with \texttt{pathMgr}, a small package written alongside it: it takes a model specification, returns the covariance between any two of its variables as an algebraic expression, and emits the path diagram to go with it.
-It computes each covariance in two independent ways --- by enumerating chains exactly as above, and in closed form from the matrix identity
+The diagrams and covariances in this document were produced with \texttt{pathMgr}, a small package written alongside it: it takes a model specification, returns the covariance between any two of its variables as an algebraic expression, and emits the path diagram to go with it.
+It computes each covariance in two independent ways, by enumerating chains exactly as above and in closed form from the matrix identity
 \begin{equation}\label{eq:ram}
     \bSigma \;=\; \B{F}(\bI-\B{B})^{-1}\bS(\bI-\B{B})^{-\intercal}\B{F}^{\intercal}
 \end{equation}
---- and their agreement is the correctness check.
+and their agreement is the correctness check.
 
 That identity is the diagram written as matrices, one row and column per variable.
-Collecting all the variables into a vector $\bv$, the matrix $\B{B}$ holds the \textbf{directed} edges --- $B_{ij}$ is the coefficient on the arrow from $j$ to $i$ --- so the whole system of structural equations is $\bv = \B{B}\bv + \bepsilon$, where $\bepsilon$ is the vector of disturbances.
-The symmetric matrix $\bS$ holds the \textbf{bidirected} edges: $S_{ij}$ is the value of $i \leftrightarrow j$, and its diagonal $S_{ii}$ is the self-loop, the variance of $i$'s disturbance.
+Collecting all the variables into a vector $\bv$, the matrix $\B{B}$ holds the directed edges ($B_{ij}$ is the coefficient on the arrow from $j$ to $i$), so the whole system of structural equations is $\bv = \B{B}\bv + \bepsilon$, where $\bepsilon$ is the vector of disturbances.
+The symmetric matrix $\bS$ holds the bidirected edges: $S_{ij}$ is the value of $i \leftrightarrow j$, and its diagonal $S_{ii}$ is the self-loop, the variance of $i$'s disturbance.
 $\B{F}$ merely selects rows, keeping the variables we want reported and discarding the rest.
 
 The inverse is what does the tracing.
-In an acyclic model $\B{B}$ is nilpotent, so $(\bI-\B{B})^{-1} = \bI + \B{B} + \B{B}^2 + \cdots$, and the $(i,u)$ entry of that sum is the total over all directed paths from $u$ to $i$ of the product of their coefficients --- one term per path, $\B{B}^n$ contributing the paths of length $n$.
+In an acyclic model $\B{B}$ is nilpotent, so $(\bI-\B{B})^{-1} = \bI + \B{B} + \B{B}^2 + \cdots$, and the $(i,u)$ entry of that sum is the total over all directed paths from $u$ to $i$ of the product of their coefficients, with one term per path and $\B{B}^n$ contributing the paths of length $n$.
 Sandwiching $\bS$ between it and its transpose therefore gives, for latent and observed variables alike,
 \begin{equation}\label{eq:ram-trace}
     \Sigma_{ij} \;=\; \sum_{u}\sum_{v}
@@ -1608,8 +1619,8 @@ Sandwiching $\bS$ between it and its transpose therefore gives, for latent and o
     \underbrace{\big[(\bI-\B{B})^{-1}\big]_{jv}}_{v \rightarrow \cdots \rightarrow j} ,
 \end{equation}
 which is Wright's rule term for term: a backward leg, exactly one bidirected edge, a forward leg, summed over every chain, indexed by the $u \leftrightarrow v$ it turns around on.
-The two methods are the same statement --- one enumerated, one summed in closed form --- which is why their agreement tests the implementation rather than the mathematics.
-Co-paths are the one thing that sits outside this identity and contributes further terms; there, the chain rules given above are the definition.
+The two methods are the same statement (one enumerated, one summed in closed form), which is why their agreement tests the implementation rather than the mathematics.
+Co-paths are the one thing that sits outside this identity and contributes further terms; there, the chain rules given above govern them.
 
 \section{Badly-behaved pedigrees}\label{app:badly-behaved}
 
@@ -1652,7 +1663,7 @@ Co-paths are the one thing that sits outside this identity and contributes furth
             Double half first cousins whose two most recent common ancestors (MRCAs) are mates.
             $M$ and $P$ are mates (their own children are not drawn), but $i$ and $j$ descend from $M$ through the maternal half-siblings $a_1$ and $a_2$, and from $P$ through the paternal half-siblings $b_1$ and $b_2$.
             Every pair of mates is unrelated and $i$ and $j$ only share two common ancestors. 
-            Yet $i$ and $j$ are not full relatives in the usual sense.%
+            Yet $i$ and $j$ are not full-relatives in the usual sense.%
         }
         \label{fig:double-half-cousins}
     \end{floatcard}
@@ -1687,11 +1698,15 @@ Co-paths are the one thing that sits outside this identity and contributes furth
             Half-siblings whose fathers are full brothers.
             $i$ and $j$ share their mother $M$, and their fathers $F_1$ and $F_2$ are children of $G_1$ and $G_2$.
             No mates are related, however, $G_1$ and $G_2$ are common ancestors of $i$ and $j$ who are not ancestors of the most recent common ancestor (MRCA) of $i$ and $j$: $M$.
-            The two relationships add, $\widehat\Theta_{ij} = \tfrac18 + \tfrac{1}{16} = \tfrac{3}{16}$, so Equation~\eqref{eq:degree-kinship} gives $d_{ij} = -\log_2 \tfrac38 \approx 1.42$.%
+            The two relationships add, $\widehat\Theta_{ij} = \tfrac18 + \tfrac{1}{16} = \tfrac{3}{16}$, so Equation~\eqref{eq:degree-kinship} gives $\ddeg_{ij} = -\log_2 \tfrac38 \approx 1.42$.%
         }
         \label{fig:fractional-degree}
     \end{floatcard}
 \end{figure}
+
+\section{Terminology and notation}\label{app:terminology}
+
+\toagent{Stub. Will give a full account of every term defined in the document and its notation.}
 
 \bibliographystyle{unsrtnat}
 \bibliography{../../../bib/references}

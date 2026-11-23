@@ -28,27 +28,39 @@
 
 \setlist[itemize]{nosep, label=--}
 
+% Lets TeX stretch a line a little more before it gives up and overruns the margin, which long
+% unbreakable items (assumption ids, inline maths) otherwise cause.
+\setlength{\emergencystretch}{3em}
+
 % Remove paragraph indentation and add vertical spacing between paragraphs
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.75em}
 
-% highlights
-% \todo -- work to be done.  \unsure -- a claim the author doubts.
-% \comment -- neither: a note about the manuscript itself (scope markers, instructions to
-% collaborators, reminders about what a region is for).  Set in italic as well as coloured, so a
-% comment is distinguishable from a todo at a glance even in greyscale or on a monochrome printout.
-% All three take whole paragraphs: \textcolor cannot (its argument may not contain \par, so a
-% note with a blank line in it fails with "Paragraph ended before \@textcolor was complete"), so
-% they switch colour inside a group instead. \leavevmode stops a note that opens a paragraph from
-% putting the colour change in vertical mode, which would add a spurious line of space.
+% notes in the source
+% \todo     -- directions for something that needs to be done; often carried out by an agent.
+% \question -- a question, answered in chat rather than by editing the document.
+% \toself   -- a note from the author to the author; needs no answer. Italic as well as coloured,
+%              so it is distinguishable from a todo even in greyscale.
+% \toagent  -- a note meant only for agents (e.g., the do-not-edit markers). NOT rendered: it
+%              expands to nothing, so it lives in the source alone.
+% \unsure and \comment are the older names (still used by relative_covariance_v1); new text uses
+% \question and \toself / \toagent instead.
+% The rendered notes take whole paragraphs: \textcolor cannot (its argument may not contain \par,
+% so a note with a blank line in it fails with "Paragraph ended before \@textcolor was complete"),
+% so they switch colour inside a group instead. \leavevmode stops a note that opens a paragraph
+% from putting the colour change in vertical mode, which would add a spurious line of space.
 \newcommand{\todo}[1]{{\leavevmode\color{blue}#1}}
-\newcommand{\unsure}[1]{{\leavevmode\color{orange}#1}}
+\newcommand{\question}[1]{{\leavevmode\color{orange}#1}}
 \definecolor{commentink}{RGB}{110,85,145}
+\newcommand{\toself}[1]{{\leavevmode\color{commentink}\itshape #1}}
+\newcommand{\toagent}[1]{}
+\newcommand{\unsure}[1]{{\leavevmode\color{orange}#1}}
 \newcommand{\comment}[1]{{\leavevmode\color{commentink}\itshape #1}}
 
 % revision markup -- \add marks text being introduced, \remove text being taken out, so that a
 % large rewrite can be read against what it replaces. Both are scaffolding: they are meant to be
-% stripped once the revision is accepted, not to live in the document.
+% stripped once the revision is accepted, not to live in the document. Not used by default: only
+% when the author asks for a change to be shown this way.
 %
 % \remove is red AND struck through, so the two stay distinguishable in greyscale. It strikes
 % word by word: ulem's \sout would do it in one step, but ulem is not in this TeX installation
@@ -176,9 +188,19 @@
 % and where they are stated. Record such a relationship in BOTH boxes, so that it can be found
 % from either end. \bundles{...} ("Commonly bundled into:") is the older, separate note; it is
 % kept for relative_covariance_v1 only.
+%
+% Cross-references: every box sets a hyperref anchor named after its id, and \assumptionid{X} /
+% \approximationid{X} in the text link to it, so clicking a cited id jumps to its box. Citing an
+% id that has no box in the same file gives a hyperref "destination ... does not exist" warning,
+% not an error. Ids may contain hyphens; \breakid lets a long id break across lines after one.
+\makeatletter
+\def\breakid#1{\breakid@#1-\@nil}
+\def\breakid@#1-#2\@nil{#1\ifx\relax#2\relax\else-\allowbreak\breakid@#2\@nil\fi}
+\makeatother
 \definecolor{assumptionframe}{RGB}{40,90,150}
 \definecolor{assumptionback}{RGB}{238,243,249}
-\newcommand{\assumptionid}[1]{{\bfseries\color{assumptionframe}[#1]}}
+\newcommand{\assumptionlabel}[1]{{\bfseries\color{assumptionframe}[\breakid{#1}]}}
+\newcommand{\assumptionid}[1]{\hyperlink{assumption.#1}{\assumptionlabel{#1}}}
 \newcommand{\bundles}[1]{\par\smallskip{\small\textit{Commonly bundled into:} #1}}
 \newcommand{\related}[1]{\par\smallskip{\small\textit{Related:} #1}}
 \newenvironment{assumption}[2]{%
@@ -186,7 +208,7 @@
   \colorlet{shadecolor}{assumptionback}%
   \begin{shaded}%
   \setlength{\parskip}{0.4em}%
-  \noindent\assumptionid{#1}~\textbf{#2}\par\nobreak\smallskip%
+  \noindent\hypertarget{assumption.#1}{}\assumptionlabel{#1}~\textbf{#2}\par\nobreak\smallskip%
 }{%
   \end{shaded}\par\smallskip%
 }
@@ -206,17 +228,18 @@
 %   \end{approximation}
 \definecolor{approximationframe}{RGB}{160,95,20}
 \definecolor{approximationback}{RGB}{252,246,235}
-\newcommand{\approximationid}[1]{{\bfseries\color{approximationframe}[#1]}}
+\newcommand{\approximationlabel}[1]{{\bfseries\color{approximationframe}[\breakid{#1}]}}
+\newcommand{\approximationid}[1]{\hyperlink{approximation.#1}{\approximationlabel{#1}}}
 \newcommand{\justification}[1]{%
   \par\smallskip%
-  {\small\textit{\color{approximationframe}Justification for approximation:}\ #1}%
+  {\small\textit{\color{approximationframe}Justification:}\ #1}%
 }
 \newenvironment{approximation}[2]{%
   \par\smallskip%
   \colorlet{shadecolor}{approximationback}%
   \begin{shaded}%
   \setlength{\parskip}{0.4em}%
-  \noindent\approximationid{#1}~\textbf{#2}\par\nobreak\smallskip%
+  \noindent\hypertarget{approximation.#1}{}\approximationlabel{#1}~\textbf{#2}\par\nobreak\smallskip%
 }{%
   \end{shaded}\par\smallskip%
 }

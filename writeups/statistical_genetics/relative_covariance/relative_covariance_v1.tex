@@ -6,6 +6,9 @@
 \makeatother
 \usepackage{config}
 \usepackage{macros}
+% v1 keeps its original chain notation, without the arrows macros.sty now puts on \Mu and \Lin.
+\renewcommand{\Mu}{\mathcal{M}}
+\renewcommand{\Lin}{\mathcal{L}}
 
 % =================================================================================================
 % STYLE GUIDE -- for agents and collaborators editing this file. Not rendered; readers never see
@@ -514,7 +517,7 @@ Because there are four such allele pairs behind any one pair of genotypes, they 
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/mated_pair_2v.tikz}
+        \input{figures/v1/mated_pair_2v.tikz}
         \caption{%
             A mated pair in the base population, assorting on the phenotype with strength $\rho_y$, with one chain traced on it and the product of its coefficients written underneath.
             The model is built from the haploid alleles: $z^{(m)}_{i,k}$ and $z^{(p)}_{i,k}$ are the maternally and paternally inherited alleles of individual $i$ at variant $k$, each with variance $\tfrac12$, and the genotype $x_{i,k} = z^{(m)}_{i,k} + z^{(p)}_{i,k}$.
@@ -722,7 +725,7 @@ In a generation-1 individual, this is no longer the case, which can be seen by t
 
 \begin{sidewaysfigure}
     \begin{floatcard}
-        \input{figures/pair_offspring_2v.tikz}
+        \input{figures/v1/pair_offspring_2v.tikz}
         \caption{%
             One mated pair from the base population and two of their offspring, at the allele level, for a trait with two causal variants.
             Each inherited allele is fed by \emph{both} alleles of the parent it came from, at $\tfrac12$ each, per \eqref{eq:transmit-mean}.
@@ -841,7 +844,7 @@ Instead we summarize the base population by its impact on the covariance of gene
 
 \begin{sidewaysfigure}
     \begin{floatcard}
-        \input{figures/reduced_pair_offspring.tikz}
+        \input{figures/v1/reduced_pair_offspring.tikz}
         \caption{%
             Two generation-1 individuals mating to produce one generation-2 offspring.
             Unlike Figure~\ref{fig:pair-offspring-2v}, each parent's alleles are correlated.
@@ -1239,7 +1242,7 @@ We'll also omit the explicit environmental term and instead code it as exogeneou
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/g_only_pair_offspring.tikz}
+        \input{figures/v1/g_only_pair_offspring.tikz}
         \caption{%
             A mated pair and two of their offspring at equilibrium, with inheritance happening at the level of genetic values, rather than alleles.
             The environment appears only as the $V_E$ on each phenotype's own self-loop, so $\Var[y] = V_A + V_E$ as before.%
@@ -1397,7 +1400,7 @@ In the below figure, we observe a pedigree structure where $\Nmu = 0, 1, 2, 3, \
 
 \begin{figure}[H]
     \begin{floatcard}
-        \input{figures/step_sib_pedigree.tikz}
+        \input{figures/v1/step_sib_pedigree.tikz}
         \caption{%
             A pedigree of four parents joined by three matings, with one child per mating, drawn at the level of genetic values as in Figure~\ref{fig:g-only}.
             Reading left to right, $A$ and $B$ are the parents of $E$, $B$ and $C$ of $F$, and $C$ and $D$ of $G$.
@@ -1452,11 +1455,11 @@ Below is a pedigree where the path between $A$ and $B$ is traced, which spans 2 
 \begin{figure}[H]
     \begin{floatcard}
         \makebox[\linewidth][l]{\textbf{(A)}}
-        \input{figures/path_example_pedigree.tikz}
+        \input{figures/v1/path_example_pedigree.tikz}
 
         \vspace{1.0em}
         \makebox[\linewidth][l]{\textbf{(B)}}
-        \input{figures/path_example_digraph.tikz}
+        \input{figures/v1/path_example_digraph.tikz}
         \caption{%
             (A) A pedigree shown as a graph containing a highlighted path connecting $A$ and $B$.
             Meioses are denoted by black directed edges while matings are denoted by red undirected edges.

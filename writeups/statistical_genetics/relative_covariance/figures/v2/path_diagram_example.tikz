@@ -1,0 +1,33 @@
+\definecolor{pmCB03A2E}{HTML}{B03A2E}
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  pmObserved/.style={draw=black, fill=white, rectangle, inner sep=0.06cm, minimum width=0.38cm, minimum height=0.34cm},
+  pmLatent/.style={draw=black, fill=white, ellipse, inner xsep=0.07cm, inner ysep=0.13cm, minimum width=0.38cm, minimum height=0.34cm},
+  pmDirected/.style={-{Stealth[length=2mm]}, line width=0.7pt},
+  pmBidirected/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, line width=0.7pt},
+  pmCopath/.style={line width=1.6pt},
+  pmLabel/.style={midway, fill=white, inner sep=1pt},
+  pmLabelAt/.style={fill=white, inner sep=1pt},
+]
+  \node[pmLatent] (g_m) at (2.000,3.400) {$g_m$};
+  \node[pmLatent] (g_p) at (8.000,3.400) {$g_p$};
+  \node[pmLatent] (g_o) at (5.000,1.600) {$g_o$};
+  \node[pmObserved] (y_m) at (2.000,5.200) {$y_m$};
+  \node[pmObserved] (y_p) at (8.000,5.200) {$y_p$};
+  \node[pmObserved] (y_o) at (5.000,0.000) {$y_o$};
+  \draw[pmDirected, draw=black] (g_m) -- node[pmLabel] {$\frac{1}{2}$} (g_o);
+  \draw[pmDirected, draw=black] (g_p) -- node[pmLabel] {$\frac{1}{2}$} (g_o);
+  \draw[pmDirected, draw=black] (g_m) -- (y_m);
+  \draw[pmDirected, draw=black] (g_p) -- (y_p);
+  \draw[pmDirected, draw=black] (g_o) -- (y_o);
+  \draw[pmBidirected, draw=black] (g_m) to[loop, looseness=6, in=210, out=150] (g_m);
+  \node[pmLabelAt] at (1.145,3.400) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_p) to[loop, looseness=6, in=30, out=330] (g_p);
+  \node[pmLabelAt] at (8.855,3.400) {$V_{A}$};
+  \draw[pmBidirected, draw=black] (g_o) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$\tfrac12 V_A$} (g_o);
+  \draw[pmBidirected, draw=black] (y_m) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_m);
+  \draw[pmBidirected, draw=black] (y_p) to[loop above, looseness=6, in=120, out=60] node[pmLabel] {$V_{E}$} (y_p);
+  \draw[pmBidirected, draw=black] (y_o) to[loop, looseness=6, in=30, out=330] (y_o);
+  \node[pmLabelAt] at (5.751,0.000) {$V_{E}$};
+  \draw[pmCopath, draw=pmCB03A2E] (y_m) -- node[pmLabel] {$\left[\rho_{y}\right]$} (y_p);
+\end{tikzpicture}

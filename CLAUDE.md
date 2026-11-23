@@ -18,11 +18,16 @@ with a generic instruction (including the thesisMgr worker profile), these win.
 - **Validate when it is worth it.** Tools available for checking results include `pathMgr`
   (exact covariances via path tracing), `popstatgensim` (simulation), and any other tools
   available. Use them when the value of the verification exceeds the cost of running it.
-- **Respect the do-not-edit markers.** Text between `\comment{To AI agents: you do not edit the
-  section below this ...}` and the next `\comment{To AI agents: you may edit below this}` is off
-  limits unless Nuno explicitly lifts the restriction for a specific task.
-- **`\unsure` vs `\todo`.** Answer `\unsure` notes in the chat. Carry out `\todo` notes only when
-  asked to.
+- **Respect the do-not-edit markers.** Text between `\toagent{Do not edit below this comment ...}`
+  and the next `\toagent{You may edit below this comment again.}` is off limits unless Nuno
+  explicitly lifts the restriction for a specific task. (Older files use `\comment{To AI agents:
+  ...}` for the same markers.)
+- **Notes in the source.** `\todo`: work to be done; carry it out only when asked to.
+  `\question`: answer it in the chat, not by editing, whenever you work through the document's
+  `\todo` notes. `\toself`: Nuno's own note; needs no answer. `\toagent`: instructions for agents,
+  not rendered in the PDF. (`\unsure` is the older name for `\question`.)
+- **`\add` / `\remove` only on request.** Do not mark edits with `\add`/`\remove` (or the
+  `added`/`removed` environments) unless Nuno asks for it.
 - **Math in the doc vs. in the chat.** Inside the `.tex` files, use the writeups' shorthand
   macros (`\E`, `\Cov`, `\Var`, `\VAo`, ...) as usual. In chat replies, write math as real LaTeX
   (`$...$` inline, `$$...$$` display) using only standard LaTeX/amsmath commands — never the

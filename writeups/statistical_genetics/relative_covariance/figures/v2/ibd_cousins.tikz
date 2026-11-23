@@ -7,18 +7,18 @@
   pmCopath/.style={line width=1.6pt},
   pmLabel/.style={midway, fill=white, inner sep=1pt},
 ]
-  \node[pmLatent] (zh_mat_mp) at (-0.250,6.000) {$\mathring{z}^{(m)}_{m(p(i)),k}$};
-  \node[pmLatent] (zh_pat_mp) at (2.250,6.000) {$\mathring{z}^{(p)}_{m(p(i)),k}$};
-  \node[pmLatent] (zh_mat_pp) at (5.250,6.000) {$\mathring{z}^{(m)}_{p(p(i)),k}$};
-  \node[pmLatent] (zh_pat_pp) at (7.750,6.000) {$\mathring{z}^{(p)}_{p(p(i)),k}$};
-  \node[pmLatent] (zh_mat_pi) at (0.400,3.000) {$\mathring{z}^{(m)}_{p(i),k}$};
-  \node[pmLatent] (zh_pat_pi) at (2.600,3.000) {$\mathring{z}^{(p)}_{p(i),k}$};
-  \node[pmLatent] (zh_mat_pj) at (4.900,3.000) {$\mathring{z}^{(m)}_{p(j),k}$};
-  \node[pmLatent] (zh_pat_pj) at (7.100,3.000) {$\mathring{z}^{(p)}_{p(j),k}$};
-  \node[pmLatent] (zh_mat_i) at (-0.800,0.000) {$\mathring{z}^{(m)}_{ik}$};
-  \node[pmLatent] (zh_pat_i) at (1.500,0.000) {$\mathring{z}^{(p)}_{ik}$};
-  \node[pmLatent] (zh_mat_j) at (8.300,0.000) {$\mathring{z}^{(m)}_{jk}$};
-  \node[pmLatent] (zh_pat_j) at (6.000,0.000) {$\mathring{z}^{(p)}_{jk}$};
+  \node[pmLatent] (zh_mat_mp) at (-0.250,6.000) {$\mathring{x}^{(m)}_{m(p(i)),k}$};
+  \node[pmLatent] (zh_pat_mp) at (2.250,6.000) {$\mathring{x}^{(p)}_{m(p(i)),k}$};
+  \node[pmLatent] (zh_mat_pp) at (5.250,6.000) {$\mathring{x}^{(m)}_{p(p(i)),k}$};
+  \node[pmLatent] (zh_pat_pp) at (7.750,6.000) {$\mathring{x}^{(p)}_{p(p(i)),k}$};
+  \node[pmLatent] (zh_mat_pi) at (0.400,3.000) {$\mathring{x}^{(m)}_{p(i),k}$};
+  \node[pmLatent] (zh_pat_pi) at (2.600,3.000) {$\mathring{x}^{(p)}_{p(i),k}$};
+  \node[pmLatent] (zh_mat_pj) at (4.900,3.000) {$\mathring{x}^{(m)}_{p(j),k}$};
+  \node[pmLatent] (zh_pat_pj) at (7.100,3.000) {$\mathring{x}^{(p)}_{p(j),k}$};
+  \node[pmLatent] (zh_mat_i) at (-0.800,0.000) {$\mathring{x}^{(m)}_{ik}$};
+  \node[pmLatent] (zh_pat_i) at (1.500,0.000) {$\mathring{x}^{(p)}_{ik}$};
+  \node[pmLatent] (zh_mat_j) at (8.300,0.000) {$\mathring{x}^{(m)}_{jk}$};
+  \node[pmLatent] (zh_pat_j) at (6.000,0.000) {$\mathring{x}^{(p)}_{jk}$};
   \draw[pmDirected, draw=black] (zh_mat_mp) -- (zh_mat_pi);
   \draw[pmDirected, draw=black] (zh_pat_mp) -- (zh_mat_pi);
   \draw[pmDirected, draw=black] (zh_mat_pp) -- (zh_pat_pi);

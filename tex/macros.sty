@@ -23,6 +23,11 @@
 \newcommand{\Corr}{\mathrm{Corr}} % correlation
 \newcommand{\diag}{\mathrm{diag}} % diagonal (of a matrix)
 \newcommand{\IBD}{\mathrm{IBD}} % identical-by-descent
+\newcommand{\IBS}{\mathrm{IBS}} % identical-by-state
+% Distances: d with a parenthesized superscript naming the type, indexed by subscripts (\dmu_{ij}).
+\newcommand{\dmu}{d^{(\mathcal{M})}}  % mating distance
+\newcommand{\dlin}{d^{(\mathcal{L})}} % lineal distance
+\newcommand{\ddeg}{d^{(\Theta)}}      % genetic degree
 
 % Information categories: a calligraphic letter is the FULL information of one kind.
 \newcommand{\Yinfo}{\mathcal{Y}} % phenotypic information
@@ -43,10 +48,10 @@
 %   - if one of these ever needs an accent, use \overline/\widehat; \bar/\hat sit visibly
 %     off-centre over a calligraphic letter.
 \newcommand{\Anc}{\mathcal{A}}                % ancestors of an individual
-\newcommand{\Mu}{\mathcal{M}}                 % mating chain: \Mu(X,Y) between two individuals joined by matings
+\newcommand{\Mu}{\overleftrightarrow{\mathcal{M}}} % mating chain: \Mu(X,Y) between two individuals joined by matings; double-headed because its two ends are symmetric
 \newcommand{\Muhat}{\widehat{\mathcal{M}}}      % the single most recent mating chain of a pair
 \newcommand{\Nmu}{N_{\mathcal{M}}}              % mating distance; \widehat{\Nmu} averages a couple's four
-\newcommand{\Lin}{\mathcal{L}}                % lineal chain: \Lin(X,Y) between two lineal relatives
+\newcommand{\Lin}{\overrightarrow{\mathcal{L}}}   % lineal chain: \Lin(X,Y) from ancestor X down to descendant Y
 \newcommand{\Nlin}{N_{\mathcal{L}}}             % lineal distance, in meioses
 \newcommand{\Nd}{N_{\mathcal{D}}}               % descent distance, in meioses
 \newcommand{\IMu}{\mathbf{1}_{\mathcal{M}}}   % indicator that two individuals have mated

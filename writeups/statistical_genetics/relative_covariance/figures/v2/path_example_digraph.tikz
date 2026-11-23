@@ -13,15 +13,15 @@
 ]
   \node[cdProband] (pA) at (0.000,0.000) {$i$};
   \node[cdLineal] (L1) at (2.150,0.000) {$\Lin(i,D)$};
-  \node[cdNote] at (2.150,-0.460) {$\Nlin = 2$};
+  \node[cdNote] at (2.150,-0.460) {$\dlin = 2$};
   \node[cdMating] (M1) at (4.300,0.000) {$\Mu(D,F)$};
-  \node[cdNote] at (4.300,-0.460) {$\Nmu = 2$\\$N_o = 0$};
+  \node[cdNote] at (4.300,-0.460) {$\dmu = 2$\\$N_o = 0$};
   \node[cdLineal] (L2) at (6.450,0.000) {$\Lin(Q,F)$};
-  \node[cdNote] at (6.450,-0.460) {$\Nlin = 3$};
+  \node[cdNote] at (6.450,-0.460) {$\dlin = 3$};
   \node[cdMating] (M2) at (8.600,0.000) {$\Mu(Q,L)$};
-  \node[cdNote] at (8.600,-0.460) {$\Nmu = 3$\\$N_o = 2$};
+  \node[cdNote] at (8.600,-0.460) {$\dmu = 3$\\$N_o = 2$};
   \node[cdLineal] (L3) at (10.750,0.000) {$\Lin(L,j)$};
-  \node[cdNote] at (10.750,-0.460) {$\Nlin = 1$};
+  \node[cdNote] at (10.750,-0.460) {$\dlin = 1$};
   \node[cdProband] (pB) at (12.900,0.000) {$j$};
   \draw[cdEdge] (pA) -- (L1);
   \draw[cdEdge] (L1) -- (M1);

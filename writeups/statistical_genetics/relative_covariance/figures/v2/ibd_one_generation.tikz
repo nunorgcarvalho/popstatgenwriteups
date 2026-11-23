@@ -10,14 +10,14 @@
   pmLabelAt/.style={fill=white, inner sep=1pt},
   pmLeader/.style={line width=0.45pt, draw=pmC555555},
 ]
-  \node[pmLatent] (zh_mat_m) at (0.000,3.000) {$\mathring{z}^{(m)}_{mk}$};
-  \node[pmLatent] (zh_pat_m) at (2.000,3.000) {$\mathring{z}^{(p)}_{mk}$};
-  \node[pmLatent] (zh_mat_p) at (5.500,3.000) {$\mathring{z}^{(m)}_{pk}$};
-  \node[pmLatent] (zh_pat_p) at (7.500,3.000) {$\mathring{z}^{(p)}_{pk}$};
-  \node[pmLatent] (zh_mat_i) at (0.400,0.000) {$\mathring{z}^{(m)}_{ik}$};
-  \node[pmLatent] (zh_pat_i) at (2.600,0.000) {$\mathring{z}^{(p)}_{ik}$};
-  \node[pmLatent] (zh_mat_j) at (4.900,0.000) {$\mathring{z}^{(m)}_{jk}$};
-  \node[pmLatent] (zh_pat_j) at (7.100,0.000) {$\mathring{z}^{(p)}_{jk}$};
+  \node[pmLatent] (zh_mat_m) at (0.000,3.000) {$\mathring{x}^{(m)}_{mk}$};
+  \node[pmLatent] (zh_pat_m) at (2.000,3.000) {$\mathring{x}^{(p)}_{mk}$};
+  \node[pmLatent] (zh_mat_p) at (5.500,3.000) {$\mathring{x}^{(m)}_{pk}$};
+  \node[pmLatent] (zh_pat_p) at (7.500,3.000) {$\mathring{x}^{(p)}_{pk}$};
+  \node[pmLatent] (zh_mat_i) at (0.400,0.000) {$\mathring{x}^{(m)}_{ik}$};
+  \node[pmLatent] (zh_pat_i) at (2.600,0.000) {$\mathring{x}^{(p)}_{ik}$};
+  \node[pmLatent] (zh_mat_j) at (4.900,0.000) {$\mathring{x}^{(m)}_{jk}$};
+  \node[pmLatent] (zh_pat_j) at (7.100,0.000) {$\mathring{x}^{(p)}_{jk}$};
   \draw[pmDirected, draw=black] (zh_mat_m) -- (zh_mat_i);
   \draw[pmDirected, draw=black] (zh_pat_m) -- (zh_mat_i);
   \draw[pmDirected, draw=black] (zh_mat_p) -- (zh_pat_i);
@@ -30,16 +30,16 @@
   \draw[pmBidirected, draw=black] (zh_pat_m) to[loop above, looseness=4, in=120, out=60] (zh_pat_m);
   \draw[pmBidirected, draw=black] (zh_mat_p) to[loop above, looseness=4, in=120, out=60] (zh_mat_p);
   \draw[pmBidirected, draw=black] (zh_pat_p) to[loop above, looseness=4, in=120, out=60] (zh_pat_p);
-  \draw[pmBidirected, draw=black] (zh_mat_m) to[bend left=30] node[pmLabel, name=pmLbl0, pos=0.280, xshift=-0.000cm, yshift=1.500cm] {$\tfrac12 \widehat{f}_m$} (zh_pat_m);
-  \draw[pmBidirected, draw=black] (zh_mat_p) to[bend left=30] node[pmLabel, name=pmLbl1, pos=0.720, xshift=-0.000cm, yshift=1.500cm] {$\tfrac12 \widehat{f}_p$} (zh_pat_p);
+  \draw[pmBidirected, draw=black] (zh_mat_m) to[bend left=30] node[pmLabel, name=pmLbl0, pos=0.280, xshift=-0.000cm, yshift=1.500cm] {$\widehat{f}_m$} (zh_pat_m);
+  \draw[pmBidirected, draw=black] (zh_mat_p) to[bend left=30] node[pmLabel, name=pmLbl1, pos=0.720, xshift=-0.000cm, yshift=1.500cm] {$\widehat{f}_p$} (zh_pat_p);
   \draw[pmBidirected, draw=black] (zh_mat_m) to[bend left=30] (zh_mat_p);
   \draw[pmBidirected, draw=black] (zh_mat_m) to[bend left=30] (zh_pat_p);
   \draw[pmBidirected, draw=black] (zh_mat_p) to[bend left=30] (zh_pat_m);
   \draw[pmBidirected, draw=black] (zh_pat_m) to[bend left=30] (zh_pat_p);
-  \draw[pmBidirected, draw=black] (zh_mat_i) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac14(1-\widehat{f}_m)$} (zh_mat_i);
-  \draw[pmBidirected, draw=black] (zh_pat_i) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac14(1-\widehat{f}_p)$} (zh_pat_i);
-  \draw[pmBidirected, draw=black] (zh_mat_j) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac14(1-\widehat{f}_m)$} (zh_mat_j);
-  \draw[pmBidirected, draw=black] (zh_pat_j) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac14(1-\widehat{f}_p)$} (zh_pat_j);
+  \draw[pmBidirected, draw=black] (zh_mat_i) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac12(1-\widehat{f}_m)$} (zh_mat_i);
+  \draw[pmBidirected, draw=black] (zh_pat_i) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac12(1-\widehat{f}_p)$} (zh_pat_i);
+  \draw[pmBidirected, draw=black] (zh_mat_j) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac12(1-\widehat{f}_m)$} (zh_mat_j);
+  \draw[pmBidirected, draw=black] (zh_pat_j) to[loop, looseness=4, in=300, out=240] node[pmLabelAt, pos=0.5, below=1pt] {$\tfrac12(1-\widehat{f}_p)$} (zh_pat_j);
   \draw[pmLeader] (pmLbl0) -- (0.688,3.271);
   \draw[pmLeader] (pmLbl1) -- (6.812,3.271);
 \end{tikzpicture}
