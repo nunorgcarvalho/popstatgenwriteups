@@ -139,6 +139,9 @@ VARIABLES
 - Lean on few variables; a quantity that appears once is written out, not named.
 - Function notation for individuals must nest: x_{m(i),k}. Bold Greek uses \pmb via the macros (\bbeta, \bSigma).
 - y, g, e: phenotype, genetic value, environmental value, all defined centered (no raw version); y = g + e. V_Y, V_A, V_E are their variances (V_Y, not V_P: the subscript names the variable). h^2 = V_A / V_Y.
+- Allele frequency p_k, with the shorthand q_k := 1 - p_k: write p_k q_k (and 2 p_k q_k), never p_k(1-p_k), in text and figures alike.
+- Within-individual allele covariances follow Weir: D^{(t)}_{kl} is the gametic disequilibrium coefficient (same gamete; extended from Weir to k = l, where D^{(t)}_{kk} = p_k q_k, so equations need no k = l cases), D^{(t)}_{k/l} the non-gametic one (across gametes; D^{(t)}_{k/k} is the Hardy-Weinberg disequilibrium coefficient). Labels eq:D-*. Never a or s (v1's names), and keep a and c free for the ACE model's a^2, c^2.
+- gamma^{(t)}_k := Cov[x^{(u)}_{ik}, y_i] / (p_k q_k) is the allelic marginal effect size (a regression slope, not a correlation); gamma^{(0)}_k = beta_k.
 - Genotypes: G_{ik} raw allele counts (capital, so lowercase g stays the genetic value); x_{ik} = G_{ik} - 2p_k centered; x^{(u)}_{ik} = G^{(u)}_{ik} - p_k the centered alleles. A tilde marks a standardized quantity (\tilde{x}_{ik}, \tilde\beta_k), used only to connect to results usually stated in standardized terms (e.g., the GRM). A ring marks a founder: \mathring{x}.
 - Exceptions to the parenthesized-superscript rule, written bare: \intercal (transpose) and \perp, which marks a residual (the part orthogonal to its expectation; the base symbol says what kind of thing it is, as in x^{\perp(m)}_{ik}, g^{\perp}_i). \epsilon is reserved for path-analysis disturbances, never residuals.
 - mu is the raw co-path coefficient; a figure labels a co-path with the correlation it induces, [rho], and mu is derived.
@@ -226,16 +229,16 @@ and $e$ is a centered function of environmental information only:
 \related{no gene--environment interaction (GxE).}
 \end{assumption}
 
-\begin{assumption}{GE-indep}{Gene--environment independence}
+\begin{assumption}{GE-indep-within}{Gene--environment independence within individuals}
 An individual's environmental value is independent of their own genetic value:
 $$ g_i \perp e_i $$
-\related{no gene--environment correlation within an individual, no population stratification under strong population structure, implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
+\related{no gene--environment correlation within an individual, no population stratification under strong population structure, implied by \assumptionid{GE-joint-indep-within} (Section~\ref{sec:rm-cov-geno-effects}).}
 \end{assumption}
 
-\begin{assumption}{No-IGE}{No indirect genetic effects}
+\begin{assumption}{GE-indep-across}{Gene--environment independence across individuals}
 One individual's genetic value is independent of another individual's environmental value:
 $$ g_i \perp e_j \ \ (i \neq j) . $$
-\related{no indirect (e.g., parental) genetic effects, implied by \assumptionid{Geno-env-indep} (Section~\ref{sec:rm-cov-geno-effects}).}
+\related{no indirect (e.g., parental) genetic effects, implied by \assumptionid{GE-joint-indep-across} (Section~\ref{sec:rm-cov-geno-effects}).}
 \end{assumption}
 
 \begin{assumption}{Env-indep}{Independent environments}
@@ -292,7 +295,8 @@ We define the \textbf{allele frequency} of a variant $p_k \in (0,1)$ to be the e
 \begin{equation}\label{eq:allele-freq}
     p_k \;:=\; \E[G_{ik}^{(u)}] \qquad \text{for } u \in \{m, p\}
 \end{equation}
-It follows that $\Var[G_{ik}^{(u)}] = p_k (1 - p_k)$ and $\E[G_{ik}] = 2 p_k$.
+It follows that the expected genotype of a variant is twice its allele frequency, $\E[G_{ik}] = 2 p_k$.
+It also follows that $\Var[G_{ik}^{(u)}] = p_k (1 - p_k)$, an expression so ubiquitous throughout this document that we introduce the shorthand $q_k := 1 - p_k$ so that we can write $\Var[G_{ik}^{(u)}] = p_k q_k$.
 From now on, we only work with \emph{centered} versions of alleles, $x_{ik}^{(u)} \in (-1,1)$, and genotypes, $x_{ik} \in (-2,2)$, defined as:
 \begin{subequations}\label{eq:centered}
 \begin{align}
@@ -300,18 +304,18 @@ From now on, we only work with \emph{centered} versions of alleles, $x_{ik}^{(u)
     x_{ik} \;&:=\; x_{ik}^{(m)} + x_{ik}^{(p)} \;=\; G_{ik} - 2 p_k \label{eq:centered-genotype}
 \end{align}
 \end{subequations}
-This results in $\E[x_{ik}^{(u)}] = \E[x_{ik}] = 0$ and an unchanged variance, $\Var[x_{ik}^{(u)}] = p_k (1 - p_k)$.
-Note that it does not follow that $\Var[x_{ik}] = 2 p_k (1 - p_k)$, which requires $\Cov[x_{ik}^{(m)}, x_{ik}^{(p)}] = 0$, something we have not yet shown.
+This results in $\E[x_{ik}^{(u)}] = \E[x_{ik}] = 0$ and an unchanged variance, $\Var[x_{ik}^{(u)}] = p_k q_k$.
+Note that it does not follow that $\Var[x_{ik}] = 2 p_k q_k$, which requires $\Cov[x_{ik}^{(m)}, x_{ik}^{(p)}] = 0$, something we have not yet shown.
 We later demonstrate (Equation~\eqref{eq:var-x}) that this is approximately the case under random mating, motivating the \emph{standardized} versions of alleles and genotypes, $\tilde{x}_{ik}^{(u)}, \tilde{x}_{ik} \in \R$:
 \begin{equation}\label{eq:standardized}
-    \tilde{x}_{ik}^{(u)} \;:=\; \frac{x_{ik}^{(u)}}{\sqrt{2 p_k (1 - p_k)}} , \qquad
-    \tilde{x}_{ik} \;:=\; \frac{x_{ik}}{\sqrt{2 p_k (1 - p_k)}}
+    \tilde{x}_{ik}^{(u)} \;:=\; \frac{x_{ik}^{(u)}}{\sqrt{2 p_k q_k}} , \qquad
+    \tilde{x}_{ik} \;:=\; \frac{x_{ik}}{\sqrt{2 p_k q_k}}
 \end{equation}
 
 Standardized alleles always have a variance of $\Var[\tilde{x}_{ik}^{(u)}] = \tfrac12$.
 We also define \emph{standardized effect sizes}:
 \begin{equation}\label{eq:standardized-effect}
-    \tilde{\beta}_k \;:=\; \beta_k \sqrt{2 p_k (1 - p_k)}
+    \tilde{\beta}_k \;:=\; \beta_k \sqrt{2 p_k q_k}
 \end{equation}
 
  Under \assumptionid{Linearity}, the genetic value is the linear combination of genotypes with effect size coefficients, using either the standardized or unstandardized versions of both:
@@ -539,7 +543,7 @@ $$ \E\big[G_{ik}^{(u)}\big] \;=\; p_k \qquad \text{for every individual } i \tex
 \related{no selection, no mutations, no migration, no drift (i.e., infinite population size).}
 \end{assumption}
 
-\paragraph{Alleles}\label{par:alleles}
+\subsubsection{Alleles}\label{sec:transmission-alleles}
 While already implicitly covered in \assumptionid{Constant-freq}, we make the following claim explicit, but frame it as an \emph{approximation}:
 
 \begin{approximation}{No-mutation}{No mutations}
@@ -585,7 +589,7 @@ An alternative parameterization of the segregation residual is:
 \end{equation}
 \end{subequations}
 
-\paragraph{Genotypes}
+\subsubsection{Genotypes}
 We can express genotype transmission the same way:
 \begin{equation}\label{eq:genotype-transmit}
 \begin{aligned}
@@ -598,7 +602,7 @@ where $x^{\perp}_{ik} \;:=\; x^{\perp(m)}_{ik} + x^{\perp(p)}_{ik}$.
 Each allele residual has mean zero given its parent's alleles, so the genotype residual has mean zero given both parents' alleles, and
 $$ \E\big[x_{ik} \mid x_{m(i),k},\, x_{p(i),k}\big] \;=\; \tfrac12 x_{m(i),k} + \tfrac12 x_{p(i),k} . $$
 
-\paragraph{Genetic values}
+\subsubsection{Genetic values}
 Finally, we can also express genetic value transmission:
 \begin{equation}\label{eq:g-transmit}
 \begin{aligned}
@@ -635,15 +639,15 @@ Therefore, we define \emph{genotypic similarity}, $A_{ij} \in \R$, to be an IBS-
 \begin{equation}\label{eq:grm}
     A_{ij} \;:=\; \frac{1}{M} \sum_{k=1}^{M} \tilde{x}_{ik} \tilde{x}_{jk}
 \end{equation}
-With unstandardized genotypes (Equation~\eqref{eq:centered}), this is $A_{ij} = \frac{1}{M} \sum_{k=1}^{M} \frac{x_{ik} x_{jk}}{2 p_k (1 - p_k)}$.
+With unstandardized genotypes (Equation~\eqref{eq:centered}), this is $A_{ij} = \frac{1}{M} \sum_{k=1}^{M} \frac{x_{ik} x_{jk}}{2 p_k q_k}$.
 Note that since we define $A_{ij}$ in terms of standardized genotypes, rarer variants contribute relatively more, a choice motivated by the distribution of effect sizes, discussed more in Section~\ref{sec:effect-size-dist}.
 Genotypic similarity can be parameterized in terms of allele cross-products by expanding each genotype into its two alleles:
-$$
+\begin{equation}\label{eq:grm-alleles}
 \begin{aligned}
     A_{ij} \;&=\; \frac{1}{M} \sum_{k=1}^{M} \big(\tilde{x}^{(m)}_{ik} + \tilde{x}^{(p)}_{ik}\big)\big(\tilde{x}^{(m)}_{jk} + \tilde{x}^{(p)}_{jk}\big) \\[4pt]
     \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \tilde{x}^{(u)}_{ik}\, \tilde{x}^{(v)}_{jk}
 \end{aligned}
-$$
+\end{equation}
 
 The matrix $\bA$ defined for all $i,j$ pairs is called the \textbf{genetic relationship matrix (GRM)}.
 Observe that IBS-based measures of relatedness only depend on genetic information $\Ginfo$ in the form of allelic or genotypic states.
@@ -759,7 +763,7 @@ To establish the equivalence between probability (IBD) and correlation (path ana
 Alleles inherited from founder alleles keep their statistical properties.
 Note that transmission information requires the scaffold of a pedigree to determine whose alleles can ultimately be passed onto whom, so conditioning on $\Tinfo$ already implicitly conditions on $\Pinfo$.
 
-Continuing from the \hyperref[par:alleles]{Alleles} paragraph of Section~\ref{sec:transmission}, the structural equation for an individual's allele in terms of founder alleles is:
+Continuing from Section~\ref{sec:transmission-alleles}, the structural equation for an individual's allele in terms of founder alleles is:
 \begin{equation}\label{eq:founder-transmit}
 \begin{aligned}
     \mathring{x}^{(u)}_{ik}
@@ -767,7 +771,7 @@ Continuing from the \hyperref[par:alleles]{Alleles} paragraph of Section~\ref{se
     \;&=\; \tfrac12 \mathring{x}^{(m)}_{u(i),k} + \tfrac12 \mathring{x}^{(p)}_{u(i),k} + \mathring{x}^{\perp(u)}_{ik}
 \end{aligned}
 \end{equation}
-where $\mathring{x}^{\perp(u)}_{ik}$, the founder-allele version of Equation~\eqref{eq:allele-transmit-T}, is an uncorrelated residual such that the variance of each allele in the graph is fixed to $p_k(1-p_k)$, as required by Section~\ref{sec:standardization}.
+where $\mathring{x}^{\perp(u)}_{ik}$, the founder-allele version of Equation~\eqref{eq:allele-transmit-T}, is an uncorrelated residual such that the variance of each allele in the graph is fixed to $p_k q_k$, as required by Section~\ref{sec:standardization}.
 IBD state and implied correlation between two alleles is therefore tracked based on whether the alleles they inherit from are identical:
 \begin{equation}\label{eq:ibd-founder}
 \begin{aligned}
@@ -777,7 +781,7 @@ IBD state and implied correlation between two alleles is therefore tracked based
         1 & \mathring{x}_{ik}^{(u)} = \mathring{x}_{jk}^{(v)} \\
         0 & \mathring{x}_{ik}^{(u)} \neq \mathring{x}_{jk}^{(v)}
     \end{cases} \\
-    \;&=\; \frac{\Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big]}{\sqrt{\Var\big[\mathring{x}_{ik}^{(u)} \;\big|\; \Tinfo\big]\, \Var\big[\mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big]}} \\
+    \;&=\; \frac{\Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big]}{p_k q_k} \\
     \;&=\; \Corr\Big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\Big|\; \Tinfo \Big]
 \end{aligned}
 \end{equation}
@@ -794,14 +798,14 @@ Converting from conditioning on transmission information to conditioning on pedi
     \widehat\Theta^{(uv)}_{ij}
     \;&:=\; \E\big[\Theta^{(uv)}_{ijk} \;\big|\; \Pinfo\big] \\
     \;&=\; \E\Big[\, \Corr\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
-    \;&=\; \frac{1}{p_k(1-p_k)}\, \E\Big[\, \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
-    \;&=\; \frac{1}{p_k(1-p_k)} \Big( \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big] \\
+    \;&=\; \frac{1}{p_k q_k}\, \E\Big[\, \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Tinfo\big] \;\Big|\; \Pinfo \Big] \\
+    \;&=\; \frac{1}{p_k q_k} \Big( \Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big] \\
     &\qquad\qquad\quad -\; \Cov\Big[\, \E\big[\mathring{x}_{ik}^{(u)} \mid \Tinfo\big],\, \E\big[\mathring{x}_{jk}^{(v)} \mid \Tinfo\big] \;\Big|\; \Pinfo \Big] \Big) \\
     \;&=\; \frac{\Cov\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big]}{\sqrt{\Var\big[\mathring{x}_{ik}^{(u)} \;\big|\; \Pinfo\big]\, \Var\big[\mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big]}} \\
     \;&=\; \Corr\big[\mathring{x}_{ik}^{(u)}, \mathring{x}_{jk}^{(v)} \;\big|\; \Pinfo\big] .
 \end{aligned}
 \end{equation}
-The second line substitutes Equation~\eqref{eq:ibd-founder}, and the third uses $\Var[\mathring{x}^{(u)}_{ik} \mid \Tinfo] = p_k(1-p_k)$.
+The second line substitutes Equation~\eqref{eq:ibd-founder}, and the third uses $\Var[\mathring{x}^{(u)}_{ik} \mid \Tinfo] = p_k q_k$.
 The fourth uses the law of total covariance, which holds because conditioning on $\Tinfo$ implicitly conditions on $\Pinfo$;
 its second term disappears as founder alleles are independent of their downstream transmissions, so $\E\big[\mathring{x}_{ik}^{(u)} \mid \Tinfo\big] = \E\big[\mathring{x}_{ik}^{(u)}\big] = 0$.
 Note that unlike Equation~\eqref{eq:ibd-founder}, where $\Theta^{(uv)}_{ijk}$ could only take on values of 0 or 1 because the founder alleles were either identical or not, $\widehat\Theta^{(uv)}_{ij}$ can take on intermediate values because it is effectively averaging across the possible combinations of founder alleles each focal allele could have inherited from based on the pedigree.
@@ -825,19 +829,19 @@ Figure~\ref{fig:ibd-one-gen} shows how allelic transmission across one generatio
             Each individual is represented by their two alleles.
             Unlabeled single-headed arrows have a value of $\tfrac12$, and unlabeled self-loops a value of $1$.
             Double-headed arrows between the parents' alleles convey inbreeding information: $\widehat{f}_m$ and $\widehat{f}_p$ within a parent, and $\widehat\Theta^{(uv)}_{mp}$ between the mother's $u$-allele and the father's $v$-allele (unlabeled due to space constraints).
-            Each offspring allele's exogenous residual variance comes from Equation~\eqref{eq:founder-resid-var}, divided by $p_k(1-p_k)$.%
+            Each offspring allele's exogenous residual variance comes from Equation~\eqref{eq:founder-resid-var}, divided by $p_k q_k$.%
         }
         \label{fig:ibd-one-gen}
     \end{floatcard}
 \end{figure}
 
-The residual's variance follows from the transmission indicator being independent of the parent's alleles, together with Equation~\eqref{eq:allele-kinship}, which makes the covariance between the parent's two founder alleles $p_k(1-p_k)\,\widehat\Theta^{(mp)}_{u(i)u(i)} = p_k(1-p_k)\,\widehat{f}_{u(i)}$:
+The residual's variance follows from the transmission indicator being independent of the parent's alleles, together with Equation~\eqref{eq:allele-kinship}, which makes the covariance between the parent's two founder alleles $p_k q_k\,\widehat\Theta^{(mp)}_{u(i)u(i)} = p_k q_k\,\widehat{f}_{u(i)}$:
 \begin{equation}\label{eq:founder-resid-var}
 \begin{aligned}
     \Var\big[\mathring{x}^{\perp(u)}_{ik} \;\big|\; \Pinfo\big]
     \;&=\; \E\Big[\big(T^{(u)}_{ik} - \tfrac12\big)^2\Big]\; \E\Big[\big(\mathring{x}^{(m)}_{u(i),k} - \mathring{x}^{(p)}_{u(i),k}\big)^2 \;\Big|\; \Pinfo\Big] \\
-    \;&=\; \tfrac14 \Big(p_k(1-p_k) + p_k(1-p_k) - 2\, p_k(1-p_k)\, \widehat{f}_{u(i)}\Big) \\
-    \;&=\; \tfrac12 p_k(1-p_k) \big(1 - \widehat{f}_{u(i)}\big) .
+    \;&=\; \tfrac14 \Big(p_k q_k + p_k q_k - 2\, p_k q_k\, \widehat{f}_{u(i)}\Big) \\
+    \;&=\; \tfrac12 p_k q_k \big(1 - \widehat{f}_{u(i)}\big) .
 \end{aligned}
 \end{equation}
 Inbreeding leads to less variance attributable to random transmission of alleles.
@@ -1105,7 +1109,7 @@ Many of these topics are discussed throughout the document.
 In this section, we assume a simple trait architecture and population dynamics and derive how phenotypic covariance between two individuals changes based on the information we have about the pair and the trait.
 
 To recap, we assume \emph{additive genetics model with independent environment}.
-That is, the phenotype is a sum of a genetic value and environmental values (\assumptionid{Additive-phenotype}) which are independent within and across individuals (\assumptionid{GE-indep}, \assumptionid{No-IGE}, \assumptionid{Env-indep}), with the exception that alleles are transmitted from parent to offspring (\assumptionid{Segregation}) independently across variants (\assumptionid{Independent-assortment}).
+That is, the phenotype is a sum of a genetic value and environmental values (\assumptionid{Additive-phenotype}) which are independent within and across individuals (\assumptionid{GE-indep-within}, \assumptionid{GE-indep-across}, \assumptionid{Env-indep}), with the exception that alleles are transmitted from parent to offspring (\assumptionid{Segregation}) independently across variants (\assumptionid{Independent-assortment}).
 Genetic effects are linear with allele count (\assumptionid{Linearity}).
 All other assumptions stated so far also apply.
 
@@ -1162,18 +1166,18 @@ We also assume the distribution of the number of offspring per mate pair is iden
 \related{no population structure, no assortative mating, no migration, no modeling of sex.}
 \end{assumption}
 
-Previously, we showed that individual centered alleles have variance $\Var[x^{(u)}_{ik}] = p_k(1-p_k)$.
+Previously, we showed that individual centered alleles have variance $\Var[x^{(u)}_{ik}] = p_k q_k$.
 However, computing the variance of (centered) genotypes, $x_{ik} = x^{(m)}_{ik} + x^{(p)}_{ik}$ requires knowledge of $\Cov[x^{(m)}_{ik},x^{(p)}_{ik}]$.
-Extending from Section~\ref{sec:ibd-transmission} (Equation~\eqref{eq:ibd-founder}), we know that if two alleles are IBD, then they are perfectly correlated (covariance of $p_k(1-p_k)$).
+Extending from Section~\ref{sec:ibd-transmission} (Equation~\eqref{eq:ibd-founder}), we know that if two alleles are IBD, then they are perfectly correlated (covariance of $p_k q_k$).
 If the two alleles are not IBD, then they derive from independent founder alleles and are therefore uncorrelated (covariance of $0$).
-We can simplify the covariance to equal $p_k(1-p_k)$ times the probability of the two alleles being IBD:
+We can simplify the covariance to equal $p_k q_k$ times the probability of the two alleles being IBD:
 $$
-\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k(1-p_k) \;
+\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k q_k \;
 \E[ \IBD(x^{(m)}_{ik},x^{(p)}_{ik}) ]
 $$
 Since $\IBD(x^{(m)}_{ik},x^{(p)}_{ik}) = f_{ik}$, we can also write this in terms of the inbreeding coefficient (Equation~\eqref{eq:inbreeding}):
 $$
-\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k(1-p_k) \; \E[ f_{ik}]
+\Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = p_k q_k \; \E[ f_{ik}]
 $$
 We could simply assume \assumptionid{Unrelated-mates}, which would mean that mates are unrelated, therefore meaning that $\E[ f_{ik}] = \Cov[x^{(m)}_{ik},x^{(p)}_{ik}] = 0$.
 However, we'll be more thorough and instead establish that random mating approximately results in \assumptionid{Unrelated-mates} given a safer new assumption:
@@ -1187,7 +1191,7 @@ We assume $N_e$ is large for the purposes of downstream approximations.
 
 \begin{approximation}{Random-mates-unrelated}{Random mates are approximately unrelated}
 Random mating results in roughly unrelated mates and therefore outbred offspring:
-$$ \Cov[x^{(m)}_{ik}, x^{(p)}_{ik}] \;=\; p_k(1-p_k) \E[ f_{ik}] \;=\; \frac{p_k(1-p_k)}{2 N_e} \;\approx\; 0 . $$
+$$ \Cov[x^{(m)}_{ik}, x^{(p)}_{ik}] \;=\; p_k q_k \E[ f_{ik}] \;=\; \frac{p_k q_k}{2 N_e} \;\approx\; 0 . $$
 \justification{Two alleles chosen at random from different individuals have a $\frac{1}{2 N_e}$ probability of being IBD.
 The offspring of a randomly-mated pair (\assumptionid{Random-mating}) effectively inherits two such alleles from the preceding generation, so $\E[ f_{ik}] = \frac{1}{2 N_e}$, which is small given a large enough $N_e$ (\assumptionid{Large-Ne}).}
 \end{approximation}
@@ -1199,9 +1203,9 @@ We can now confidently state the variance of genotypes under random mating as be
 \begin{aligned}
     \Var[x_{ik}]
     \;&=\; \Var\big[x^{(m)}_{ik}\big] + \Var\big[x^{(p)}_{ik}\big] + 2\Cov\big[x^{(m)}_{ik}, x^{(p)}_{ik}\big] \\
-    \;&=\; 2 p_k(1-p_k) + 2 p_k(1-p_k)\, \E[f_{ik}] \\
-    \;&=\; 2 p_k(1-p_k) \Big(1 + \frac{1}{2 N_e}\Big) \\
-    \;&\approx\; 2 p_k(1-p_k)
+    \;&=\; 2 p_k q_k + 2 p_k q_k\, \E[f_{ik}] \\
+    \;&=\; 2 p_k q_k \Big(1 + \frac{1}{2 N_e}\Big) \\
+    \;&\approx\; 2 p_k q_k
 \end{aligned}
 \end{equation}
 Equivalently, standardized genotypes (Equation~\eqref{eq:standardized}) have approximately unit variance, $\Var[\tilde{x}_{ik}] \approx 1$.
@@ -1222,14 +1226,20 @@ When $i = j$, $\E[y_i^2] = \Var[y_i] = V_Y$.
 Suppose we have genotypic information about a pair, $\Ginfo$.
 Specifically, we have their genotype matrix, $\mathbf{G}$ (non-centered) and $\bX$ (centered), for $M$ genotyped variants, which include all causal variants for the trait of interest.
 Suppose we also know the effect sizes of all the genotyped variants, $\bbeta$.
-Furthermore, we adopt stronger versions of the \assumptionid{GE-indep} and \assumptionid{No-IGE} assumptions, assuming independence between environmental values and jointly-distributed genotypes and effect sizes.
+Furthermore, we adopt stronger versions of the \assumptionid{GE-indep-within} and \assumptionid{GE-indep-across} assumptions, assuming independence between environmental values and jointly-distributed genotypes and effect sizes.
 
-\begin{assumption}{Geno-env-indep}{Genotype--environment independence, within and across individuals}
-Environmental values are jointly independent of the genotypes of individuals and effect sizes:
-$$ \big(\mathbf{G}, \bbeta\big) \;\perp\; \mathbf{e} . $$
-\related{no gene--environment correlation within or across individuals, no indirect (e.g., parental) genetic effects, no population stratification, implies \assumptionid{GE-indep} and \assumptionid{No-IGE} (Section~\ref{sec:pheno-form}).}
+\begin{assumption}{GE-joint-indep-within}{Genotype--environment independence within individuals}
+An individual's environmental value is jointly independent of their own genotypes and alleles and effect sizes:
+$$ \big(\mathbf{G}_i, \mathbf{G}^{(u)}_i, \bbeta\big) \;\perp\; e_i . $$
+\related{no gene--environment correlation within individuals, no population stratification, implies \assumptionid{GE-indep-within} (Section~\ref{sec:pheno-form}).}
 \end{assumption}
-Note that this assumption is a much stronger constraint on population stratification compared to the weaker constraint imposed in \assumptionid{GE-indep}, which requires strong enough population structure, migration, and/or differential selection to cause large differences in mean genetic values across subpopulations.
+
+\begin{assumption}{GE-joint-indep-across}{Genotype--environment independence across individuals}
+An individual's environmental value is jointly independent of another individual's genotypes and alleles and effect sizes:
+$$ \big(\mathbf{G}_j, \mathbf{G}^{(u)}_j, \bbeta\big) \;\perp\; e_i \ \ (i \neq j) . $$
+\related{no gene--environment correlation across individuals, no indirect (e.g., parental) genetic effects, no population stratification, implies \assumptionid{GE-indep-across} (Section~\ref{sec:pheno-form}).}
+\end{assumption}
+Note that \assumptionid{GE-joint-indep-within} is a much stronger constraint on population stratification compared to the weaker constraint imposed in \assumptionid{GE-indep-within}, which requires strong enough population structure, migration, and/or differential selection to cause large differences in mean genetic values across subpopulations.
 A more thorough discussion is reserved for the population structure and stratification sections of this document.
 
 It is now trivial to derive the expected phenotypic cross-product conditional on this information ($i \neq j$):
@@ -1241,7 +1251,7 @@ It is now trivial to derive the expected phenotypic cross-product conditional on
     \;&=\; \sum_{k=1}^{M} \sum_{k'=1}^{M} \beta_k \beta_{k'}\, x_{ik}\, x_{jk'}
 \end{aligned}
 \end{equation}
-The first step follows from \assumptionid{Geno-env-indep}, which lets us drop the conditioning on $\bX$ and $\bbeta$ from every term containing an environmental value, and \assumptionid{Env-indep}, which then makes $\E[e_i e_j] = 0$.
+The first step follows from \assumptionid{GE-joint-indep-within} and \assumptionid{GE-joint-indep-across}, which let us drop the conditioning on $\bX$ and $\bbeta$ from every term containing an environmental value, and \assumptionid{Env-indep}, which then makes $\E[e_i e_j] = 0$.
 
 \subsection{Covariance given genotypes}\label{sec:rm-cov-geno}
 
@@ -1253,8 +1263,8 @@ We avoid making unnecessary assumptions about these effect size distributions an
 We have already constrained the first moment of effect sizes to be zero (\assumptionid{Effects-first-moment-zero}), but we must also constrain the second moment:
 
 \begin{assumption}{Effects-second-moment-var-constant}{Squared effect sizes scale with allele frequency}
-Averaged over variants with the same allele frequency, the squared effect size is a constant, $\sigma_\beta^2 \in \R_{>0}$, scaled by a power, $\alpha \in \R$, of the allele-frequency term used to standardize genotypes, $2p_k(1-p_k)$:
-$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \E\big[\fbeta(\Binfo_k) \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k(1-p_k)\big]^{\alpha} . $$
+Averaged over variants with the same allele frequency, the squared effect size is a constant, $\sigma_\beta^2 \in \R_{>0}$, scaled by a power, $\alpha \in \R$, of the allele-frequency term used to standardize genotypes, $2p_k q_k$:
+$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \E\big[\fbeta(\Binfo_k) \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k q_k\big]^{\alpha} . $$
 \related{the infinitesimal / random-effects model.}
 \end{assumption}
 
@@ -1267,8 +1277,6 @@ In conjunction with \assumptionid{Effects-first-moment-zero}, the effect sizes o
 $$ \E[\beta_k \beta_{k'} \mid p_k, p_{k'}] \;=\; 0 \qquad (k \neq k') . $$
 \related{the infinitesimal / random-effects model, whose effects are drawn independently across variants.}
 \end{assumption}
-
-
 
 Next, we need to assume that individual genotype information is not predictive of variant effect sizes up to the second moment.
 Any form of non-random mating or selection that is downstream of effect sizes violates this assumption;
@@ -1295,13 +1303,13 @@ By \assumptionid{Effects-second-moment-covar}, all off-diagonal terms ($k\neq k'
 Subsequently, only main diagonal terms ($k = k'$) remain, weighted by each variant's squared effect size, which by \assumptionid{Effects-second-moment-var-constant} depends only on its allele frequency:
 \begin{equation}\label{eq:cov-geno-diag}
     \E\big[g_i g_j \mid \bX\big] \;=\; \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, x_{ik}\, x_{jk}
-    \;=\; \sigma_\beta^2 \sum_{k=1}^{M} \big[2p_k(1-p_k)\big]^{\alpha}\, x_{ik}\, x_{jk}
+    \;=\; \sigma_\beta^2 \sum_{k=1}^{M} \big[2p_k q_k\big]^{\alpha}\, x_{ik}\, x_{jk}
 \end{equation}
 To relate this to genotypic similarity (Equation~\eqref{eq:grm}), we now fix $\alpha$:
 
 \begin{assumption}{Effects-alpha-minus-one}{Standardized effect sizes have the same variance}
 The allele-frequency exponent of \assumptionid{Effects-second-moment-var-constant} is $\alpha = -1$:
-$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k(1-p_k)\big]^{-1} . $$
+$$ \E\big[\beta_k^2 \mid p_k\big] \;=\; \sigma_\beta^2 \, \big[2p_k q_k\big]^{-1} . $$
 Equivalently, every variant has the same expected squared \emph{standardized} effect size (Equation~\eqref{eq:standardized-effect}), $\E[\tilde{\beta}_k^2 \mid p_k] = \sigma_\beta^2$.
 \related{equal per-standardized-allele effect variance across variants.}
 \end{assumption}
@@ -1311,7 +1319,7 @@ The choice of $\alpha = -1$ is primarily driven by its wide adoption in the lite
 
 Previously in Equation~\eqref{eq:additive-variance}, we introduced the additive genetic variance as the variance of genetic values in the population, $V_A := \Var[g_i \mid \Ginfo, \bbeta]$. 
 If we don't condition on effect sizes nor genotypes and instead average over them, we can derive the expected additive variance under random mating.
-Furthermore, previously in Equation~\eqref{eq:var-x}, we derived that $\Var[x_{ik}] \approx 2p_k(1-p_k)$, and in Equation~\eqref{eq:cov-geno-diag} that the off-diagonal terms go to zero:
+Furthermore, previously in Equation~\eqref{eq:var-x}, we derived that $\Var[x_{ik}] \approx 2p_k q_k$, and in Equation~\eqref{eq:cov-geno-diag} that the off-diagonal terms go to zero:
 \begin{equation}\label{eq:additive-variance-effects}
 \begin{aligned}
     \E[V_A]
@@ -1321,7 +1329,7 @@ Furthermore, previously in Equation~\eqref{eq:var-x}, we derived that $\Var[x_{i
     \;&=\; \E\Big[\, \E\big[g_i g_i \mid \bX\big] \Big] \\
     \;&=\; \E\bigg[\, \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, x_{ik}^2 \bigg] \\
     \;&=\; \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, \E\big[x_{ik}^2\big] \\
-    \;&\approx\; \sum_{k=1}^{M} \sigma_\beta^2 \big[2p_k(1-p_k)\big]^{-1}\, 2p_k(1-p_k) \;=\; M \sigma_\beta^2
+    \;&\approx\; \sum_{k=1}^{M} \sigma_\beta^2 \big[2p_k q_k\big]^{-1}\, 2p_k q_k \;=\; M \sigma_\beta^2
 \end{aligned}
 \end{equation}
 The second line is the law of total variance, and the following approximation assumes that the population's mean genetic value, $\E[g_i \mid \bX, \bbeta]$, is approximately zero.
@@ -1348,43 +1356,364 @@ For reference, normally distributed effect sizes have a kurtosis of $\kappa = 3$
 
 Therefore:
 \begin{equation}\label{eq:cov-geno-va}
-    \E\big[y_i y_j \mid \bX\big] \;\approx\; V_A \cdot \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k(1-p_k)} .
+\begin{aligned}
+    \E\big[y_i y_j \mid \bX\big]
+    \;&=\; \E\big[g_i g_j \mid \bX\big] \\
+    \;&=\; \sum_{k=1}^{M} \sum_{k'=1}^{M} \E\big[\beta_k \beta_{k'} \mid p_k, p_{k'}\big]\, x_{ik}\, x_{jk'} \\
+    \;&=\; \sum_{k=1}^{M} \E\big[\beta_k^2 \mid p_k\big]\, x_{ik}\, x_{jk}
+    \;+\; \sum_{k \neq k'} \underbrace{\E\big[\beta_k \beta_{k'} \mid p_k, p_{k'}\big]}_{=\,0}\, x_{ik}\, x_{jk'} \\
+    \;&=\; \sigma_\beta^2 \sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k q_k} \\
+    \;&\approx\; V_A \cdot \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k q_k} .
+\end{aligned}
 \end{equation}
-In this equation, we also observe genotypic similarity, i.e., an element of the genetic relationship matrix, $A_{ij} = \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k(1-p_k)}$, which we derived earlier in Equation~\eqref{eq:grm}.
+In this equation, we also observe genotypic similarity, i.e., an element of the genetic relationship matrix, $A_{ij} = \frac{1}{M}\sum_{k=1}^{M} \frac{x_{ik}\, x_{jk}}{2p_k q_k}$, which we derived earlier in Equation~\eqref{eq:grm}.
 Therefore, we can further simplify:
 \begin{equation}\label{eq:cov-grm}
     \E\big[y_i y_j \mid A_{ij}\big] \;\approx\; V_A\, A_{ij}
 \end{equation}
 
-\toagent{Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos, questions or notes in this section. The content in this section does not need to remain accurate with the rest of the document.}
+\subsection{Covariance given relatedness}\label{sec:rm-relatedness}
 
-\toagent{You may edit below this comment again.}
+\subsubsection{Covariance given coefficient of kinship}\label{sec:rm-kinship}
+Suppose that for a pair of individuals, we do not know their genotypes, $\mathbf{G} \in \Ginfo$, but do know their coefficient of kinship, $\Theta_{ij} \in \Tinfo$.
+We can derive the expected phenotypic cross-product as follows.
 
-\subsection{Transmission}\label{sec:rm-transmission}
-% v1: Level 2, conditioning on pi_ij.
+Because IBD implies IBS (\assumptionid{No-recent-mutation}), the cross-product of IBD allele pairs is $p_k q_k$.
+In contrast, allele pairs that are not IBD must therefore have been inherited from non-overlapping transmission chains.
+\assumptionid{Random-mating} ensures that the individuals along those non-overlapping transmission chains are chosen roughly at random from the population, meaning the alleles transmitted along each chain are uncorrelated.
+Therefore, without knowledge of genotypes, non-IBD allele pairs have an expected cross-product of $0$. 
+We can write this as:
 
-\subsection{Path}\label{sec:rm-path}
-% v1: Level 3, with E[pi | P] derived from meiosis (Genetic-degree assumption dropped).
+\begin{equation}\label{eq:allele-cross-ibd}
+    \E\big[x^{(u)}_{ik}\, x^{(v)}_{jk} \;\big|\; \Theta^{(uv)}_{ijk}\big]
+    \;=\; \begin{cases}
+        p_k q_k & \Theta^{(uv)}_{ijk} = 1 \\
+        0 & \Theta^{(uv)}_{ijk} = 0
+    \end{cases}
+    \;=\; p_k q_k\, \Theta^{(uv)}_{ijk}
+\end{equation}
 
-\subsection{Summary}\label{sec:rm-summary}
-% Target x information grid. Tower property (needs only nesting) vs screening (finer
-% information alone suffices), which assortative mating breaks.
+Using the allele-level formula for the genotypic similarity (Equation~\eqref{eq:grm-alleles}), we can derive the expected genotypic similarity given the coefficient of kinship:
 
-% =================================================================================================
+\begin{equation}\label{eq:grm-kinship}
+\begin{aligned}
+    \E\big[A_{ij} \mid \Theta_{ij}\big]
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \E\big[\tilde{x}^{(u)}_{ik}\, \tilde{x}^{(v)}_{jk} \mid \Theta_{ij}\big] \\
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \E\Big[\, \E\big[\tilde{x}^{(u)}_{ik}\, \tilde{x}^{(v)}_{jk} \mid \Theta^{(uv)}_{ijk}\big] \;\Big|\; \Theta_{ij}\Big] \\
+    \;&=\; \frac{1}{M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \frac{p_k q_k}{2p_k q_k}\, \E\big[\Theta^{(uv)}_{ijk} \mid \Theta_{ij}\big] \\
+    \;&=\; 2\, \E\bigg[\frac{1}{4M} \sum_{k=1}^{M} \sum_{u,v \in \{m,p\}} \Theta^{(uv)}_{ijk} \;\bigg|\; \Theta_{ij}\bigg] \\
+    \;&=\; 2\, \Theta_{ij} \;=\; \pi_{ij}
+\end{aligned}
+\end{equation}
+
+Before proceeding, we need to explicitly state that the coefficient of kinship of two individuals does not give us any information about their phenotypic covariance beyond what their genotypic similarity tells us:
+
+\begin{assumption}{Kinship-screened}{Genotypic similarity screens off kinship}
+Given the genotypic similarity, the coefficient of kinship conveys no further information about the phenotypic cross-product:
+$$ \E\big[y_i y_j \mid A_{ij}, \Theta_{ij}\big] \;=\; \E\big[y_i y_j \mid A_{ij}\big] . $$
+\related{no shared environment among relatives, no indirect (e.g., parental) genetic effects, no effect sizes that depend on relatedness.}
+\end{assumption}
+
+With that assumption, we can simplify Equation~\eqref{eq:cov-grm} as follows ($i \neq j$):
+
+\begin{equation}\label{eq:cov-kinship}
+\begin{aligned}
+    \E\big[y_i y_j \mid \Theta_{ij}\big]
+    \;&=\; \E\Big[\, \E\big[y_i y_j \mid A_{ij}, \Theta_{ij}\big] \;\Big|\; \Theta_{ij} \Big] \\
+    \;&=\; \E\Big[\, \E\big[y_i y_j \mid A_{ij}\big] \;\Big|\; \Theta_{ij} \Big] \\
+    \;&\approx\; V_A\, \E\big[A_{ij} \mid \Theta_{ij}\big] \\
+    \;&=\; 2\, V_A\, \Theta_{ij} \\
+    \;&=\; V_A\, \pi_{ij}
+\end{aligned}
+\end{equation}
+
+\subsubsection{Covariance given genetic degree}\label{sec:rm-degree}
+
+Suppose that for a pair of individuals, we do not even know their coefficient of kinship, only their genetic degree, $\ddeg_{ij} \in \Pinfo$.
+We can take a similar approach as Section~\ref{sec:rm-kinship} to derive the expected phenotypic cross-product.
+
+Earlier in Equation~\eqref{eq:kinship-degree}, we already derived the expected coefficient of kinship given the genetic degree:
+$\E[\Theta_{ij} \mid \ddeg_{ij}] = \E\big[\widehat\Theta_{ij} \mid \ddeg_{ij}\big] = \tfrac12\, 2^{-\ddeg_{ij}}$.
+Like the \assumptionid{Kinship-screened} assumption of the previous section, we similarly assume:
+
+\begin{assumption}{Degree-screened}{Kinship screens off genetic degree}
+Given the coefficient of kinship, the genetic degree conveys no further information about the phenotypic cross-product:
+$$ \E\big[y_i y_j \mid \Theta_{ij}, \ddeg_{ij}\big] \;=\; \E\big[y_i y_j \mid \Theta_{ij}\big] . $$
+\related{no shared environment among relatives, no indirect (e.g., parental) genetic effects, no effect sizes that depend on relative pedigree position.}
+\end{assumption}
+
+We can now simplify Equation~\eqref{eq:cov-kinship} to obtain ($i \neq j$):
+
+\begin{equation}\label{eq:cov-degree}
+\begin{aligned}
+    \E\big[y_i y_j \mid \ddeg_{ij}\big]
+    \;&=\; \E\Big[\, \E\big[y_i y_j \mid \Theta_{ij}, \ddeg_{ij}\big] \;\Big|\; \ddeg_{ij} \Big] \\
+    \;&=\; \E\Big[\, \E\big[y_i y_j \mid \Theta_{ij}\big] \;\Big|\; \ddeg_{ij} \Big] \\
+    \;&\approx\; 2\, V_A\, \E\big[\Theta_{ij} \mid \ddeg_{ij}\big] \\
+    \;&=\; V_A\, 2^{-\ddeg_{ij}}
+\end{aligned}
+\end{equation}
+
+\subsection{Hierarchy of information}
+Here, we summarize the interesting property that emerges from our assumptions and derivations.
+Namely, there is a clear ``hierarchy'' of information with regards to the granularity in phenotypic cross-products it provides:
+\begin{enumerate}[nosep]
+    \item The genetic degree, $\ddeg \in Pinfo$, provides the least granularity, assigning the same expected cross-product to everyone with the same genetic degree.
+    \item The coefficient of kinship, $\Theta \in \Tinfo$, provides additional granularity around the degree, allowing for more precise expectations between relative pairs of differing IBD proportions.
+    \item The genotypic similarity/GRM, $\mathbf{A} \in \Ginfo$, adds further granularity around the kinship-based expectation, broadly differentiating pairs whose non-IBD genome segments happen to be more or less similar.
+    \item Finally, effect sizes, $\bbeta \in \Binfo$, provide the highest possible granularity around the genotypic similarity, broadly differentiating pairs whose genotypes happen to be more or less similar at high-effect-size variants.
+\end{enumerate}
+
 \section{Additive genetics under assortative mating}\label{sec:am}
 
 \subsection{The mating model}\label{sec:am-model}
-% Primary-AM as the co-path specialized to y. Matings in P become dependent on G and E
-% (relaxing Non-IBD-indep (b)); G leaks beta.
+We now explicitly revoke the \assumptionid{Random-mating} assumption.
+In its place, we adopt a mating model of \textbf{primary assortative mating}:
+
+\begin{assumption}{Primary-AM}{Primary assortative mating}
+Mating is non-random such that the phenotypes of two mates, $m$ and $p$, are correlated for some trait at the time of mating:
+$$ \Corr[\,y_m, y_p\,] = \rho_y . $$
+\related{primary phenotypic assortment, as opposed to social homogamy (matching on a shared environment) or genetic homogamy (matching on genotype directly)}
+\end{assumption}
+Primary assortative mating means that mates are paired up based directly on their phenotypes, and any other correlations between mates' values emerge from their association with the phenotype.
+For example, as we'll soon see, mates' genetic values also become correlated under primary assortative mating, but only because genetic values are correlated with the phenotype mates are matching on.
+Following the convention that a subscript names the component being correlated across mates, we write $\rho_g$ for the induced correlation between mates' genetic values:
+$ \Corr[\,g_m, g_p\,] = \rho_g $.
+Note that $\rho_y$ is often written as $\mu$ or $r$ in the literature (not to be confused with our placeholder co-path coefficient $\mu$, Equation~\eqref{eq:copath-mu}), and it is referred to as the \emph{strength} of assortative mating.
+
+Furthermore, \textbf{convergence} describes the phenomenon where two mates' phenotypic values become more similar after mating, presumably due to each individual affecting the other's environment in some sense.
+Our definition of primary assortative mating makes no claims about convergence, since we impose the $\rho_y$ constraint at the time of mating.
+However, throughout this section, we will derive formulas for the covariance between phenotypes across individuals, often of different generations.
+To avoid having to couch every statement with the clause ``at the time of mating'', we will explicitly assume away convergence:
+
+\begin{assumption}{No-convergence}{No phenotypic convergence after mating}
+The correlation in mates' phenotypic values does not change after mating.
+\related{no cultural transmission or IGEs between mates.}
+\end{assumption}
 
 \subsection{Dynamics and equilibrium}\label{sec:am-dynamics}
 
-\subsubsection{First generation}\label{sec:am-first-gen}
-% Shortened to an illustration. v1: "Consequences of assortative mating on first generation of
-% mates / offspring", tab:relatives-gen1.
+The consequences of assortative mating on the subsequent generation's genetics accumulate across generations.
+Luckily, a stable equilibrium is eventually reached, which will be the focus of our derivations regarding phenotypic covariance between individuals in Section~\ref{sec:am-rel-values}.
+However, first we must establish how that equilibrium is reached, which we will do by starting with a randomly-mating population that then switches to primary assortative mating at generation $t=0$.
+Parameters that are time-varying due to the dynamics of assortative mating will contain a $(t)$ superscript to denote the generation they belong to, such as $\rho_g^{(t)}$ and $V_A^{(t)}$.
+Note that $\rho_y$ does not change across generations as the \assumptionid{Primary-AM} assumption must hold for a fixed strength.
+We will then solve for equilibrium and denote its respective parameters using the superscript $(\mathrm{eq})$.
+
+We remind the reader of key assumptions we've previously made that are heavily relied on here.
+Namely, we continue to assume that allele frequencies do not change over time (\assumptionid{Constant-freq}) and that variants are transmitted independently of each other (\assumptionid{Independent-assortment}).
+Furthermore, we will heavily rely on path analysis, which is properly introduced in Appendix~\ref{app:path-analysis}.
+
+\subsubsection{First generation of mates under assortative mating}\label{sec:am-first-gen-mates}
+We begin at generation $t=0$, the first generation for which mates are matched on their phenotype.
+Figure~\ref{fig:am-pair} shows the path diagram of such an assortatively-mated pair, with nodes shown for alleles, genotypes, genetic values, environmental values, and phenotypic values.
+For clarity, we temporarily assume there are only two variants in the genome.
+An example chain is traced between two of the mates' alleles, with the implied covariance between them shown below the figure, calculated by multiplying edge coefficients.
+Note the first instance of the \emph{co-path} edge in a path diagram, which is used to convey matching between variables, such as that induced by assortative mating.
+
+\begin{figure}[H]
+    \begin{floatcard}
+        \input{figures/v2/am_pair.tikz}
+        \caption{%
+            Path diagram of a mated pair in generation $t=0$ assorting on the phenotype.
+            One chain between alleles is traced and the product of its coefficients is written underneath.
+            Each centered allele $x^{(u)}_{ik}$ has variance $p_k q_k$.%
+        }
+        \label{fig:am-pair}
+    \end{floatcard}
+\end{figure}
+
+We can trace chains between any two variables in order to obtain their covariance.
+Table~\ref{tab:am-pair-within} confirms that the covariance between two variables belonging to the same individual remains unchanged:
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{l|ccccc}
+                 & $x_{i1}$ & $x_{i2}$ & $g_i$ & $e_i$ & $y_i$ \\
+        \hline
+        $x_{i1}$ & $2p_1 q_1$ & $0$ & $2p_1 q_1\beta_1$ & $0$ & $2p_1 q_1\beta_1$ \\
+        $x_{i2}$ & $0$ & $2p_2 q_2$ & $2p_2 q_2\beta_2$ & $0$ & $2p_2 q_2\beta_2$ \\
+        $g_i$    & $2p_1 q_1\beta_1$ & $2p_2 q_2\beta_2$ & $\VAo$ & $0$ & $\VAo$ \\
+        $e_i$    & $0$ & $0$ & $0$ & $V_E$ & $V_E$ \\
+        $y_i$    & $2p_1 q_1\beta_1$ & $2p_2 q_2\beta_2$ & $\VAo$ & $V_E$ & $\VYo$ \\
+    \end{tabular}
+    \caption{%
+        Covariances within one mate $i \in \{m,p\}$ in generation $t=0$, identical for both mates.%
+    }
+    \label{tab:am-pair-within}
+    \end{floatcard}
+\end{table}
+
+Note that the genotype variances and the lack of covariance between genotypes at different variants follow from \assumptionid{Random-mating} (Equation~\eqref{eq:var-x}) and \assumptionid{Independent-assortment}, since the mates are themselves the offspring of random mating.
+Because every chain between a variable $w_m$ of one mate and a variable $z_p$ of the other crosses the co-path edge once, their covariance decomposes into:
+\begin{equation}\label{eq:leg-rule}
+    \Cov[\,w_m,\, z_p\,] \;=\; \Cov[\,w_m,\, y_m\,] \cdot \frac{\rho_y}{\VYo} \cdot \Cov[\,y_p,\, z_p\,]
+\end{equation}
+
+Therefore, the matrix of covariances between cross-mate variables can be computed from the outer product of the last column of Table~\ref{tab:am-pair-within} for the two mates, scaled by $\rho_y / \VYo$ (Table~\ref{tab:am-pair-between}).
+
+\begin{table}[H]
+    \begin{floatcard}
+    \renewcommand{\arraystretch}{1.4}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{l|cccc}
+        $\times\, \rho_y / \VYo$ & $x_{pl}$ & $g_p$ & $e_p$ & $y_p$ \\
+        \hline
+        $x_{mk}$ & $4p_k q_k\,p_l q_l\,\beta_k\beta_l$ & $2p_k q_k\beta_k\VAo$ & $2p_k q_k\beta_k V_E$ & $2p_k q_k\beta_k\VYo$ \\
+        $g_m$    & $2p_l q_l\beta_l\VAo$ & $(\VAo)^2$ & $\VAo V_E$ & $\VAo\VYo$ \\
+        $e_m$    & $2p_l q_l\beta_l V_E$ & $\VAo V_E$ & $V_E^2$ & $V_E\VYo$ \\
+        $y_m$    & $2p_l q_l\beta_l\VYo$ & $\VAo\VYo$ & $V_E\VYo$ & $(\VYo)^2$ \\
+    \end{tabular}
+    \caption{%
+        Covariances between variables across the two mates in generation $t=0$, where $k, l \in \{1, 2\}$ index the two variants.
+        Every entry should be multiplied by a factor of $\rho_y/\VYo$ (shown in the top-left corner).%
+    }
+    \label{tab:am-pair-between}
+    \end{floatcard}
+\end{table}
+
+Three key results from Table~\ref{tab:am-pair-between} are highlighted here.
+We also generalize from two variants to $M$ variants, meaning $g_i = \sum_{k=1}^{M} \beta_k x_{ik}$.
+
+\begin{enumerate}[nosep]
+    \item $\Cov[\,x_{mk},\, x_{pl}\,] = 4p_k q_k\,p_l q_l\,\beta_k\beta_l\,\rho_y/\VYo \neq 0$, for every pair of variants $k$ and $l$ where $\beta_k , \beta_l \neq 0$ (and if $\rho_y \neq 0$).
+    Genotypes at different variants across mates are correlated, with a sign determined by the product of their effect sizes.
+    \item $\Cov[\,e_m,\, g_p\,] = \VAo V_E \,\rho_y/\VYo \neq 0$.
+    One mate's environment is correlated with the other's genetic value, which breaks \assumptionid{GE-indep-across} and \assumptionid{GE-joint-indep-across}.
+    Despite one mate's genotype not causally affecting the other's environment, the two still become correlated due to the phenotypic matching.
+    Two mates' environments also become correlated, $\Cov[\,e_m,\, e_p\,] = V_E^2\,\rho_y/\VYo$, breaking \assumptionid{Env-indep}.
+    \item\label{item:rhog-hsq} $\rhogo \,=\, \Corr[\,g_m,\, g_p\,] \,=\, \frac{(\VAo)^2 \rho_y/\VYo}{\VAo} \,=\, \rho_y\,\frac{\VAo}{\VYo} \,=\, \rho_y\,\hsqo . $
+    Mates' genetic values are correlated according to the strength of assortative mating and the heritability of the sorting trait.
+    Equivalently, the numerator $\Cov[\,g_m,\, g_p\,]$ is the sum of the first result over all $M^2$ ordered pairs of variants, weighted by their effect sizes: $\sum_{k}\sum_{l}\beta_k\beta_l \cdot 4p_k q_k\,p_l q_l\,\beta_k\beta_l\,\rho_y/\VYo = \big(\sum_k 2p_k q_k\,\beta_k^2\big)^2\rho_y/\VYo = (\VAo)^2\rho_y/\VYo$.
+\end{enumerate}
+
+\subsubsection{Commonly-used terms}
+Before proceeding, we introduce and re-establish notation that clarifies downstream analysis.
+Note that for notational consistency, we should also be attaching a ${(t)}$ superscript to every allele, genotype, etc.
+However, for the sake of clarity, we omit this.
+
+\paragraph{Disequilibrium coefficients}
+
+For an individual $i$ of generation $t$ and variants $k$ and $l$, we define the \textbf{non-gametic disequilibrium coefficient}, $D^{(t)}_{k/l}$, to be the covariance between alleles \emph{across} gametes of an individual, i.e., between the maternal and paternal allele:
+\begin{equation}\label{eq:D-nongametic}
+    D^{(t)}_{k/l} \;:=\; \Cov\big[x^{(m)}_{ik},\, x^{(p)}_{il}\big]
+\end{equation}
+Since mothers and fathers are exchangeable under \assumptionid{Primary-AM}, swapping $m$ and $p$ does not change the covariance, $\Cov\big[x^{(p)}_{ik},\, x^{(m)}_{il}\big] = D^{(t)}_{k/l}$.
+
+Similarly, we define the \textbf{gametic disequilibrium coefficient}, $D^{(t)}_{kl}$, to be the covariance between alleles within the \emph{same} gamete $u \in \{m,p\}$ of an individual:
+\begin{equation}\label{eq:D-gametic}
+\begin{aligned}
+    D^{(t)}_{kl} \;&:=\; \Cov\big[x^{(u)}_{ik},\, x^{(u)}_{il}\big] \\
+    D^{(t)}_{kk} \;&=\; p_k q_k \qquad \text{for all } t
+\end{aligned}
+\end{equation}
+The second line holds because, when $k = l$, the gametic disequilibrium coefficient is the variance of a single allele, which is fixed for all generations by \assumptionid{Constant-freq}.
+
+We can write the covariance between two genotypes in the same individual, or the variance of a genotype when $k = l$, as the sum of four allelic covariances:
+\begin{equation}\label{eq:x-from-D}
+\begin{aligned}
+    \Cov[\,x_{ik},\, x_{il}\,]
+    \;&=\; \sum_{u,v \in \{m,p\}} \Cov\big[x^{(u)}_{ik},\, x^{(v)}_{il}\big] \\
+    \;&=\; \Cov\big[x^{(m)}_{ik},\, x^{(m)}_{il}\big] + \Cov\big[x^{(p)}_{ik},\, x^{(p)}_{il}\big] \\
+    &\qquad +\; \Cov\big[x^{(m)}_{ik},\, x^{(p)}_{il}\big] + \Cov\big[x^{(p)}_{ik},\, x^{(m)}_{il}\big] \\
+    \;&=\; 2\big(D^{(t)}_{kl} + D^{(t)}_{k/l}\big)
+\end{aligned}
+\end{equation}
+
+The terms and notation used here come from Weir \citep{weir1996book}.
+\question{wait, im unsure and stopped writing, do we need the next sentence, or does our use of the term now match theirs?}
+Note that in their work, both coefficients are only defined for different variants, $k \neq l$, while we extend them to the same variant.
+When $k=l$, the gametic disequilibrium coefficient becomes the variance of a single allele, and the non-gametic disequilibrium coefficient, $D^{(t)}_{k/k} = \Cov\big[x^{(m)}_{ik},\, x^{(p)}_{ik}\big]$, is what they call the \textbf{Hardy--Weinberg disequilibrium coefficient}.
+
+\paragraph{Allelic marginal effect size}
+The third quantity we define is the \textbf{allelic marginal effect size}, i.e., the slope from regressing the phenotype of an individual on one of their alleles, $\gamma_{k}^{(t)}$:
+\begin{equation}\label{eq:gamma-def}
+    \gamma^{(t)}_k \;:=\; \frac{\Cov\big[\,x^{(u)}_{ik},\, y_i\,\big]}{\Var\big[\,x^{(u)}_{ik}\,\big]}
+\end{equation}
+
+Its numerator decomposes into the sum of covariances between the allele and the causes of the phenotype.
+This includes the environmental term (covariance of zero under \assumptionid{GE-joint-indep-within}, which still holds under assortative mating because an individual's own environmental value is drawn independently of their genetics) and each genotype weighted by its effect size.
+Each of the latter terms can itself be expanded into an allele on the opposite gamete, $D^{(t)}_{k/l}$, and an allele on the same gamete, $D^{(t)}_{kl}$:
+\begin{equation}\label{eq:gamma-from-D}
+\begin{aligned}
+    \gamma^{(t)}_k
+    \;&=\; \frac{1}{p_k q_k}\Big(\underbrace{\Cov\big[\,x^{(u)}_{ik},\, e_i\,\big]}_{0} + \sum_{l=1}^{M} \beta_l\,\Cov\big[\,x^{(u)}_{ik},\, x_{il}\,\big]\Big) \\
+    \;&=\; \frac{1}{p_k q_k} \sum_{l=1}^{M} \beta_l \Big(D^{(t)}_{kl} + D^{(t)}_{k/l}\Big) \\
+    \;&=\; \beta_k + \frac{1}{p_k q_k}\Big(\sum_{l \neq k} \beta_l\, D^{(t)}_{kl} + \sum_{l=1}^{M} \beta_l\, D^{(t)}_{k/l}\Big)
+\end{aligned}
+\end{equation}
+The last line separates out the $l = k$ gametic term, $D^{(t)}_{kk} = p_k q_k$, to make its relationship to $\beta_k$ clearer.
+A single allele can therefore covary with the phenotype through any variant the individual carries, not just its own.
+
+\paragraph{Additive genetic variance}
+Deriving the additive genetic variance, $V_A^{(t)}$, follows similar logic:
+\begin{equation}\label{eq:VA-from-gamma}
+\begin{aligned}
+    \VAt \;=\; \Var[\,g_i\,]
+    \;&=\; \sum_{k} \beta_k \Cov[\,x_{ik},\, g_i\,] \\
+    \;&=\; \sum_{k} \beta_k \Big(\Cov\big[\,x^{(m)}_{ik},\, y_i\,\big] + \Cov\big[\,x^{(p)}_{ik},\, y_i\,\big]\Big) \\
+    \;&=\; \sum_{k} 2 p_k q_k\, \beta_k\, \gamma^{(t)}_k
+\end{aligned}
+\end{equation}
+The second line swaps $g_i$ for $y_i$, since each allele is uncorrelated with $e_i$ per \assumptionid{GE-joint-indep-within}.
+Compared with $\VAo = \sum_k 2 p_k q_k \beta_k^2$, one of the two effect sizes is replaced by the marginal effect size.
+
+\paragraph{Heritability}
+Like additive genetic variance, phenotypic variance can also vary across time, $\VYt = \VAt + V_E$ (this formula still holds by \assumptionid{GE-indep-within}).
+Similarly, we define generation-specific heritability as follows:
+\begin{equation}\label{eq:hsq-t}
+\begin{aligned}
+    \hsqt \;:=\; \frac{\VAt}{\VYt} \;&=\; \frac{\VAt}{\VAt + V_E} \\
+    \;&=\; \frac{\sum_k 2 p_k q_k\, \beta_k\, \gamma^{(t)}_k}{\sum_k 2 p_k q_k\, \beta_k\, \gamma^{(t)}_k + V_E}
+\end{aligned}
+\end{equation}
+
+\paragraph{Genetic value correlation between mates}
+We'll also confirm here that $\rho_g^{(t)} = \rho_y V_A^{(t)} / V_Y^{(t)} $ holds for any $t$, rather than just $t=0$ as shown in result~\ref{item:rhog-hsq} of Section~\ref{sec:am-first-gen-mates}.
+Per \assumptionid{GE-indep-within}, each mate's genetic value covariance with their phenotype is $\Cov[g_i, y_i] = \Cov[g_i, g_i + e_i] = \Var[g_i] = \VAt$.
+Crossing the mating co-path means multiplying these two covariances by $\rho_y / \VYt$ (the denominator is the variance of the variable being matched on, phenotypes):
+\begin{equation}\label{eq:rhog-t}
+\begin{aligned}
+    \rhogt \;&=\; \frac{\Cov[\,g_m,\, g_p\,]}{\sqrt{\Var[g_m]\,\Var[g_p]}} \\
+    \;&=\; \frac{\overbrace{\Cov[\,g_m,\, y_m\,]}^{\VAt} \cdot\; \dfrac{\rho_y}{\VYt} \;\cdot \overbrace{\Cov[\,y_p,\, g_p\,]}^{\VAt}}{\VAt} \\
+    \;&=\; \rho_y\,\frac{\VAt}{\VYt} \;=\; \rho_y\,\hsqt
+\end{aligned}
+\end{equation}
+The genetic correlation between mates is the phenotypic correlation scaled by that generation's heritability, exactly as it was in $t=0$.
+
+\paragraph{Segregation variation}
+
+Earlier in Section~\ref{sec:transmission-alleles} (Equation~\eqref{eq:allele-transmit-resid}), we parameterized an offspring's allele as the mean of the transmitting parent's two alleles plus an uncorrelated segregation residual.
+We can derive the variance of this residual under the presence of correlated parent alleles.
+Note our temporary use of the $(t+1)$ superscript on the residual to clarify that the properties of a generation-$t+1$ individual's segregation residual is a function of generation-$t$ properties.
+\begin{equation}\label{eq:seg-var-allele}
+\begin{aligned}
+    \Var\big[x^{\perp(u)\;(t+1)}_{ik}\big]
+    \;&=\; \E\Big[\big(T^{(u)}_{ik} - \tfrac12\big)^2\Big]\; \E\Big[\big(x^{(m)}_{u(i),k} - x^{(p)}_{u(i),k}\big)^2\Big] \\
+    \;&=\; \tfrac14\Big(p_k q_k + p_k q_k - 2\,D^{(t)}_{k/k}\Big) \\
+    \;&=\; \tfrac12\big(p_k q_k - D^{(t)}_{k/k}\big)
+\end{aligned}
+\end{equation}
+We can also derive the segregation residual of genotypes:
+\begin{equation}\label{eq:seg-var-x}
+\begin{aligned}
+    \Var\big[x^{\perp\;(t+1)}_{ik}\big]
+    \;&=\; \Var\big[x^{\perp(m)}_{ik}\big] + \Var\big[x^{\perp(p)}_{ik}\big] + 2\Cov\big[x^{\perp(m)}_{ik},\, x^{\perp(p)}_{ik}\big] \\
+    \;&=\; \tfrac12\big(p_k q_k - D^{(t)}_{k/k}\big) + \tfrac12\big(p_k q_k - D^{(t)}_{k/k}\big) + 0 \\
+    \;&=\; p_k q_k - D^{(t)}_{k/k}
+\end{aligned}
+\end{equation}
+
+These derivations are a generalization of our earlier result in Equation~\eqref{eq:founder-resid-var} that showed that inbred parents pass on alleles with lower segregation variance.
+The earlier result only considered IBS between possibly-inherited alleles that arises from IBD, while this section's result encompasses any IBS.
+
+\subsubsection{First generation of offspring under assortative mating}\label{sec:am-first-gen-offspring}
+We will now produce the first generation of offspring, $t=1$, and derive the consequences of assortative mating on it.
 
 \subsubsection{Compounding across generations}\label{sec:am-compounding}
-% Recursions for a, s, b. v1: "Compounding across generations".
+% Recursions for D_{k/l} (v1's a), D_{kl} (v1's s), b. v1: "Compounding across generations".
 
 \subsubsection{Equilibrium}\label{sec:am-equilibrium}
 % v1: "Equilibrium".
@@ -1421,6 +1750,11 @@ Therefore, we can further simplify:
 % The A_ij problem, framed as the beta-leak. v1: "Conditioning on allelic sharing".
 
 % =================================================================================================
+
+\toagent{Do not edit below this comment until told otherwise. Text in this section is not necessarily up-to-date or accurate. You do not need to address any to-dos, questions or notes in this section. The content in this section does not need to remain accurate with the rest of the document.}
+
+\toagent{You may edit below this comment again.}
+
 \clearpage
 \appendixsections
 

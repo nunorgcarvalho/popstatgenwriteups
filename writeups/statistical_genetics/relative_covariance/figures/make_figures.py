@@ -1285,6 +1285,165 @@ def check_path_diagram_example() -> int:
 
 
 # ----------------------------------------------------------------------------------------------
+# v2 fig:am-pair, tab:am-pair-within and tab:am-pair-between: v1's Figure 1 and Tables 1-2 redone
+# in the v2 notation. The exogenous nodes are the CENTERED (unstandardized) alleles x^{(u)}_{ik},
+# each with variance p_k(1-p_k) (Constant-freq keeps that fixed across generations), rather than
+# v1's standardized z's. Every hand-typed table entry is asserted in check_am_pair.
+# ----------------------------------------------------------------------------------------------
+
+_AM_PAIR_ALLELES = [(w, u, k) for w in "mp" for u in "mp" for k in (1, 2)]
+
+
+def _xa(who: str, u: str, k: int) -> str:
+    return f"xa_{u}_{who}{k}"
+
+
+def am_pair() -> pm.Model:
+    lines = [
+        "latent: g_m, e_m, g_p, e_p",
+        "latent: " + ", ".join(_xa(*a) for a in _AM_PAIR_ALLELES),
+        "positive: V_E, p_1, p_2",
+        "real: beta_1, beta_2",
+        *[f"label: {_xa(w, u, k)} = $x^{{({u})}}_{{{w}{k}}}$" for w, u, k in _AM_PAIR_ALLELES],
+        *[f"label: x_{w}{k} = $x_{{{w}{k}}}$" for w in "mp" for k in (1, 2)],
+        *[f"label: {v}_{w} = ${v}_{w}$" for w in "mp" for v in "gey"],
+        # a genotype is the sum of its two alleles (eq:centered-genotype): unit coefficients, no
+        # variance of its own
+        *[f"x_{w}{k} ~ {_xa(w, 'm', k)} + {_xa(w, 'p', k)}" for w in "mp" for k in (1, 2)],
+        "g_m ~ beta_1*x_m1 + beta_2*x_m2",
+        "g_p ~ beta_1*x_p1 + beta_2*x_p2",
+        "y_m ~ g_m + e_m",
+        "y_p ~ g_p + e_p",
+        *[f"{_xa(w, u, k)} ~~ p_{k}*(1 - p_{k})*{_xa(w, u, k)}" for w, u, k in _AM_PAIR_ALLELES],
+        "e_m ~~ V_E*e_m",
+        "e_p ~~ V_E*e_p",
+        "y_m -- [rho_y]*y_p",
+    ]
+    return pm.from_text("\n".join(lines), name="v2 mated pair, two causal variants, centered alleles")
+
+
+def _am_pair_person(who: str, dx: float) -> dict[str, tuple[float, float]]:
+    return {
+        _xa(who, "m", 1): (dx + 0.0, 4.6), _xa(who, "p", 1): (dx + 1.6, 4.6),
+        f"x_{who}1": (dx + 0.8, 3.0),
+        _xa(who, "m", 2): (dx + 3.4, 4.6), _xa(who, "p", 2): (dx + 5.0, 4.6),
+        f"x_{who}2": (dx + 4.2, 3.0),
+        f"e_{who}": (dx + 0.0, 1.5), f"g_{who}": (dx + 2.5, 1.5),
+        f"y_{who}": (dx + 2.5, 0.0),
+    }
+
+
+AM_PAIR_LAYOUT = Layout({**_am_pair_person("m", 0.0), **_am_pair_person("p", 8.0)})
+
+#: the traced chain, and the closed form the caption ends on
+AM_PAIR_CHAIN = (_xa("m", "m", 1), _xa("p", "p", 2))
+AM_PAIR_CHAIN_RESULT = r"p_1 q_1\, p_2 q_2\, \beta_1 \beta_2\, \rho_y / \VYo"
+
+
+def am_pair_tikz() -> str:
+    """The figure with AM_PAIR_CHAIN traced on it. Same conventions as v1's Figure 1: every
+    coefficient shown (so the reader can multiply along the chain), and the edges off the chain
+    faded rather than dropped. pathMgr's simplified product reads (p_1 - 1)(p_2 - 1); it is
+    replaced by AM_PAIR_CHAIN_RESULT, which check_am_pair asserts equal to the covariance."""
+    model = am_pair()
+    p1, p2, b1, b2, V_E = (model.sym(s) for s in ("p_1", "p_2", "beta_1", "beta_2", "V_E"))
+    V_Y = sp.expand(2 * p1 * (1 - p1) * b1**2 + 2 * p2 * (1 - p2) * b2**2 + V_E)
+    # q_k := 1 - p_k. Written out as p_k(1-p_k), the allele loop labels were too wide for v1's
+    # node spacing and ran into each other; p_k q_k fits.
+    names = {V_Y: r"\VYo", p1 * (1 - p1): "p_1 q_1", p2 * (1 - p2): "p_2 q_2"}
+    style = DiagramStyle(show_variances=True, show_unit_coefficients=True, latex_names=names)
+    report = diagnose(model, AM_PAIR_LAYOUT, style, max_width=15.0)
+    assert not report.collisions.collisions and not report.collisions.ambiguous, report
+    decomposition = pm.WrightTracer(model).trace(*AM_PAIR_CHAIN)
+    assert len(decomposition) == 1, f"expected a single chain, got {len(decomposition)}"
+    tikz = to_tikz(
+        model,
+        layout=AM_PAIR_LAYOUT,
+        style=style,
+        highlight=decomposition.chains[0],
+        caption_name=r"\operatorname{Cov}\left[x^{(m)}_{m1}, x^{(p)}_{p2}\right]",
+    )
+    tikz, n = re.subn(
+        r"= \\frac\{\\beta_\{1\} \\beta_\{2\} p_\{1\} p_\{2\} \\rho_\{y\} "
+        r"\\left\(p_\{1\} - 1\\right\) \\left\(p_\{2\} - 1\\right\)\}\{\\VYo\}\$\}",
+        lambda _: "= " + AM_PAIR_CHAIN_RESULT + "$}",
+        tikz,
+    )
+    assert n == 1, n
+    return tikz
+
+
+def check_am_pair() -> int:
+    """Assert tab:am-pair-within and tab:am-pair-between entry by entry, the traced chain, the
+    leg rule (eq:leg-rule) and the three highlighted results, against the diagram."""
+    model = am_pair()
+    assert not [i for i in model.validate() if i.severity == "error"], model.validate()
+    e = pm.RAMEngine(model)
+    p1, p2, b1, b2, V_E, rho = (
+        model.sym(s) for s in ("p_1", "p_2", "beta_1", "beta_2", "V_E", "rho_y")
+    )
+    H1, H2 = 2 * p1 * (1 - p1), 2 * p2 * (1 - p2)          # Var[x_{i1}], Var[x_{i2}]
+    V_A = H1 * b1**2 + H2 * b2**2                           # \VAo, as the caption states it
+    V_Y = V_A + V_E                                         # \VYo
+    checked = 0
+
+    def eq(got, want, what):
+        nonlocal checked
+        assert sp.simplify(got - want) == 0, f"{what}: got {sp.factor(got)}, want {want}"
+        checked += 1
+
+    # allele variance p_k(1-p_k), in both mates
+    for w, u, k in _AM_PAIR_ALLELES:
+        eq(e.var(_xa(w, u, k)), p1 * (1 - p1) if k == 1 else p2 * (1 - p2), f"Var[{_xa(w, u, k)}]")
+
+    # tab:am-pair-within, both mates
+    cols = ("x_?1", "x_?2", "g_?", "e_?", "y_?")
+    within = {
+        ("x_?1", "x_?1"): H1, ("x_?1", "x_?2"): 0, ("x_?1", "g_?"): H1 * b1,
+        ("x_?1", "e_?"): 0, ("x_?1", "y_?"): H1 * b1,
+        ("x_?2", "x_?2"): H2, ("x_?2", "g_?"): H2 * b2, ("x_?2", "e_?"): 0,
+        ("x_?2", "y_?"): H2 * b2,
+        ("g_?", "g_?"): V_A, ("g_?", "e_?"): 0, ("g_?", "y_?"): V_A,
+        ("e_?", "e_?"): V_E, ("e_?", "y_?"): V_E,
+        ("y_?", "y_?"): V_Y,
+    }
+    for w in "mp":
+        for (a, b), want in within.items():
+            eq(e.cov(a.replace("?", w), b.replace("?", w)), want, f"within {a},{b} ({w})")
+
+    # tab:am-pair-between, all 25 entries: the outer product of the y_? column of the within
+    # table, times rho_y / \VYo (eq:leg-rule)
+    leg = dict(zip(cols, (H1 * b1, H2 * b2, V_A, V_E, V_Y)))
+    for a in cols:
+        for b in cols:
+            got = e.cov(a.replace("?", "m"), b.replace("?", "p"))
+            eq(got, leg[a] * leg[b] * rho / V_Y, f"between {a},{b}")
+            # eq:leg-rule, read off the engine's own legs
+            eq(got, e.cov(a.replace("?", "m"), "y_m") * rho / V_Y
+               * e.cov("y_p", b.replace("?", "p")), f"leg rule {a},{b}")
+
+    # the traced chain and the caption's closed form
+    eq(e.cov(*AM_PAIR_CHAIN), p1 * (1 - p1) * p2 * (1 - p2) * b1 * b2 * rho / V_Y, "chain")
+
+    # result 3: rho_g^(0) = rho_y h^2_(0), and its sum-over-variants form
+    # (Var[g_m] = Var[g_p] = \VAo is asserted above, so the square root is just \VAo; sympy
+    # cannot take it itself, since it does not know p_k < 1)
+    eq(e.cov("g_m", "g_p") / V_A, rho * V_A / V_Y, "rho_g")
+    betas, Hs = {1: b1, 2: b2}, {1: H1, 2: H2}
+    eq(sum(betas[k] * betas[l] * e.cov(f"x_m{k}", f"x_p{l}") for k in (1, 2) for l in (1, 2)),
+       V_A**2 * rho / V_Y, "sum over variant pairs")
+    # result 1, in the M-variant form the text states
+    for k in (1, 2):
+        for l in (1, 2):
+            eq(e.cov(f"x_m{k}", f"x_p{l}"), Hs[k] * Hs[l] * betas[k] * betas[l] * rho / V_Y,
+               f"Cov[x_m{k}, x_p{l}]")
+    # result 2, and the environments
+    eq(e.cov("e_m", "g_p"), V_A * V_E * rho / V_Y, "Cov[e_m, g_p]")
+    eq(e.cov("e_m", "e_p"), V_E**2 * rho / V_Y, "Cov[e_m, e_p]")
+    return checked
+
+
+# ----------------------------------------------------------------------------------------------
 # v2 fig:ibd-cousins: full first cousins i and j in an outbred recent pedigree, drawn as
 # fig:ibd-one-gen two generations down. Their fathers p(i) and p(j) are full brothers, so the two
 # most recent common ancestors are the paternal grandparents, m(p(i)) = m(p(j)) and
@@ -3769,6 +3928,7 @@ def main() -> int:
     print(f"IBD c-paths:   {check_ibd_cpaths()} results agree with pathMgr")
     print(f"IBD cousins:   {check_ibd_cousins()} results agree with pathMgr")
     print(f"path diagram:  {check_path_diagram_example()} results agree with pathMgr")
+    print(f"AM pair (v2):  {check_am_pair()} results agree with pathMgr")
     print(f"genetic degree: {check_genetic_degree()} results agree with the c-path sum")
     print(f"chain formulas: {check_chain_formulas()} results agree with pathMgr")
     print(f"pedigree sets: {check_pedigree_sets()} results agree with pathMgr")
@@ -3940,6 +4100,11 @@ def main() -> int:
     assert not report.collisions.collisions and not report.collisions.ambiguous, report
     target = HERE / "v2" / "path_diagram_example.tikz"
     target.write_text(to_tikz(pd_model, layout=PATH_DIAGRAM_LAYOUT, style=pd_style))
+    print(f"wrote {target.relative_to(HERE.parent)}")
+
+    # v2 fig:am-pair (checked by diagnose() inside am_pair_tikz)
+    target = HERE / "v2" / "am_pair.tikz"
+    target.write_text(am_pair_tikz())
     print(f"wrote {target.relative_to(HERE.parent)}")
 
     # Figure 5: the step-sibling pedigree that the mating-count definition is read off. Same

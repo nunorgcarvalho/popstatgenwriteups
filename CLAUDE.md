@@ -33,6 +33,11 @@ with a generic instruction (including the thesisMgr worker profile), these win.
   (`$...$` inline, `$$...$$` display) using only standard LaTeX/amsmath commands — never the
   writeup macros, which the VS Code chat panel cannot render — and never as plain-text or
   Unicode approximations. Spell them out instead: `\mathrm{E}`, `\mathrm{Cov}`, `V_A^{(0)}`.
+  The chat's markdown parser can read two underscores in one math block as italic markers and
+  delete them (e.g. `D^{(t)}_{kl} + D^{(t)}_{k/l}` lost both `_`), which breaks the rendering.
+  To avoid it: put each display equation in its own `$$` block, with the `$$` on their own lines
+  and a blank line before and after; keep displays out of lists and inline sentences; and keep
+  inline math short, moving any formula with several subscripts into its own display.
 
 ## Staging: `git add -A` at the start of every round
 
